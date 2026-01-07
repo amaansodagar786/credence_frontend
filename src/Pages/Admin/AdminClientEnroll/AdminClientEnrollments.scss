@@ -1,0 +1,67 @@
+.admin-enrollments {
+  h2 {
+    margin-bottom: 20px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  th,
+  td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 14px;
+  }
+
+  th {
+    background: #f3f4f6;
+    font-weight: 600;
+  }
+
+  .status {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+
+    &.pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    &.approved {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    &.rejected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+  }
+
+  button {
+    padding: 6px 12px;
+    font-size: 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 6px;
+  }
+
+  .approve {
+    background: #16a34a;
+    color: #fff;
+  }
+
+  .reject {
+    background: #dc2626;
+    color: #fff;
+  }
+}
