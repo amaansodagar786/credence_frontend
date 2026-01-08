@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import AdminLayout from "../Layout/AdminLayout";
 import {
   FiEdit2,
   FiX,
-  FiUserPlus,
-  FiCheck,
   FiUsers,
   FiCalendar,
   FiBriefcase,
@@ -17,11 +17,36 @@ import {
   FiEye,
   FiEyeOff,
   FiSearch,
-  FiFilter
+  FiPlus,
+  FiTrash2,
+  FiUserCheck,
+  FiUserX,
+  FiCheck,
+  FiAlertTriangle,
+  FiClock,
+  FiCheckCircle,
+  FiXCircle,
+  FiArchive,
+  FiFileText
 } from "react-icons/fi";
 import "./AdminEmployees.scss";
 
-// Client assignment validation schema
+// Validation schemas
+const employeeSchema = Yup.object().shape({
+  name: Yup.string()
+    .min(2, "Name must be at least 2 characters")
+    .required("Name is required"),
+  email: Yup.string()
+    .email("Invalid email address")
+    .required("Email is required"),
+  phone: Yup.string()
+    .matches(/^\d{10}$/, "Phone must be 10 digits")
+    .required("Phone is required"),
+  password: Yup.string()
+    .min(6, "Password must be at least 6 characters")
+    .optional()
+});
+
 const assignSchema = Yup.object().shape({
   clientId: Yup.string().required("Client is required"),
   year: Yup.number()
@@ -31,28 +56,55 @@ const assignSchema = Yup.object().shape({
   month: Yup.number()
     .min(1, "Month must be between 1-12")
     .max(12, "Month must be between 1-12")
-    .required("Month is required")
+    .required("Month is required"),
+  task: Yup.string()
+    .oneOf([
+      "Bookkeeping",
+      "VAT Filing Computation",
+      "VAT Filing",
+      "Financial Statement Generation"
+    ], "Please select a valid task")
+    .required("Task is required")
 });
 
 const AdminEmployees = () => {
   // State declarations
   const [employees, setEmployees] = useState([]);
   const [clients, setClients] = useState([]);
-  const [filteredClients, setFilteredClients] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+
+  // Modal states
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showRemoveConfirmModal, setShowRemoveConfirmModal] = useState(false);
+
+  // Selected items
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [assigningEmployee, setAssigningEmployee] = useState(null);
-  const [currentMonth, setCurrentMonth] = useState({
+  const [employeeToConfirm, setEmployeeToConfirm] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(""); // "deactivate" or "activate"
+  const [confirmMessage, setConfirmMessage] = useState("");
+  const [assignmentToRemove, setAssignmentToRemove] = useState(null);
+
+  // Task options
+  const taskOptions = [
+    { value: "Bookkeeping", label: "Bookkeeping" },
+    { value: "VAT Filing Computation", label: "VAT Filing Computation" },
+    { value: "VAT Filing", label: "VAT Filing" },
+    { value: "Financial Statement Generation", label: "Financial Statement Generation" }
+  ];
+
+  // Current month/year
+  const currentMonth = {
     year: new Date().getFullYear(),
     month: new Date().getMonth() + 1
-  });
+  };
 
-  // Formik for employee form - with validation schema inside
+  // Formik for Add/Edit Employee
   const employeeFormik = useFormik({
     initialValues: {
       name: "",
@@ -60,89 +112,122 @@ const AdminEmployees = () => {
       phone: "",
       password: ""
     },
-    validationSchema: Yup.object().shape({
-      name: Yup.string()
-        .min(2, "Name must be at least 2 characters")
-        .required("Name is required"),
-      email: Yup.string()
-        .email("Invalid email address")
-        .required("Email is required"),
-      phone: Yup.string()
-        .matches(/^\d{10}$/, "Phone must be 10 digits")
-        .required("Phone is required"),
-      password: Yup.string()
-        .when([], {
-          is: () => !editing,
-          then: schema => schema
-            .min(6, "Password must be at least 6 characters")
-            .required("Password is required"),
-          otherwise: schema => schema
-            .min(6, "Password must be at least 6 characters")
-            .optional()
-        })
-    }),
+    validationSchema: employeeSchema,
     onSubmit: async (values) => {
       try {
         setLoading(true);
-        setErrorMessage("");
 
-        if (editing) {
-          await axios.put(
-            `${import.meta.env.VITE_API_URL}/admin-employee/update/${editing.employeeId}`,
-            values,
-            { withCredentials: true }
-          );
-          setSuccessMessage("Employee updated successfully");
-        } else {
-          await axios.post(
-            `${import.meta.env.VITE_API_URL}/admin-employee/create`,
-            values,
-            { withCredentials: true }
-          );
-          setSuccessMessage("Employee created successfully");
+        const payload = {
+          name: values.name,
+          email: values.email,
+          phone: values.phone
+        };
+
+        // Only include password if provided
+        if (values.password && values.password.trim() !== "") {
+          payload.password = values.password;
         }
 
-        resetForm();
+        // For new employees, check if password exists
+        if (!selectedEmployee && !values.password) {
+          toast.error("Password is required for new employees");
+          setLoading(false);
+          return;
+        }
+
+        if (selectedEmployee) {
+          // Update existing employee
+          const response = await axios.put(
+            `${import.meta.env.VITE_API_URL}/admin-employee/update/${selectedEmployee.employeeId}`,
+            payload,
+            { withCredentials: true }
+          );
+
+          toast.success(response.data.message || "Employee updated successfully!", {
+            position: "top-right",
+            autoClose: 3000,
+            theme: "dark"
+          });
+        } else {
+          // Create new employee (password required)
+          if (!values.password) {
+            toast.error("Password is required for new employees", {
+              position: "top-right",
+              autoClose: 3000,
+              theme: "dark"
+            });
+            setLoading(false);
+            return;
+          }
+
+          const response = await axios.post(
+            `${import.meta.env.VITE_API_URL}/admin-employee/create`,
+            payload,
+            { withCredentials: true }
+          );
+
+          toast.success(response.data.message || "Employee created successfully!", {
+            position: "top-right",
+            autoClose: 3000,
+            theme: "dark"
+          });
+        }
+
+        resetEmployeeForm();
         loadEmployees();
       } catch (error) {
         console.error("Error saving employee:", error);
-        setErrorMessage(error.response?.data?.message || "An error occurred");
+        toast.error(error.response?.data?.message || "An error occurred", {
+          position: "top-right",
+          autoClose: 5000,
+          theme: "dark"
+        });
       } finally {
         setLoading(false);
       }
     }
   });
 
-  // Formik for client assignment
+  // Formik for Assign Client (UPDATED WITH TASK)
   const assignFormik = useFormik({
     initialValues: {
       clientId: "",
       year: currentMonth.year,
-      month: currentMonth.month
+      month: currentMonth.month,
+      task: ""
     },
     validationSchema: assignSchema,
     onSubmit: async (values) => {
       try {
         setLoading(true);
-        setErrorMessage("");
 
         const response = await axios.post(
           `${import.meta.env.VITE_API_URL}/admin-employee/assign-client`,
           {
             employeeId: assigningEmployee.employeeId,
-            ...values,
+            clientId: values.clientId,
             year: Number(values.year),
-            month: Number(values.month)
+            month: Number(values.month),
+            task: values.task
           },
           { withCredentials: true }
         );
 
-        setSuccessMessage(response.data.message || "Client assigned successfully");
+        toast.success(response.data.message || "Client assigned successfully!", {
+          position: "top-right",
+          autoClose: 3000,
+          theme: "dark"
+        });
+
         resetAssignForm();
-        loadEmployees(); // Reload to show updated assignments
+        loadEmployees();
       } catch (error) {
         console.error("Error assigning client:", error);
-        setErrorMessage(error.response?.data?.message || "An error occurred");
+        toast.error(error.response?.data?.message || "An error occurred", {
+          position: "top-right",
+          autoClose: 5000,
+          theme: "dark"
+        });
       } finally {
         setLoading(false);
       }
@@ -152,6 +237,7 @@ const AdminEmployees = () => {
   // Load data
   const loadEmployees = async () => {
     try {
+      setLoading(true);
       const res = await axios.get(
         `${import.meta.env.VITE_API_URL}/admin-employee/all`,
         { withCredentials: true }
@@ -159,6 +245,13 @@ const AdminEmployees = () => {
       setEmployees(res.data);
     } catch (error) {
       console.error("Error loading employees:", error);
+      toast.error("Failed to load employees", {
+        position: "top-right",
+        autoClose: 3000,
+        theme: "dark"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -169,7 +262,6 @@ const AdminEmployees = () => {
         { withCredentials: true }
       );
       setClients(res.data);
-      setFilteredClients(res.data);
     } catch (error) {
       console.error("Error loading clients:", error);
     }
@@ -180,25 +272,159 @@ const AdminEmployees = () => {
     loadClients();
   }, []);
 
-  // Search clients
-  useEffect(() => {
-    if (searchTerm) {
-      const filtered = clients.filter(client =>
-        client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.clientId.toLowerCase().includes(searchTerm.toLowerCase())
+  // Open Edit Modal
+  const openEditModal = (employee) => {
+    setSelectedEmployee(employee);
+    employeeFormik.setValues({
+      name: employee.name,
+      email: employee.email,
+      phone: employee.phone,
+      password: ""
+    });
+    setShowEditModal(true);
+  };
+
+  // Open Assign Modal (UPDATED)
+  const openAssignModal = (employee) => {
+    setAssigningEmployee(employee);
+    assignFormik.setValues({
+      clientId: "",
+      year: currentMonth.year,
+      month: currentMonth.month,
+      task: ""
+    });
+    setShowAssignModal(true);
+  };
+
+  // Open Confirm Modal for Deactivate
+  const openDeactivateConfirm = (employee) => {
+    setEmployeeToConfirm(employee);
+    setConfirmAction("deactivate");
+    setConfirmMessage(`Are you sure you want to deactivate "${employee.name}"? This will remove their current month assignments from clients.`);
+    setShowConfirmModal(true);
+  };
+
+  // Open Confirm Modal for Activate
+  const openActivateConfirm = (employee) => {
+    setEmployeeToConfirm(employee);
+    setConfirmAction("activate");
+    setConfirmMessage(`Activate "${employee.name}"? Employee will be available for new assignments.`);
+    setShowConfirmModal(true);
+  };
+
+  // Open Remove Assignment Confirmation
+  const openRemoveAssignmentConfirm = (assignment) => {
+    setAssignmentToRemove(assignment);
+    setShowRemoveConfirmModal(true);
+  };
+
+  // Handle Remove Assignment
+  const handleRemoveAssignment = async () => {
+    if (!assignmentToRemove || !assigningEmployee) return;
+
+    try {
+      setLoading(true);
+
+      const response = await axios.delete(
+        `${import.meta.env.VITE_API_URL}/admin-employee/remove-assignment`,
+        {
+          data: {
+            clientId: assignmentToRemove.clientId,
+            employeeId: assigningEmployee.employeeId,
+            year: assignmentToRemove.year,
+            month: assignmentToRemove.month
+          },
+          withCredentials: true
+        }
       );
-      setFilteredClients(filtered);
-    } else {
-      setFilteredClients(clients);
+
+      toast.success(response.data.message || "Assignment removed successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+        theme: "dark"
+      });
+
+      loadEmployees();
+      closeRemoveConfirmModal();
+    } catch (error) {
+      console.error("Error removing assignment:", error);
+      toast.error(error.response?.data?.message || "Failed to remove assignment", {
+        position: "top-right",
+        autoClose: 5000,
+        theme: "dark"
+      });
+    } finally {
+      setLoading(false);
     }
-  }, [searchTerm, clients]);
+  };
+
+  // Handle Confirm Action (Deactivate/Activate)
+  const handleConfirmAction = async () => {
+    if (!employeeToConfirm) return;
+
+    try {
+      setLoading(true);
+
+      if (confirmAction === "deactivate") {
+        const response = await axios.post(
+          `${import.meta.env.VITE_API_URL}/admin-employee/deactivate/${employeeToConfirm.employeeId}`,
+          {},
+          { withCredentials: true }
+        );
+
+        toast.success(response.data.message || "Employee deactivated successfully!", {
+          position: "top-right",
+          autoClose: 3000,
+          theme: "dark"
+        });
+      } else {
+        const response = await axios.post(
+          `${import.meta.env.VITE_API_URL}/admin-employee/activate/${employeeToConfirm.employeeId}`,
+          {},
+          { withCredentials: true }
+        );
+
+        toast.success(response.data.message || "Employee activated successfully!", {
+          position: "top-right",
+          autoClose: 3000,
+          theme: "dark"
+        });
+      }
+
+      loadEmployees();
+      closeConfirmModal();
+    } catch (error) {
+      console.error(`Error ${confirmAction}ing employee:`, error);
+      toast.error(error.response?.data?.message || `Failed to ${confirmAction} employee`, {
+        position: "top-right",
+        autoClose: 5000,
+        theme: "dark"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Close modals
+  const closeConfirmModal = () => {
+    setShowConfirmModal(false);
+    setEmployeeToConfirm(null);
+    setConfirmAction("");
+    setConfirmMessage("");
+  };
+
+  const closeRemoveConfirmModal = () => {
+    setShowRemoveConfirmModal(false);
+    setAssignmentToRemove(null);
+  };
 
   // Reset forms
-  const resetForm = () => {
+  const resetEmployeeForm = () => {
     employeeFormik.resetForm();
-    setEditing(null);
-    setShowForm(false);
-    setErrorMessage("");
+    setSelectedEmployee(null);
+    setShowAddModal(false);
+    setShowEditModal(false);
+    setShowPassword(false);
   };
 
   const resetAssignForm = () => {
@@ -206,35 +432,12 @@ const AdminEmployees = () => {
       values: {
         clientId: "",
         year: currentMonth.year,
-        month: currentMonth.month
+        month: currentMonth.month,
+        task: ""
       }
     });
     setAssigningEmployee(null);
-    setErrorMessage("");
-  };
-
-  // Start editing employee
-  const startEdit = (emp) => {
-    setEditing(emp);
-    employeeFormik.setValues({
-      name: emp.name,
-      email: emp.email,
-      phone: emp.phone,
-      password: ""
-    });
-    setShowForm(true);
-    setErrorMessage("");
-  };
-
-  // Start assigning client
-  const startAssign = (emp) => {
-    setAssigningEmployee(emp);
-    assignFormik.setValues({
-      clientId: "",
-      year: currentMonth.year,
-      month: currentMonth.month
-    });
-    setErrorMessage("");
+    setShowAssignModal(false);
   };
 
   // Format month name
@@ -246,6 +449,11 @@ const AdminEmployees = () => {
     return months[month - 1] || "";
   };
 
+  // Format month-year string
+  const getMonthYear = (month, year) => {
+    return `${getMonthName(month)} ${year}`;
+  };
+
   // Format phone number
   const formatPhone = (phone) => {
     const cleaned = phone.replace(/\D/g, '');
@@ -255,241 +463,67 @@ const AdminEmployees = () => {
     return phone;
   };
 
-  // Get employee assigned clients count
+  // Get assigned clients count
   const getAssignedCount = (employee) => {
-    return employee.assignedClients?.length || 0;
+    return employee.assignedClients?.filter(ac => !ac.isRemoved).length || 0;
+  };
+
+  // Filtered employees based on search
+  const filteredEmployees = employees.filter(emp =>
+    emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    emp.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Get current month assignments
+  const getCurrentMonthAssignments = (employee) => {
+    const currentYear = new Date().getFullYear();
+    const currentMonthNum = new Date().getMonth() + 1;
+
+    return employee.assignedClients?.filter(
+      assignment => assignment.year === currentYear &&
+        assignment.month === currentMonthNum &&
+        !assignment.isRemoved
+    ) || [];
+  };
+
+  // Get past assignments for display (filter out removed)
+  const getPastAssignments = (employee) => {
+    if (!employee?.assignedClients) return [];
+
+    // Filter out removed assignments and sort by year and month
+    return [...employee.assignedClients]
+      .filter(assignment => !assignment.isRemoved)
+      .sort((a, b) => {
+        if (a.year !== b.year) return b.year - a.year;
+        return b.month - a.month;
+      });
   };
 
   return (
     <AdminLayout>
+      <ToastContainer />
       <div className="admin-employees">
         {/* Header Section */}
         <div className="header-section">
           <div className="title-section">
             <h1 className="page-title">
-              <FiUser size={28} /> Employee Management
+              <FiUsers size={28} /> Employee Management
             </h1>
             <p className="page-subtitle">
-              Manage employees and assign clients month-wise
+              Manage employees and assign clients month-wise with specific tasks
             </p>
           </div>
-          
+
           <div className="action-section">
             <button
-              className={`add-btn ${showForm ? 'cancel' : ''}`}
-              onClick={() => {
-                if (showForm) {
-                  resetForm();
-                } else {
-                  setShowForm(true);
-                  setEditing(null);
-                  employeeFormik.resetForm();
-                }
-              }}
-              disabled={loading || assigningEmployee}
+              className="add-btn"
+              onClick={() => setShowAddModal(true)}
+              disabled={loading}
             >
-              {showForm ? (
-                <>
-                  <FiX size={18} /> Cancel
-                </>
-              ) : (
-                <>
-                  <FiUserPlus size={18} /> Add Employee
-                </>
-              )}
+              <FiPlus size={18} /> Add Employee
             </button>
           </div>
         </div>
-
-        {/* Messages */}
-        {successMessage && (
-          <div className="success-message">
-            <FiCheck size={20} /> {successMessage}
-          </div>
-        )}
-        
-        {errorMessage && (
-          <div className="error-message">
-            <FiX size={20} /> {errorMessage}
-          </div>
-        )}
-
-        {/* Employee Form */}
-        {showForm && (
-          <div className="form-container">
-            <div className="form-header">
-              <h3>
-                {editing ? (
-                  <>
-                    <FiEdit2 /> Edit Employee
-                  </>
-                ) : (
-                  <>
-                    <FiUserPlus /> Add New Employee
-                  </>
-                )}
-              </h3>
-              <p>
-                {editing
-                  ? "Update employee information"
-                  : "Create a new employee account"
-                }
-              </p>
-            </div>
-
-            <form onSubmit={employeeFormik.handleSubmit} className="employee-form">
-              <div className="form-grid">
-                <div className="form-group">
-                  <label htmlFor="name">
-                    <FiUser size={16} /> Full Name *
-                  </label>
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    placeholder="Enter full name"
-                    value={employeeFormik.values.name}
-                    onChange={employeeFormik.handleChange}
-                    onBlur={employeeFormik.handleBlur}
-                    className={
-                      employeeFormik.touched.name && employeeFormik.errors.name
-                        ? "error"
-                        : ""
-                    }
-                    disabled={loading}
-                  />
-                  {employeeFormik.touched.name && employeeFormik.errors.name && (
-                    <div className="error-text">{employeeFormik.errors.name}</div>
-                  )}
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="email">
-                    <FiMail size={16} /> Email Address *
-                  </label>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="employee@company.com"
-                    value={employeeFormik.values.email}
-                    onChange={employeeFormik.handleChange}
-                    onBlur={employeeFormik.handleBlur}
-                    className={
-                      employeeFormik.touched.email && employeeFormik.errors.email
-                        ? "error"
-                        : ""
-                    }
-                    disabled={loading}
-                  />
-                  {employeeFormik.touched.email && employeeFormik.errors.email && (
-                    <div className="error-text">{employeeFormik.errors.email}</div>
-                  )}
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="phone">
-                    <FiPhone size={16} /> Phone Number *
-                  </label>
-                  <input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    placeholder="1234567890"
-                    value={employeeFormik.values.phone}
-                    onChange={employeeFormik.handleChange}
-                    onBlur={employeeFormik.handleBlur}
-                    className={
-                      employeeFormik.touched.phone && employeeFormik.errors.phone
-                        ? "error"
-                        : ""
-                    }
-                    disabled={loading}
-                    maxLength="10"
-                  />
-                  {employeeFormik.touched.phone && employeeFormik.errors.phone && (
-                    <div className="error-text">{employeeFormik.errors.phone}</div>
-                  )}
-                </div>
-
-                <div className="form-group">
-                  <div className="password-header">
-                    <label htmlFor="password">
-                      <FiEye size={16} /> Password{" "}
-                      {!editing && "*"}
-                    </label>
-                    <button
-                      type="button"
-                      className="show-password-btn"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <>
-                          <FiEyeOff size={14} /> Hide
-                        </>
-                      ) : (
-                        <>
-                          <FiEye size={14} /> Show
-                        </>
-                      )}
-                    </button>
-                  </div>
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder={
-                      editing
-                        ? "Enter new password (leave blank to keep current)"
-                        : "Create a strong password"
-                    }
-                    value={employeeFormik.values.password}
-                    onChange={employeeFormik.handleChange}
-                    onBlur={employeeFormik.handleBlur}
-                    className={
-                      employeeFormik.touched.password && employeeFormik.errors.password
-                        ? "error"
-                        : ""
-                    }
-                    disabled={loading}
-                  />
-                  {employeeFormik.touched.password && employeeFormik.errors.password && (
-                    <div className="error-text">{employeeFormik.errors.password}</div>
-                  )}
-                  {editing && (
-                    <small className="hint">
-                      Only enter if you want to change the password
-                    </small>
-                  )}
-                </div>
-              </div>
-
-              <div className="form-actions">
-                <button
-                  type="button"
-                  className="secondary-btn"
-                  onClick={resetForm}
-                  disabled={loading}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="primary-btn"
-                  disabled={loading || !employeeFormik.isValid}
-                >
-                  {loading ? (
-                    <span className="spinner"></span>
-                  ) : editing ? (
-                    "Update Employee"
-                  ) : (
-                    "Create Employee"
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
 
         {/* Employees Table */}
         <div className="table-container">
@@ -500,43 +534,49 @@ const AdminEmployees = () => {
               </h3>
               <div className="table-stats">
                 <span className="count-badge">
-                  {employees.length} employees
+                  {employees.filter(e => e.isActive).length} active
                 </span>
                 <span className="assignments-badge">
                   {employees.reduce((total, emp) => total + getAssignedCount(emp), 0)} total assignments
                 </span>
               </div>
             </div>
-            
+
             <div className="table-controls">
               <div className="search-box">
                 <FiSearch size={18} />
                 <input
                   type="text"
-                  placeholder="Search employees..."
+                  placeholder="Search employees by name or email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  disabled={loading}
                 />
               </div>
             </div>
           </div>
 
-          {employees.length === 0 ? (
+          {loading && filteredEmployees.length === 0 ? (
+            <div className="empty-state">
+              <div className="loading-spinner"></div>
+              <p>Loading employees...</p>
+            </div>
+          ) : filteredEmployees.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">👥</div>
               <h4>No employees found</h4>
-              <p>Add your first employee to get started</p>
+              <p>{searchTerm ? "Try a different search term" : "Add your first employee to get started"}</p>
               <button
                 className="empty-action-btn"
-                onClick={() => setShowForm(true)}
+                onClick={() => setShowAddModal(true)}
                 disabled={loading}
               >
-                <FiUserPlus size={16} /> Add Employee
+                <FiPlus size={16} /> Add Employee
               </button>
             </div>
           ) : (
             <div className="responsive-table">
-              <table>
+              <table className="employees-table">
                 <thead>
                   <tr>
                     <th>Employee</th>
@@ -547,12 +587,11 @@ const AdminEmployees = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {employees
-                    .filter(emp =>
-                      emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      emp.email.toLowerCase().includes(searchTerm.toLowerCase())
-                    )
-                    .map((employee) => (
+                  {filteredEmployees.map((employee) => {
+                    const currentAssignments = getCurrentMonthAssignments(employee);
+                    const hasCurrentAssignments = currentAssignments.length > 0;
+
+                    return (
                       <tr key={employee.employeeId} className="employee-row">
                         <td className="employee-info">
                           <div className="avatar">
@@ -560,7 +599,7 @@ const AdminEmployees = () => {
                           </div>
                           <div className="employee-details">
                             <div className="employee-name">{employee.name}</div>
-                            <div className="employee-id">ID: {employee.employeeId.slice(0, 8)}...</div>
+                            <div className="employee-role">Employee</div>
                           </div>
                         </td>
                         <td>
@@ -579,57 +618,272 @@ const AdminEmployees = () => {
                               <FiBriefcase size={16} />
                               <span>{getAssignedCount(employee)} assigned</span>
                             </div>
-                            {employee.assignedClients?.length > 0 && (
+                            {hasCurrentAssignments && (
+                              <div className="recent-assignment">
+                                {currentAssignments.length} current month
+                              </div>
+                            )}
+                            {getPastAssignments(employee).length > 0 && (
                               <div className="recent-assignment">
                                 Latest: {getMonthName(
-                                  employee.assignedClients[employee.assignedClients.length - 1].month
-                                )} {employee.assignedClients[employee.assignedClients.length - 1].year}
+                                  getPastAssignments(employee)[0].month
+                                )} {getPastAssignments(employee)[0].year}
                               </div>
                             )}
                           </div>
                         </td>
                         <td>
-                          <span className="status-badge active">
-                            Active
-                          </span>
+                          {employee.isActive ? (
+                            <span className="status-badge active">
+                              <FiUserCheck size={12} /> Active
+                            </span>
+                          ) : (
+                            <span className="status-badge inactive">
+                              <FiUserX size={12} /> Inactive
+                            </span>
+                          )}
                         </td>
                         <td>
                           <div className="action-buttons">
-                            <button
-                              className="edit-btn"
-                              onClick={() => startEdit(employee)}
-                              title="Edit employee"
-                              disabled={loading}
-                            >
-                              <FiEdit2 size={16} />
-                              <span>Edit</span>
-                            </button>
-                            <button
-                              className="assign-btn"
-                              onClick={() => startAssign(employee)}
-                              title="Assign client"
-                              disabled={loading}
-                            >
-                              <FiUsers size={16} />
-                              <span>Assign</span>
-                            </button>
+                            {employee.isActive ? (
+                              <>
+                                <button
+                                  className="edit-btn"
+                                  onClick={() => openEditModal(employee)}
+                                  title="Edit employee"
+                                  disabled={loading}
+                                >
+                                  <FiEdit2 size={16} />
+                                  <span>Edit</span>
+                                </button>
+                                <button
+                                  className="assign-btn"
+                                  onClick={() => openAssignModal(employee)}
+                                  title="Assign client"
+                                  disabled={loading}
+                                >
+                                  <FiBriefcase size={16} />
+                                  <span>Assign</span>
+                                </button>
+                                <button
+                                  className="delete-btn"
+                                  onClick={() => openDeactivateConfirm(employee)}
+                                  title="Deactivate employee"
+                                  disabled={loading}
+                                >
+                                  <FiTrash2 size={16} />
+                                  <span>Deactivate</span>
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                className="activate-btn"
+                                onClick={() => openActivateConfirm(employee)}
+                                title="Activate employee"
+                                disabled={loading}
+                              >
+                                <FiUserCheck size={16} />
+                                <span>Activate</span>
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           )}
         </div>
 
-        {/* Assign Client Modal */}
-        {assigningEmployee && (
-          <div className="assign-modal-overlay">
-            <div className="assign-modal">
+        {/* Add Employee Modal */}
+        {(showAddModal || showEditModal) && (
+          <div className="modal-overlay">
+            <div className="modal">
               <div className="modal-header">
                 <h3>
-                  <FiUsers size={24} />
+                  {selectedEmployee ? (
+                    <>
+                      <FiEdit2 /> Edit Employee
+                    </>
+                  ) : (
+                    <>
+                      <FiUser /> Add New Employee
+                    </>
+                  )}
+                </h3>
+                <button
+                  className="close-modal"
+                  onClick={resetEmployeeForm}
+                  disabled={loading}
+                >
+                  <FiX size={24} />
+                </button>
+              </div>
+
+              <div className="modal-body">
+                <form onSubmit={employeeFormik.handleSubmit} className="modal-form">
+                  <div className="form-group">
+                    <label htmlFor="name">
+                      <FiUser size={16} /> Full Name *
+                    </label>
+                    <input
+                      id="name"
+                      name="name"
+                      type="text"
+                      placeholder="Enter full name"
+                      value={employeeFormik.values.name}
+                      onChange={employeeFormik.handleChange}
+                      onBlur={employeeFormik.handleBlur}
+                      className={
+                        employeeFormik.touched.name && employeeFormik.errors.name
+                          ? "error"
+                          : ""
+                      }
+                      disabled={loading}
+                    />
+                    {employeeFormik.touched.name && employeeFormik.errors.name && (
+                      <div className="error-text">{employeeFormik.errors.name}</div>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="email">
+                      <FiMail size={16} /> Email Address *
+                    </label>
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="employee@company.com"
+                      value={employeeFormik.values.email}
+                      onChange={employeeFormik.handleChange}
+                      onBlur={employeeFormik.handleBlur}
+                      className={
+                        employeeFormik.touched.email && employeeFormik.errors.email
+                          ? "error"
+                          : ""
+                      }
+                      disabled={loading}
+                    />
+                    {employeeFormik.touched.email && employeeFormik.errors.email && (
+                      <div className="error-text">{employeeFormik.errors.email}</div>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="phone">
+                      <FiPhone size={16} /> Phone Number *
+                    </label>
+                    <input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      placeholder="1234567890"
+                      value={employeeFormik.values.phone}
+                      onChange={employeeFormik.handleChange}
+                      onBlur={employeeFormik.handleBlur}
+                      className={
+                        employeeFormik.touched.phone && employeeFormik.errors.phone
+                          ? "error"
+                          : ""
+                      }
+                      disabled={loading}
+                      maxLength="10"
+                    />
+                    {employeeFormik.touched.phone && employeeFormik.errors.phone && (
+                      <div className="error-text">{employeeFormik.errors.phone}</div>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <div className="password-header">
+                      <label htmlFor="password">
+                        <FiEye size={16} /> Password{" "}
+                        {!selectedEmployee && "*"}
+                      </label>
+                      <button
+                        type="button"
+                        className="show-password-btn"
+                        onClick={() => setShowPassword(!showPassword)}
+                        disabled={loading}
+                      >
+                        {showPassword ? (
+                          <>
+                            <FiEyeOff size={14} /> Hide
+                          </>
+                        ) : (
+                          <>
+                            <FiEye size={14} /> Show
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder={
+                        selectedEmployee
+                          ? "Enter new password (leave blank to keep current)"
+                          : "Create a strong password"
+                      }
+                      value={employeeFormik.values.password}
+                      onChange={employeeFormik.handleChange}
+                      onBlur={employeeFormik.handleBlur}
+                      className={
+                        employeeFormik.touched.password && employeeFormik.errors.password
+                          ? "error"
+                          : ""
+                      }
+                      disabled={loading}
+                    />
+                    {employeeFormik.touched.password && employeeFormik.errors.password && (
+                      <div className="error-text">{employeeFormik.errors.password}</div>
+                    )}
+                    {selectedEmployee && (
+                      <small className="hint">
+                        Only enter if you want to change the password
+                      </small>
+                    )}
+                  </div>
+
+                  <div className="modal-actions">
+                    <button
+                      type="button"
+                      className="secondary-btn"
+                      onClick={resetEmployeeForm}
+                      disabled={loading}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="primary-btn"
+                      disabled={loading || !employeeFormik.isValid}
+                    >
+                      {loading ? (
+                        <span className="spinner"></span>
+                      ) : selectedEmployee ? (
+                        "Update Employee"
+                      ) : (
+                        "Create Employee"
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showAssignModal && assigningEmployee && (
+          <div className="modal-overlay">
+            <div className="modal assign-modal">
+              <div className="modal-header">
+                <h3>
+                  <FiBriefcase size={24} />
                   Assign Client to {assigningEmployee.name}
                 </h3>
                 <button
@@ -649,23 +903,18 @@ const AdminEmployees = () => {
                   <div>
                     <h4>{assigningEmployee.name}</h4>
                     <p>{assigningEmployee.email}</p>
+                    <small className="current-assignments">
+                      Currently assigned to {getAssignedCount(assigningEmployee)} clients
+                    </small>
                   </div>
                 </div>
 
-                <form onSubmit={assignFormik.handleSubmit} className="assign-form">
+                <form onSubmit={assignFormik.handleSubmit} className="modal-form">
+                  {/* Client Selection */}
                   <div className="form-group">
                     <label htmlFor="clientId">
                       <FiBriefcase size={16} /> Select Client *
                     </label>
-                    <div className="search-client">
-                      <FiSearch size={18} />
-                      <input
-                        type="text"
-                        placeholder="Search clients..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
                     <select
                       id="clientId"
                       name="clientId"
@@ -680,9 +929,9 @@ const AdminEmployees = () => {
                       disabled={loading}
                     >
                       <option value="">-- Select a client --</option>
-                      {filteredClients.map((client) => (
+                      {clients.map((client) => (
                         <option key={client.clientId} value={client.clientId}>
-                          {client.name} ({client.clientId})
+                          {client.name} {client.email ? `(${client.email})` : ''}
                         </option>
                       ))}
                     </select>
@@ -691,6 +940,37 @@ const AdminEmployees = () => {
                     )}
                   </div>
 
+                  {/* Task Selection */}
+                  <div className="form-group">
+                    <label htmlFor="task">
+                      <FiFileText size={16} /> Select Task *
+                    </label>
+                    <select
+                      id="task"
+                      name="task"
+                      value={assignFormik.values.task}
+                      onChange={assignFormik.handleChange}
+                      onBlur={assignFormik.handleBlur}
+                      className={
+                        assignFormik.touched.task && assignFormik.errors.task
+                          ? "error"
+                          : ""
+                      }
+                      disabled={loading}
+                    >
+                      <option value="">-- Select task to assign --</option>
+                      {taskOptions.map((task) => (
+                        <option key={task.value} value={task.value}>
+                          {task.label}
+                        </option>
+                      ))}
+                    </select>
+                    {assignFormik.touched.task && assignFormik.errors.task && (
+                      <div className="error-text">{assignFormik.errors.task}</div>
+                    )}
+                  </div>
+
+                  {/* Date Selection */}
                   <div className="date-selection">
                     <div className="form-group">
                       <label htmlFor="year">
@@ -748,6 +1028,7 @@ const AdminEmployees = () => {
                     </div>
                   </div>
 
+                  {/* Assignment Summary */}
                   <div className="assignment-summary">
                     <h4>Assignment Summary</h4>
                     <div className="summary-details">
@@ -761,6 +1042,11 @@ const AdminEmployees = () => {
                           : "Select month and year"
                         }
                       </p>
+                      {assignFormik.values.task && (
+                        <p>
+                          <strong>Task:</strong> {assignFormik.values.task}
+                        </p>
+                      )}
                       {assignFormik.values.clientId && (
                         <p>
                           <strong>Client:</strong>{" "}
@@ -774,6 +1060,7 @@ const AdminEmployees = () => {
                     </div>
                   </div>
 
+                  {/* ===== MOVED BUTTONS HERE (AFTER ASSIGNMENT SUMMARY) ===== */}
                   <div className="modal-actions">
                     <button
                       type="button"
@@ -792,12 +1079,235 @@ const AdminEmployees = () => {
                         <span className="spinner"></span>
                       ) : (
                         <>
-                          <FiUsers size={18} /> Assign Client
+                          <FiBriefcase size={18} /> Assign Client
                         </>
                       )}
                     </button>
                   </div>
+
+                  {/* Past Assignments Table (SHOW ALL - NOT JUST 5) */}
+                  {getPastAssignments(assigningEmployee).length > 0 && (
+                    <div className="past-assignments">
+                      <h4>
+                        <FiClock size={18} /> Past Assignments
+                        <span className="count-badge">{getPastAssignments(assigningEmployee).length}</span>
+                      </h4>
+                      <div className="assignments-table-container">
+                        <table className="past-assignments-table">
+                          <thead>
+                            <tr>
+                              <th>Client Name</th>
+                              <th>Period</th>
+                              <th>Task</th>
+                              <th>Accounting Status</th>
+                              <th>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {/* SHOW ALL ASSIGNMENTS (REMOVED .slice(0, 5)) */}
+                            {getPastAssignments(assigningEmployee).map((assignment, index) => (
+                              <tr key={index}>
+                                <td className="client-name">
+                                  <div className="client-name-cell">
+                                    {assignment.clientName}
+                                  </div>
+                                </td>
+                                <td className="period">
+                                  {getMonthYear(assignment.month, assignment.year)}
+                                </td>
+                                <td className="task">
+                                  <span className="task-badge">
+                                    {assignment.task}
+                                  </span>
+                                </td>
+                                <td className="accounting-status">
+                                  {assignment.accountingDone ? (
+                                    <span className="status-done">
+                                      <FiCheckCircle size={14} /> Done
+                                    </span>
+                                  ) : (
+                                    <span className="status-pending">
+                                      <FiClock size={14} /> Pending
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="assignment-actions">
+                                  {!assignment.accountingDone && (
+                                    <button
+                                      className="remove-assignment-btn"
+                                      onClick={() => openRemoveAssignmentConfirm(assignment)}
+                                      title="Remove this assignment"
+                                      disabled={loading}
+                                    >
+                                      <FiTrash2 size={14} />
+                                      <span>Remove</span>
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Confirmation Modal for Deactivate/Activate */}
+        {showConfirmModal && employeeToConfirm && (
+          <div className="modal-overlay">
+            <div className="modal confirm-modal">
+              <div className="modal-header">
+                <h3>
+                  <FiAlertTriangle size={24} />
+                  {confirmAction === "deactivate" ? "Deactivate Employee" : "Activate Employee"}
+                </h3>
+                <button
+                  className="close-modal"
+                  onClick={closeConfirmModal}
+                  disabled={loading}
+                >
+                  <FiX size={24} />
+                </button>
+              </div>
+
+              <div className="modal-body">
+                <div className="confirmation-content">
+                  <div className="confirmation-icon">
+                    {confirmAction === "deactivate" ? (
+                      <div className="icon-deactivate">
+                        <FiUserX size={48} />
+                      </div>
+                    ) : (
+                      <div className="icon-activate">
+                        <FiUserCheck size={48} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="confirmation-details">
+                    <h4>{employeeToConfirm.name}</h4>
+                    <p className="employee-email">{employeeToConfirm.email}</p>
+                    <p className="confirmation-message">{confirmMessage}</p>
+
+                    {confirmAction === "deactivate" && (
+                      <div className="warning-note">
+                        <FiAlertTriangle size={16} />
+                        <span>
+                          <strong>Note:</strong> This will remove all current month assignments from clients.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="modal-actions">
+                  <button
+                    type="button"
+                    className="secondary-btn"
+                    onClick={closeConfirmModal}
+                    disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className={confirmAction === "deactivate" ? "danger-btn" : "success-btn"}
+                    onClick={handleConfirmAction}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <span className="spinner"></span>
+                    ) : confirmAction === "deactivate" ? (
+                      <>
+                        <FiCheck size={18} /> Yes, Deactivate
+                      </>
+                    ) : (
+                      <>
+                        <FiCheck size={18} /> Yes, Activate
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Remove Assignment Confirmation Modal */}
+        {showRemoveConfirmModal && assignmentToRemove && (
+          <div className="modal-overlay">
+            <div className="modal confirm-modal">
+              <div className="modal-header">
+                <h3>
+                  <FiArchive size={24} />
+                  Remove Assignment
+                </h3>
+                <button
+                  className="close-modal"
+                  onClick={closeRemoveConfirmModal}
+                  disabled={loading}
+                >
+                  <FiX size={24} />
+                </button>
+              </div>
+
+              <div className="modal-body">
+                <div className="confirmation-content">
+                  <div className="confirmation-icon">
+                    <div className="icon-remove">
+                      <FiArchive size={48} />
+                    </div>
+                  </div>
+
+                  <div className="confirmation-details">
+                    <h4>Remove Assignment</h4>
+                    <div className="assignment-details">
+                      <p><strong>Employee:</strong> {assigningEmployee?.name}</p>
+                      <p><strong>Client:</strong> {assignmentToRemove.clientName}</p>
+                      <p><strong>Task:</strong> {assignmentToRemove.task}</p>
+                      <p><strong>Period:</strong> {getMonthYear(assignmentToRemove.month, assignmentToRemove.year)}</p>
+                      <p><strong>Status:</strong> <span className="status-pending">Pending (Accounting not done)</span></p>
+                    </div>
+
+                    <div className="warning-note">
+                      <FiAlertTriangle size={16} />
+                      <span>
+                        <strong>Note:</strong> This will remove this assignment from both employee and client records.
+                        This action can only be performed for pending assignments.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="modal-actions">
+                  <button
+                    type="button"
+                    className="secondary-btn"
+                    onClick={closeRemoveConfirmModal}
+                    disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="danger-btn"
+                    onClick={handleRemoveAssignment}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <span className="spinner"></span>
+                    ) : (
+                      <>
+                        <FiTrash2 size={18} /> Yes, Remove Assignment
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

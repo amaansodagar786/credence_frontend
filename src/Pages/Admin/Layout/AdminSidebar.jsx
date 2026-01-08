@@ -70,8 +70,8 @@ const AdminSidebar = ({ children }) => {
     { icon: <FiUsers />, title: "Employees", path: "/admin/employees" },
     { icon: <FiCheckSquare />, title: "Employees Tasks", path: "/admin/employees-tasks" },
     { icon: <TbUsers />, title: "Clients Info", path: "/admin/clients" },
-    { icon: <FiUserPlus />, title: "Register Admin", path: "/admin/register" },
-    { icon: <FiSettings />, title: "Settings", path: "/admin/settings" },
+    { icon: <FiUserPlus />, title: "Register Admin", path: "/admin/login" },
+    // { icon: <FiSettings />, title: "Settings", path: "/admin/settings" }, 
   ];
 
   return (

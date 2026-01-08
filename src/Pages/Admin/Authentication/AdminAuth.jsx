@@ -428,17 +428,15 @@ const AdminAuth = () => {
           )}
 
           {/* Footer */}
-          <div className="auth-footer">
+          {/* <div className="auth-footer">
             <p className="help-text">
               {authType === "login" 
                 ? "For security reasons, please use strong passwords." 
                 : "Registered admins will have full system access."
               }
             </p>
-            {/* <div className="version-info">
-              <span>v2.0.0 | Admin Portal</span>
-            </div> */}
-          </div>
+            
+          </div> */}
         </div>
 
         {/* Info Side - Right Side (Hidden on Mobile) */}

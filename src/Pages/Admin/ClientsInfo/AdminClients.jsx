@@ -14,28 +14,30 @@ import {
   FiFile,
   FiFileText,
   FiFolder,
-  FiDownload,
   FiEye,
   FiChevronRight,
   FiClock,
-  FiActivity,
   FiTrendingUp,
   FiPackage,
-  FiDollarSign,
   FiCreditCard,
-  FiArchive,
-  FiFilter,
   FiSearch,
   FiChevronDown,
   FiChevronUp,
   FiUserCheck,
-  FiClipboard,
-  FiEdit,
-  FiClock as FiTimeIcon,
   FiAlertCircle,
-  FiInfo
+  FiInfo,
+  FiClipboard,
+  FiUpload,
+  FiCloud
 } from "react-icons/fi";
+import { Snackbar, Alert } from "@mui/material";
 import "./AdminClients.scss";
+
+import { pdfjs } from 'react-pdf';
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.js',
+  import.meta.url,
+).toString();
 
 const AdminClients = () => {
   const [clients, setClients] = useState([]);
@@ -46,29 +48,70 @@ const AdminClients = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [expandedFiles, setExpandedFiles] = useState({});
   const [expandedInfo, setExpandedInfo] = useState({});
-  const [stats, setStats] = useState({
-    total: 0,
-    active: 0,
-    inactive: 0,
-    totalDocuments: 0,
-    lockedDocuments: 0,
-    totalMonths: 0,
-    lockedMonths: 0,
-    accountingCompleted: 0
-  });
+
+  // Month dropdown states
+  const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
+  const [monthDropdownOpen, setMonthDropdownOpen] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonthNum, setSelectedMonthNum] = useState(new Date().getMonth() + 1);
 
   // Document Preview States
   const [previewDoc, setPreviewDoc] = useState(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const previewRef = useRef(null);
 
+
+
+  const [numPages, setNumPages] = useState(null);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pdfError, setPdfError] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  // Snackbar states
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success"
+  });
+
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
 
-  /* ================= DOCUMENT PREVIEW PROTECTION ================= */
-  /* SAME AS CLIENTFILESUPLOAD COMPONENT */
+  // Years array (current year and previous year)
+  const years = [currentYear, currentYear - 1];
 
+  // Months array
+  const months = [
+    { value: 1, label: "January" },
+    { value: 2, label: "February" },
+    { value: 3, label: "March" },
+    { value: 4, label: "April" },
+    { value: 5, label: "May" },
+    { value: 6, label: "June" },
+    { value: 7, label: "July" },
+    { value: 8, label: "August" },
+    { value: 9, label: "September" },
+    { value: 10, label: "October" },
+    { value: 11, label: "November" },
+    { value: 12, label: "December" }
+  ];
+
+  // Show snackbar
+  const showSnackbar = (message, severity = "success") => {
+    setSnackbar({
+      open: true,
+      message,
+      severity
+    });
+  };
+
+  // Close snackbar
+  const handleCloseSnackbar = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
+  };
+
+  /* ================= DOCUMENT PREVIEW PROTECTION ================= */
   const applyProtection = () => {
     if (!previewRef.current) return;
 
@@ -90,27 +133,14 @@ const AdminClients = () => {
       return false;
     };
 
-    // Disable keyboard shortcuts (Ctrl+S, Ctrl+P, etc.)
-    const disableShortcuts = (e) => {
-      if ((e.ctrlKey || e.metaKey) &&
-        (e.key === 's' || e.key === 'p' || e.key === 'c')) {
-        e.preventDefault();
-        return false;
-      }
-    };
-
     const iframe = previewRef.current.querySelector('iframe, img');
     if (iframe) {
       iframe.addEventListener('contextmenu', disableRightClick);
       iframe.addEventListener('dragstart', disableDragStart);
       iframe.addEventListener('selectstart', disableTextSelect);
-      iframe.addEventListener('keydown', disableShortcuts);
 
       // Make iframe non-draggable
       iframe.setAttribute('draggable', 'false');
-
-      // Disable pointer events for extra protection
-      iframe.style.pointerEvents = 'none';
     }
 
     // Also protect the modal container
@@ -126,12 +156,14 @@ const AdminClients = () => {
       iframe.removeEventListener('contextmenu', () => { });
       iframe.removeEventListener('dragstart', () => { });
       iframe.removeEventListener('selectstart', () => { });
-      iframe.removeEventListener('keydown', () => { });
     }
   };
 
   const openDocumentPreview = (document) => {
-    if (!document || !document.url) return;
+    if (!document || !document.url) {
+      showSnackbar("No document available to preview", "warning");
+      return;
+    }
 
     setPreviewDoc(document);
     setIsPreviewOpen(true);
@@ -142,35 +174,27 @@ const AdminClients = () => {
     }, 100);
   };
 
-  const closeDocumentPreview = () => {
-    cleanupProtection();
-    setIsPreviewOpen(false);
-    setPreviewDoc(null);
-  };
-
-  const getFileType = (fileName) => {
-    if (!fileName) return 'unknown';
-
-    const ext = fileName.split('.').pop().toLowerCase();
-
-    if (['pdf'].includes(ext)) return 'pdf';
-    if (['doc', 'docx'].includes(ext)) return 'word';
-    if (['xls', 'xlsx', 'csv'].includes(ext)) return 'excel';
-    if (['jpg', 'jpeg', 'png', 'gif', 'bmp'].includes(ext)) return 'image';
-    if (['ppt', 'pptx'].includes(ext)) return 'powerpoint';
-
-    return 'unknown';
-  };
-
   const renderDocumentPreview = () => {
     if (!previewDoc || !isPreviewOpen) return null;
 
-    const fileUrl = previewDoc.url;
+    // Enhanced URL with security parameters
+    const fileUrl = `${previewDoc.url}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`;
 
     return (
-      <div className={`document-preview-modal ${isPreviewOpen ? 'open' : ''}`}>
+      <div
+        className={`document-preview-modal ${isPreviewOpen ? 'open' : ''}`}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }}
+      >
         <div className="preview-modal-overlay" onClick={closeDocumentPreview}></div>
-        <div className="preview-modal-content" ref={previewRef}>
+        <div
+          className="preview-modal-content"
+          ref={previewRef}
+          onContextMenu={(e) => e.preventDefault()}
+        >
           <div className="preview-modal-header">
             <h3 className="preview-title">
               <span className="file-icon">📕</span>
@@ -187,67 +211,57 @@ const AdminClients = () => {
             </button>
           </div>
 
-          <div className="preview-modal-body">
+          <div
+            className="preview-modal-body"
+            onContextMenu={(e) => e.preventDefault()}
+          >
             <div className="protection-note">
-              <span className="protection-icon">🛡️</span>
+              <FiLock size={16} />
               <span className="protection-text">
-                PROTECTED VIEW: Right-click & Drag disabled
+                SECURE VIEW: Right-click disabled
               </span>
-              <span className="scroll-instruction">
-                (Use scrollbar on right →)
+              <span className="scroll-hint">
+                (Scroll with mouse wheel or drag scrollbar)
               </span>
             </div>
 
-            {/* KEY CHANGE: Make iframe height auto to fit content */}
+            {/* SIMPLE WORKING SOLUTION */}
             <div className="pdf-viewer-container">
               <iframe
                 src={fileUrl}
-                title="PDF Document Preview"
+                title="Protected PDF Viewer"
                 width="100%"
-                height="1000px" // Fixed large height
+                height="100%"
                 frameBorder="0"
                 className="pdf-iframe"
+                scrolling="yes"
                 style={{
                   display: 'block',
-                  pointerEvents: 'auto' // Allow PDF interaction
+                  border: 'none'
                 }}
-                scrolling="no" // Disable iframe scroll
                 onContextMenu={(e) => {
                   e.preventDefault();
+                  e.stopPropagation();
                   return false;
                 }}
-              />
-
-              {/* Minimal right-click protection */}
-              <div
-                className="click-protector"
-                onContextMenu={(e) => e.preventDefault()}
-                onDragStart={(e) => e.preventDefault()}
+                onLoad={() => {
+                  // Simple protection - no complex injection
+                  console.log('PDF loaded securely');
+                }}
               />
             </div>
           </div>
 
           <div className="preview-modal-footer">
-            <div className="file-info-simple">
+            <div className="file-info">
               <span className="file-size">
-                Size: {(previewDoc.fileSize / 1024).toFixed(1)} KB
+                <FiFile size={14} /> Size: {(previewDoc.fileSize / 1024).toFixed(1)} KB
               </span>
               <span className="upload-date">
-                Uploaded: {previewDoc.uploadedAt ?
+                <FiClock size={14} /> Uploaded: {previewDoc.uploadedAt ?
                   new Date(previewDoc.uploadedAt).toLocaleDateString() :
                   'N/A'}
               </span>
-            </div>
-
-            <div className="navigation-help">
-              <div className="nav-item">
-                <span className="nav-icon">🖱️</span>
-                <span>Mouse wheel to scroll</span>
-              </div>
-              <div className="nav-item">
-                <span className="nav-icon">👇</span>
-                <span>Drag scrollbar on right</span>
-              </div>
             </div>
 
             <button
@@ -262,6 +276,16 @@ const AdminClients = () => {
     );
   };
 
+
+  // Reset PDF state when closing
+  const closeDocumentPreview = () => {
+    setPageNumber(1);
+    setNumPages(null);
+    setPdfError(false);
+    setIsPreviewOpen(false);
+    setPreviewDoc(null);
+  }
+
   /* ================= LOAD ALL CLIENTS ================= */
   const loadClients = async () => {
     try {
@@ -271,19 +295,9 @@ const AdminClients = () => {
         { withCredentials: true }
       );
       setClients(res.data);
-      
-      // Calculate stats
-      const activeClients = res.data.filter(c => c.isActive).length;
-      const inactiveClients = res.data.filter(c => !c.isActive).length;
-      
-      setStats(prev => ({
-        ...prev,
-        total: res.data.length,
-        active: activeClients,
-        inactive: inactiveClients
-      }));
     } catch (error) {
       console.error("Error loading clients:", error);
+      showSnackbar("Error loading clients", "error");
     } finally {
       setLoading(false);
     }
@@ -298,18 +312,18 @@ const AdminClients = () => {
         { withCredentials: true }
       );
       setSelectedClient(res.data);
-      
+
       // Set default selected month to current month
+      setSelectedYear(currentYear);
+      setSelectedMonthNum(currentMonth);
       setSelectedMonth({
         year: currentYear,
         month: currentMonth
       });
-      
-      // Calculate document stats from the complete client data
-      calculateClientStats(res.data);
-      
+
     } catch (error) {
       console.error("Error loading client details:", error);
+      showSnackbar("Error loading client details", "error");
     } finally {
       setLoading(false);
     }
@@ -318,157 +332,93 @@ const AdminClients = () => {
   /* ================= SAFE ACCESS HELPER ================= */
   const safeGet = (obj, path, defaultValue = null) => {
     if (!obj) return defaultValue;
-    
+
     const keys = path.split('.');
     let result = obj;
-    
+
     for (const key of keys) {
       if (result === null || result === undefined) return defaultValue;
-      
+
       // Check if it's a Map
       if (result instanceof Map || (typeof result.get === 'function')) {
         result = result.get(key);
-      } 
+      }
       // Check if it's a plain object
       else if (typeof result === 'object' && key in result) {
         result = result[key];
-      } 
+      }
       // Try to access as array index
       else if (Array.isArray(result) && !isNaN(key)) {
         result = result[parseInt(key)];
-      } 
+      }
       else {
         return defaultValue;
       }
     }
-    
+
     return result !== undefined ? result : defaultValue;
   };
 
-  /* ================= CALCULATE CLIENT STATS ================= */
-  const calculateClientStats = (client) => {
-    let totalDocs = 0;
-    let lockedDocs = 0;
-    let totalMonths = 0;
-    let lockedMonths = 0;
-    let accountingCompleted = 0;
-
-    // Count from employee assignments (this is where accounting status is!)
-    const assignments = client.employeeAssignments;
-    if (assignments && Array.isArray(assignments)) {
-      totalMonths = assignments.length;
-      accountingCompleted = assignments.filter(assignment => assignment.accountingDone).length;
-    }
-
-    const documents = client.documents;
-    if (documents && typeof documents === 'object') {
-      
-      // Helper function to iterate over documents
-      const iterateDocuments = (docs) => {
-        if (typeof docs === 'object') {
-          for (const year in docs) {
-            const yearData = docs[year];
-            if (typeof yearData === 'object') {
-              for (const month in yearData) {
-                const monthData = yearData[month];
-                if (monthData) {
-                  // Check month lock status
-                  if (monthData.isLocked) lockedMonths++;
-                  
-                  // Count main files
-                  ["sales", "purchase", "bank"].forEach(type => {
-                    if (monthData[type]) {
-                      if (monthData[type]?.url) totalDocs++;
-                      if (monthData[type]?.isLocked) lockedDocs++;
-                    }
-                  });
-                  
-                  // Count other files
-                  if (monthData.other && Array.isArray(monthData.other)) {
-                    monthData.other.forEach(otherDoc => {
-                      if (otherDoc.document) {
-                        if (otherDoc.document?.url) totalDocs++;
-                        if (otherDoc.document?.isLocked) lockedDocs++;
-                      }
-                    });
-                  }
-                }
-              }
-            }
-          }
-        }
-      };
-
-      iterateDocuments(documents);
-    }
-    
-    // Update stats
-    setStats(prev => ({
-      ...prev,
-      totalDocuments: totalDocs,
-      lockedDocuments: lockedDocs,
-      totalMonths: totalMonths,
-      lockedMonths: lockedMonths,
-      accountingCompleted: accountingCompleted
-    }));
+  /* ================= HANDLE MONTH SELECTION ================= */
+  const handleYearSelect = (year) => {
+    setSelectedYear(year);
+    setYearDropdownOpen(false);
+    setSelectedMonth({
+      year: year,
+      month: selectedMonthNum
+    });
   };
 
-  useEffect(() => {
-    loadClients();
-  }, []);
-
-  /* ================= MONTH LIST ================= */
-  const generateMonthsList = () => {
-    const months = [];
-    for (let m = currentMonth; m >= 1; m--) {
-      months.push({ year: currentYear, month: m });
-    }
-    
-    // Add previous year if needed
-    if (currentMonth < 12) {
-      for (let m = 12; m > currentMonth; m--) {
-        months.push({ year: currentYear - 1, month: m });
-      }
-    }
-    
-    return months;
+  const handleMonthSelect = (month) => {
+    setSelectedMonthNum(month);
+    setMonthDropdownOpen(false);
+    setSelectedMonth({
+      year: selectedYear,
+      month: month
+    });
   };
-
-  const monthsToShow = generateMonthsList();
 
   /* ================= GET MONTH DATA ================= */
   const getMonthData = () => {
     if (!selectedClient || !selectedMonth) return null;
-    
+
     const yearKey = String(selectedMonth.year);
     const monthKey = String(selectedMonth.month);
-    
-    // Use safeGet to handle both Map and plain object
+
     return safeGet(selectedClient.documents, `${yearKey}.${monthKey}`);
   };
 
   /* ================= GET EMPLOYEE ASSIGNMENT ================= */
   const getEmployeeAssignment = () => {
     if (!selectedClient || !selectedMonth) return null;
-    
+
     const assignments = selectedClient.employeeAssignments;
     if (!assignments || !Array.isArray(assignments)) return null;
-    
+
     return assignments.find(
-      assignment => 
-        assignment.year === selectedMonth.year && 
+      assignment =>
+        assignment.year === selectedMonth.year &&
         assignment.month === selectedMonth.month
     );
   };
 
-  /* ================= GET MONTH DATA FOR GRID ================= */
-  const getMonthDataForGrid = (year, month) => {
-    if (!selectedClient) return null;
-    
-    const yearKey = String(year);
-    const monthKey = String(month);
-    
-    return safeGet(selectedClient.documents, `${yearKey}.${monthKey}`);
+  /* ================= GET DOCUMENT UPLOAD STATUS ================= */
+  const getDocumentUploadStatus = () => {
+    if (!selectedMonth) return null;
+
+    const monthData = getMonthData();
+    if (!monthData) return "pending";
+
+    // Check if all main documents (sales, purchase, bank) are uploaded
+    const salesUploaded = monthData.sales?.url ? true : false;
+    const purchaseUploaded = monthData.purchase?.url ? true : false;
+    const bankUploaded = monthData.bank?.url ? true : false;
+
+    if (salesUploaded && purchaseUploaded && bankUploaded) {
+      return "completed";
+    }
+
+    return "pending";
   };
 
   /* ================= MONTH LOCK ================= */
@@ -483,18 +433,18 @@ const AdminClients = () => {
         },
         { withCredentials: true }
       );
+
+      showSnackbar(`Month ${lock ? 'locked' : 'unlocked'} successfully!`, "success");
       loadClientDetails(selectedClient.clientId);
     } catch (error) {
       console.error("Error toggling month lock:", error);
-      alert(`Error: ${error.response?.data?.message || error.message}`);
+      showSnackbar(`Error: ${error.response?.data?.message || error.message}`, "error");
     }
   };
 
-  /* ================= FILE LOCK - ADMIN CAN LOCK EVEN IF NOT UPLOADED ================= */
+  /* ================= FILE LOCK ================= */
   const toggleFileLock = async (type, lock, categoryName = null) => {
     try {
-      console.log("Toggling file lock:", { type, lock, categoryName });
-      
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/admin/clients/file-lock/${selectedClient.clientId}`,
         {
@@ -506,20 +456,19 @@ const AdminClients = () => {
         },
         { withCredentials: true }
       );
-      
-      console.log("File lock response:", response.data);
-      alert(response.data.message || `File ${lock ? 'locked' : 'unlocked'} successfully!`);
+
+      showSnackbar(response.data.message || `File ${lock ? 'locked' : 'unlocked'} successfully!`, "success");
       loadClientDetails(selectedClient.clientId);
     } catch (error) {
       console.error("Error toggling file lock:", error);
-      alert(`Error: ${error.response?.data?.message || error.message || "Please try again"}`);
+      showSnackbar(`Error: ${error.response?.data?.message || error.message || "Please try again"}`, "error");
     }
   };
 
   /* ================= FORMAT DATE ================= */
   const formatMonthYear = (month, year) => {
     const date = new Date(year, month - 1);
-    return date.toLocaleDateString('en-US', { 
+    return date.toLocaleDateString('en-US', {
       month: 'long',
       year: 'numeric'
     });
@@ -565,30 +514,34 @@ const AdminClients = () => {
     </span>
   );
 
-  /* ================= GET ACCOUNTING BADGE ================= */
-  const getAccountingBadge = (isDone) => (
-    <span className={`accounting-badge ${isDone ? 'done' : 'pending'}`}>
-      {isDone ? (
-        <>
-          <FiCheckCircle /> Accounting Done
-        </>
-      ) : (
-        <>
-          <FiAlertCircle /> Accounting Pending
-        </>
-      )}
-    </span>
-  );
+  /* ================= GET DOCUMENT UPLOAD BADGE ================= */
+  const getDocumentUploadBadge = () => {
+    const status = getDocumentUploadStatus();
+
+    return (
+      <span className={`document-upload-badge ${status}`}>
+        {status === "completed" ? (
+          <>
+            <FiCheckCircle /> Documents Uploaded
+          </>
+        ) : (
+          <>
+            <FiAlertCircle /> Documents Pending
+          </>
+        )}
+      </span>
+    );
+  };
 
   /* ================= GET ACCOUNTING STATUS ================= */
   const getAccountingStatus = () => {
     if (!selectedClient || !selectedMonth) return { done: false };
-    
+
     // Check in employee assignments first
     const assignment = selectedClient.employeeAssignments?.find(
       a => a.year === selectedMonth.year && a.month === selectedMonth.month
     );
-    
+
     if (assignment) {
       return {
         done: assignment.accountingDone || false,
@@ -598,11 +551,12 @@ const AdminClients = () => {
         employeeId: assignment.employeeId,
         assignedBy: assignment.assignedBy,
         adminName: assignment.adminName,
-        assignedAt: assignment.assignedAt
+        assignedAt: assignment.assignedAt,
+        task: assignment.task || "Not specified"
       };
     }
-    
-    return { done: false };
+
+    return { done: false, task: "Not assigned" };
   };
 
   /* ================= TOGGLE EXPANSION ================= */
@@ -623,18 +577,21 @@ const AdminClients = () => {
   /* ================= FILTERED CLIENTS ================= */
   const filteredClients = clients.filter(client => {
     // Search filter
-    const matchesSearch = searchTerm === '' || 
+    const matchesSearch = searchTerm === '' ||
       client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.clientId.toLowerCase().includes(searchTerm.toLowerCase());
-    
+      client.email.toLowerCase().includes(searchTerm.toLowerCase());
+
     // Status filter
     const matchesStatus = statusFilter === 'all' ||
       (statusFilter === 'active' && client.isActive) ||
       (statusFilter === 'inactive' && !client.isActive);
-    
+
     return matchesSearch && matchesStatus;
   });
+
+  useEffect(() => {
+    loadClients();
+  }, []);
 
   const monthData = getMonthData();
   const employeeAssignment = getEmployeeAssignment();
@@ -644,62 +601,12 @@ const AdminClients = () => {
     <AdminLayout>
       <div className="admin-clients">
         {/* Header */}
-        <div className="page-header">
-          <div className="header-content">
-            <h1>
-              <FiUsers size={32} /> Client Management
-            </h1>
+        <div className="enrollments-header">
+          <div className="header-left">
+            <h2>Client Management</h2>
             <p className="subtitle">
               Manage client documents, locks, and view accounting status
             </p>
-          </div>
-          
-          <div className="header-stats">
-            <div className="stat-card">
-              <div className="stat-icon clients">
-                <FiUsers size={24} />
-              </div>
-              <div className="stat-info">
-                <span className="stat-number">{stats.total}</span>
-                <span className="stat-label">Total Clients</span>
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-icon active">
-                <FiCheckCircle size={24} />
-              </div>
-              <div className="stat-info">
-                <span className="stat-number">{stats.active}</span>
-                <span className="stat-label">Active</span>
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-icon documents">
-                <FiFileText size={24} />
-              </div>
-              <div className="stat-info">
-                <span className="stat-number">{stats.totalDocuments}</span>
-                <span className="stat-label">Documents</span>
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-icon locked">
-                <FiLock size={24} />
-              </div>
-              <div className="stat-info">
-                <span className="stat-number">{stats.lockedDocuments}</span>
-                <span className="stat-label">Locked Files</span>
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-icon accounting">
-                <FiClipboard size={24} />
-              </div>
-              <div className="stat-info">
-                <span className="stat-number">{stats.accountingCompleted}/{stats.totalMonths}</span>
-                <span className="stat-label">Accounting Done</span>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -708,12 +615,10 @@ const AdminClients = () => {
           {/* Left Sidebar - Client List */}
           <div className="clients-sidebar">
             <div className="sidebar-header">
-              <h3>
-                <FiUsers size={20} /> Clients
-              </h3>
+              <h3>Clients</h3>
               <span className="count-badge">{filteredClients.length}</span>
             </div>
-            
+
             <div className="search-filter-section">
               <div className="search-box">
                 <FiSearch size={18} />
@@ -724,21 +629,21 @@ const AdminClients = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              
+
               <div className="filter-buttons">
-                <button 
+                <button
                   className={`filter-btn ${statusFilter === 'all' ? 'active' : ''}`}
                   onClick={() => setStatusFilter('all')}
                 >
                   All
                 </button>
-                <button 
+                <button
                   className={`filter-btn ${statusFilter === 'active' ? 'active' : ''}`}
                   onClick={() => setStatusFilter('active')}
                 >
                   Active
                 </button>
-                <button 
+                <button
                   className={`filter-btn ${statusFilter === 'inactive' ? 'active' : ''}`}
                   onClick={() => setStatusFilter('inactive')}
                 >
@@ -746,7 +651,7 @@ const AdminClients = () => {
                 </button>
               </div>
             </div>
-            
+
             <div className="clients-list">
               {loading ? (
                 <div className="loading-state">
@@ -773,7 +678,6 @@ const AdminClients = () => {
                       <p className="client-email">{client.email}</p>
                       <div className="client-meta">
                         {getStatusBadge(client.isActive)}
-                        <span className="client-id">ID: {client.clientId}</span>
                       </div>
                     </div>
                     {selectedClient?.clientId === client.clientId && (
@@ -813,76 +717,73 @@ const AdminClients = () => {
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="client-actions">
-                    <div className="client-id-display">
-                      <span className="label">Client ID:</span>
-                      <span className="value">{selectedClient.clientId}</span>
-                    </div>
-                    <div className="client-stats-summary">
-                      <span className="stat-item">
-                        <FiFolder size={14} /> {stats.totalMonths} months
-                      </span>
-                      <span className="stat-item">
-                        <FiClipboard size={14} /> {stats.accountingCompleted} accounting done
-                      </span>
-                    </div>
-                  </div>
                 </div>
 
-                {/* Month Selection */}
+                {/* Month Selection - Dropdown Style */}
                 <div className="month-selection-section">
                   <div className="section-header">
                     <h3>
                       <FiCalendar size={20} /> Select Month
                     </h3>
-                    <div className="current-month">
-                      {selectedMonth && (
-                        <span className="current-month-text">
-                          {formatMonthYear(selectedMonth.month, selectedMonth.year)}
+                  </div>
+
+                  <div className="month-dropdowns">
+                    <div className="dropdown-wrapper">
+                      <button
+                        className="dropdown-toggle"
+                        onClick={() => setYearDropdownOpen(!yearDropdownOpen)}
+                      >
+                        <span>{selectedYear}</span>
+                        <FiChevronDown size={16} />
+                      </button>
+                      {yearDropdownOpen && (
+                        <div className="dropdown-menu">
+                          {years.map(year => (
+                            <button
+                              key={year}
+                              className="dropdown-item"
+                              onClick={() => handleYearSelect(year)}
+                            >
+                              {year}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="dropdown-wrapper">
+                      <button
+                        className="dropdown-toggle"
+                        onClick={() => setMonthDropdownOpen(!monthDropdownOpen)}
+                      >
+                        <span>{months.find(m => m.value === selectedMonthNum)?.label}</span>
+                        <FiChevronDown size={16} />
+                      </button>
+                      {monthDropdownOpen && (
+                        <div className="dropdown-menu">
+                          {months.map(month => (
+                            <button
+                              key={month.value}
+                              className="dropdown-item"
+                              onClick={() => handleMonthSelect(month.value)}
+                            >
+                              {month.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="selected-month-display">
+                      <span className="current-month-text">
+                        {formatMonthYear(selectedMonthNum, selectedYear)}
+                      </span>
+                      {monthData && monthData.isLocked && (
+                        <span className="month-lock-indicator">
+                          <FiLock size={12} /> Locked
                         </span>
                       )}
                     </div>
-                  </div>
-                  
-                  <div className="months-grid">
-                    {monthsToShow.map((m) => {
-                      const monthKey = `${m.year}-${m.month}`;
-                      const monthData = getMonthDataForGrid(m.year, m.month);
-                      const hasData = !!monthData || selectedClient.employeeAssignments?.some(
-                        a => a.year === m.year && a.month === m.month
-                      );
-                      const isSelected = selectedMonth?.year === m.year && selectedMonth?.month === m.month;
-                      
-                      // Check if month has employee assignment
-                      const assignment = selectedClient.employeeAssignments?.find(
-                        a => a.year === m.year && a.month === m.month
-                      );
-                      
-                      return (
-                        <button
-                          key={monthKey}
-                          className={`month-button ${isSelected ? 'selected' : ''} ${hasData ? 'has-data' : ''} ${monthData?.isLocked ? 'locked' : ''}`}
-                          onClick={() => setSelectedMonth(m)}
-                        >
-                          <div className="month-name">
-                            {formatMonthYear(m.month, m.year)}
-                          </div>
-                          <div className="month-indicators">
-                            {hasData && (
-                              <>
-                                <div className={`data-dot ${assignment?.accountingDone ? 'accounting-done' : ''}`}></div>
-                                {monthData?.isLocked && (
-                                  <div className="lock-indicator">
-                                    <FiLock size={10} />
-                                  </div>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
                   </div>
                 </div>
 
@@ -906,10 +807,17 @@ const AdminClients = () => {
                             )}
                           </button>
                         </div>
-                        
+
                         {expandedInfo['monthInfo'] && (
                           <div className="info-details">
                             <div className="info-grid">
+                              {/* Document Upload Status */}
+                              <div className="info-item">
+                                <span className="label">Document Status:</span>
+                                {getDocumentUploadBadge()}
+                              </div>
+
+                              {/* Month Lock Status */}
                               <div className="info-item">
                                 <span className="label">Month Status:</span>
                                 {monthData?.isLocked ? (
@@ -920,6 +828,11 @@ const AdminClients = () => {
                                         on {new Date(monthData.lockedAt).toLocaleDateString()}
                                       </span>
                                     )}
+                                    {monthData?.lockedBy && (
+                                      <span className="subtext">
+                                        by {monthData.lockedBy}
+                                      </span>
+                                    )}
                                   </span>
                                 ) : (
                                   <span className="value unlocked">
@@ -927,7 +840,8 @@ const AdminClients = () => {
                                   </span>
                                 )}
                               </div>
-                              
+
+                              {/* Accounting Status */}
                               <div className="info-item">
                                 <span className="label">Accounting Status:</span>
                                 {accountingStatus.done ? (
@@ -940,7 +854,7 @@ const AdminClients = () => {
                                     )}
                                     {accountingStatus.doneBy && (
                                       <span className="subtext">
-                                        by {accountingStatus.doneBy}
+                                        by {accountingStatus.employeeName || accountingStatus.doneBy}
                                       </span>
                                     )}
                                   </span>
@@ -950,7 +864,15 @@ const AdminClients = () => {
                                   </span>
                                 )}
                               </div>
-                              
+
+                              {/* Task Information */}
+                              <div className="info-item">
+                                <span className="label">Assigned Task:</span>
+                                <span className="value task-info">
+                                  {accountingStatus.task}
+                                </span>
+                              </div>
+
                               {monthData?.autoLockDate && (
                                 <div className="info-item">
                                   <span className="label">Auto Lock Date:</span>
@@ -960,35 +882,51 @@ const AdminClients = () => {
                                 </div>
                               )}
                             </div>
-                            
+
                             {/* Employee Assignment Info */}
                             {accountingStatus.employeeName && (
                               <div className="assignment-info">
                                 <h5>
-                                  <FiUserCheck size={16} /> Employee Assignment
+                                  <FiUserCheck size={16} /> Employee Assignment Details
                                 </h5>
                                 <div className="assignment-details">
                                   <div className="detail-item">
                                     <span className="label">Assigned Employee:</span>
                                     <span className="value">
-                                      {accountingStatus.employeeName || 'Unknown'} 
-                                      {accountingStatus.employeeId && ` (${accountingStatus.employeeId})`}
+                                      {accountingStatus.employeeName || 'Unknown'}
                                     </span>
                                   </div>
+
+                                  <div className="detail-item">
+                                    <span className="label">Task:</span>
+                                    <span className="value">
+                                      {accountingStatus.task || 'Not specified'}
+                                    </span>
+                                  </div>
+
                                   {accountingStatus.adminName && (
                                     <div className="detail-item">
                                       <span className="label">Assigned By:</span>
                                       <span className="value">
-                                        {accountingStatus.adminName || 'Unknown'} 
-                                        {accountingStatus.assignedBy && ` (${accountingStatus.assignedBy})`}
+                                        {accountingStatus.adminName || 'Unknown'}
                                       </span>
                                     </div>
                                   )}
+
                                   {accountingStatus.assignedAt && (
                                     <div className="detail-item">
                                       <span className="label">Assigned On:</span>
                                       <span className="value">
                                         {new Date(accountingStatus.assignedAt).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                  )}
+
+                                  {accountingStatus.doneAt && (
+                                    <div className="detail-item">
+                                      <span className="label">Completed On:</span>
+                                      <span className="value">
+                                        {new Date(accountingStatus.doneAt).toLocaleDateString()}
                                       </span>
                                     </div>
                                   )}
@@ -1018,7 +956,7 @@ const AdminClients = () => {
                           )}
                         </div>
                       </div>
-                      
+
                       <div className="action-buttons">
                         <button
                           className="action-btn lock-btn"
@@ -1053,7 +991,7 @@ const AdminClients = () => {
                         </span>
                       </div>
 
-                      {/* Main Files - ADMIN CAN LOCK EVEN IF NOT UPLOADED */}
+                      {/* Main Files */}
                       <div className="files-category">
                         <h4 className="category-title">Main Documents</h4>
                         <div className="files-grid">
@@ -1061,7 +999,7 @@ const AdminClients = () => {
                             const file = monthData?.[type];
                             const fileId = `${type}-${selectedMonth.year}-${selectedMonth.month}`;
                             const isExpanded = expandedFiles[fileId];
-                            
+
                             return (
                               <div key={type} className="file-card">
                                 <div className="file-header">
@@ -1090,7 +1028,7 @@ const AdminClients = () => {
                                       <button
                                         className="view-btn"
                                         onClick={() => openDocumentPreview(file)}
-                                        title="Preview Document (Protected)"
+                                        title="Preview Document"
                                       >
                                         <FiEye size={16} />
                                       </button>
@@ -1107,14 +1045,22 @@ const AdminClients = () => {
                                     </button>
                                   </div>
                                 </div>
-                                
+
                                 {isExpanded && (
                                   <div className="file-details">
                                     <div className="detail-grid">
                                       <div className="detail-item">
                                         <span className="label">File Status:</span>
                                         <span className="value">
-                                          {file?.url ? "Uploaded" : "Not Uploaded"}
+                                          {file?.url ? (
+                                            <span className="uploaded-status">
+                                              <FiCheckCircle size={12} /> Uploaded
+                                            </span>
+                                          ) : (
+                                            <span className="pending-status">
+                                              <FiAlertCircle size={12} /> Not Uploaded
+                                            </span>
+                                          )}
                                         </span>
                                       </div>
                                       {file?.fileName && (
@@ -1154,7 +1100,7 @@ const AdminClients = () => {
                                         </div>
                                       )}
                                     </div>
-                                    
+
                                     <div className="file-controls">
                                       <button
                                         className="control-btn lock"
@@ -1187,7 +1133,7 @@ const AdminClients = () => {
                         </div>
                       </div>
 
-                      {/* Other Documents - ADMIN CAN LOCK EVEN IF NOT UPLOADED */}
+                      {/* Other Documents */}
                       <div className="files-category">
                         <h4 className="category-title">Other Documents</h4>
                         {(monthData?.other?.length > 0 || monthData?.other) ? (
@@ -1196,7 +1142,7 @@ const AdminClients = () => {
                               const file = otherDoc.document;
                               const fileId = `other-${otherDoc.categoryName}-${selectedMonth.year}-${selectedMonth.month}`;
                               const isExpanded = expandedFiles[fileId];
-                              
+
                               return (
                                 <div key={otherDoc.categoryName} className="file-card">
                                   <div className="file-header">
@@ -1225,7 +1171,7 @@ const AdminClients = () => {
                                         <button
                                           className="view-btn"
                                           onClick={() => openDocumentPreview(file)}
-                                          title="Preview Document (Protected)"
+                                          title="Preview Document"
                                         >
                                           <FiEye size={16} />
                                         </button>
@@ -1242,7 +1188,7 @@ const AdminClients = () => {
                                       </button>
                                     </div>
                                   </div>
-                                  
+
                                   {isExpanded && (
                                     <div className="file-details">
                                       <div className="detail-grid">
@@ -1253,7 +1199,15 @@ const AdminClients = () => {
                                         <div className="detail-item">
                                           <span className="label">File Status:</span>
                                           <span className="value">
-                                            {file?.url ? "Uploaded" : "Not Uploaded"}
+                                            {file?.url ? (
+                                              <span className="uploaded-status">
+                                                <FiCheckCircle size={12} /> Uploaded
+                                              </span>
+                                            ) : (
+                                              <span className="pending-status">
+                                                <FiAlertCircle size={12} /> Not Uploaded
+                                              </span>
+                                            )}
                                           </span>
                                         </div>
                                         {file?.fileName && (
@@ -1293,7 +1247,7 @@ const AdminClients = () => {
                                           </div>
                                         )}
                                       </div>
-                                      
+
                                       <div className="file-controls">
                                         <button
                                           className="control-btn lock"
@@ -1347,6 +1301,26 @@ const AdminClients = () => {
 
         {/* DOCUMENT PREVIEW MODAL */}
         {renderDocumentPreview()}
+
+        {/* SNACKBAR FOR NOTIFICATIONS */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={4000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        >
+          <Alert
+            onClose={handleCloseSnackbar}
+            severity={snackbar.severity}
+            sx={{
+              width: '100%',
+              fontFamily: 'Poppins, sans-serif',
+              fontWeight: 500
+            }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </div>
     </AdminLayout>
   );
