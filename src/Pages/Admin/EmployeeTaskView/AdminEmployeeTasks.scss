@@ -1,1221 +1,532 @@
-// AdminEmployeeTasks.scss
+.admin-employee-tasks-module {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  min-height: calc(100vh - 120px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  font-family: 'Poppins', sans-serif;
 
-// ===== VARIABLES =====
-$primary-color: #6366f1;
-$primary-light: #818cf8;
-$primary-dark: #4f46e5;
-$secondary-color: #10b981;
-$danger-color: #ef4444;
-$warning-color: #f59e0b;
-$info-color: #3b82f6;
-
-$light-bg: #f8fafc;
-$dark-bg: #1e293b;
-$card-bg: #ffffff;
-$sidebar-bg: #ffffff;
-$border-color: #e2e8f0;
-$text-primary: #1e293b;
-$text-secondary: #64748b;
-$text-muted: #94a3b8;
-
-$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-
-$border-radius-sm: 8px;
-$border-radius-md: 12px;
-$border-radius-lg: 16px;
-$border-radius-xl: 20px;
-
-$transition-fast: 150ms ease;
-$transition-base: 250ms ease;
-$transition-slow: 350ms ease;
-
-// ===== MIXINS =====
-@mixin flex-center {
+  /* ================= MAIN LAYOUT ================= */
   display: flex;
-  align-items: center;
-  justify-content: center;
-}
+  gap: 24px;
 
-@mixin flex-between {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
+  /* ================= SIDEBAR ================= */
+  .admin-tasks-sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 
-@mixin flex-column {
-  display: flex;
-  flex-direction: column;
-}
+    .admin-sidebar-header {
+      padding: 20px;
+      border-bottom: 2px solid #e5e7eb;
+      background: rgba(124, 214, 75, 0.08);
 
-@mixin card-hover {
-  transition: all $transition-base;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: $shadow-lg;
-  }
-}
-
-@mixin responsive($breakpoint) {
-  @if $breakpoint == tablet {
-    @media (max-width: 1024px) { @content; }
-  }
-  @if $breakpoint == mobile {
-    @media (max-width: 768px) { @content; }
-  }
-  @if $breakpoint == small-mobile {
-    @media (max-width: 480px) { @content; }
-  }
-}
-
-// ===== ANIMATIONS =====
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba($primary-color, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba($primary-color, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba($primary-color, 0);
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -1000px 0;
-  }
-  100% {
-    background-position: 1000px 0;
-  }
-}
-
-// ===== BASE STYLES =====
-.admin-employee-tasks {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  padding: 20px;
-  animation: fadeIn 0.5s ease;
-
-  // Page Header
-  .page-header {
-    background: white;
-    border-radius: $border-radius-lg;
-    padding: 24px 32px;
-    margin-bottom: 24px;
-    box-shadow: $shadow-lg;
-    animation: slideDown 0.5s ease;
-
-    .header-content {
-      margin-bottom: 24px;
-
-      h1 {
+      h3 {
+        margin: 0 0 8px 0;
+        color: #000000;
+        font-size: 18px;
+        font-weight: 700;
         display: flex;
         align-items: center;
-        gap: 12px;
-        color: $text-primary;
-        font-size: 28px;
-        font-weight: 700;
-        margin: 0 0 8px 0;
-
-        svg {
-          color: $primary-color;
-        }
+        gap: 8px;
       }
 
-      .subtitle {
-        color: $text-secondary;
-        font-size: 16px;
-        margin: 0;
+      .admin-total-employees {
+        background: #7cd64b;
+        color: #000;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+        display: inline-block;
       }
     }
 
-    .header-stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-top: 20px;
+    .admin-employee-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
 
-      @include responsive(mobile) {
-        grid-template-columns: repeat(2, 1fr);
+      &::-webkit-scrollbar {
+        width: 6px;
       }
 
-      @include responsive(small-mobile) {
-        grid-template-columns: 1fr;
+      &::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
       }
 
-      .stat-card {
-        @include flex-center;
-        gap: 16px;
-        background: $light-bg;
-        padding: 20px;
-        border-radius: $border-radius-md;
-        border-left: 4px solid $primary-color;
-        transition: all $transition-base;
+      &::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+      }
+
+      .admin-employee-item {
+        padding: 15px;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.2s ease;
 
         &:hover {
-          background: lighten($primary-color, 45%);
-          transform: translateX(4px);
+          background: rgba(124, 214, 75, 0.1);
+          border-color: #7cd64b;
+          transform: translateX(5px);
         }
 
-        .stat-icon {
-          @include flex-center;
-          width: 48px;
-          height: 48px;
-          background: white;
-          border-radius: 12px;
-          color: $primary-color;
-          box-shadow: $shadow-sm;
-        }
-
-        .stat-info {
-          @include flex-column;
-          flex: 1;
-
-          .stat-number {
-            font-size: 28px;
-            font-weight: 700;
-            color: $text-primary;
-            line-height: 1;
-          }
-
-          .stat-label {
-            font-size: 14px;
-            color: $text-secondary;
-            margin-top: 4px;
-          }
-        }
-      }
-    }
-  }
-
-  // Main Content
-  .main-content {
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 24px;
-    min-height: calc(100vh - 200px);
-
-    @include responsive(tablet) {
-      grid-template-columns: 1fr;
-    }
-
-    // Employees Sidebar
-    .employees-sidebar {
-      background: white;
-      border-radius: $border-radius-lg;
-      overflow: hidden;
-      box-shadow: $shadow-md;
-      height: fit-content;
-      position: sticky;
-      top: 24px;
-
-      .sidebar-header {
-        @include flex-between;
-        padding: 20px;
-        border-bottom: 1px solid $border-color;
-        background: linear-gradient(135deg, $primary-light, $primary-dark);
-
-        h3 {
-          @include flex-center;
-          gap: 8px;
-          color: white;
-          font-size: 18px;
-          font-weight: 600;
-          margin: 0;
-        }
-
-        .count-badge {
-          background: rgba(255, 255, 255, 0.2);
-          color: white;
-          padding: 4px 12px;
-          border-radius: 20px;
-          font-size: 14px;
-          font-weight: 600;
-          backdrop-filter: blur(10px);
-        }
-      }
-
-      .search-box {
-        @include flex-center;
-        gap: 12px;
-        padding: 16px 20px;
-        border-bottom: 1px solid $border-color;
-
-        svg {
-          color: $text-muted;
-          flex-shrink: 0;
-        }
-
-        input {
-          flex: 1;
-          border: none;
-          outline: none;
-          font-size: 14px;
-          color: $text-primary;
-          background: transparent;
-
-          &::placeholder {
-            color: $text-muted;
-          }
-        }
-      }
-
-      .employees-list {
-        max-height: 500px;
-        overflow-y: auto;
-        padding: 8px;
-
-        &::-webkit-scrollbar {
-          width: 6px;
-        }
-
-        &::-webkit-scrollbar-track {
-          background: $light-bg;
-          border-radius: 3px;
-        }
-
-        &::-webkit-scrollbar-thumb {
-          background: $primary-light;
-          border-radius: 3px;
-        }
-
-        .employee-card {
-          @include flex-center;
-          gap: 12px;
-          padding: 16px;
-          border-radius: $border-radius-md;
-          cursor: pointer;
-          transition: all $transition-base;
+        &.admin-active {
+          background: rgba(124, 214, 75, 0.15);
+          border-color: #7cd64b;
+          box-shadow: 0 4px 12px rgba(124, 214, 75, 0.1);
           position: relative;
-          margin-bottom: 8px;
 
-          &:hover {
-            background: $light-bg;
-          }
-
-          &.active {
-            background: lighten($primary-color, 45%);
-            border-left: 3px solid $primary-color;
-            
-            .active-indicator {
-              position: absolute;
-              right: 16px;
-              width: 8px;
-              height: 8px;
-              background: $primary-color;
-              border-radius: 50%;
-              animation: pulse 2s infinite;
-            }
-          }
-
-          .employee-avatar {
-            @include flex-center;
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, $primary-color, $primary-dark);
-            color: white;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 16px;
-            flex-shrink: 0;
-          }
-
-          .employee-info {
-            flex: 1;
-            min-width: 0;
-
-            h4 {
-              margin: 0 0 4px 0;
-              font-size: 15px;
-              font-weight: 600;
-              color: $text-primary;
-              white-space: nowrap;
-              overflow: hidden;
-              text-overflow: ellipsis;
-            }
-
-            .employee-email {
-              margin: 0 0 8px 0;
-              font-size: 12px;
-              color: $text-secondary;
-              white-space: nowrap;
-              overflow: hidden;
-              text-overflow: ellipsis;
-            }
-
-            .employee-stats {
-              @include flex-center;
-              gap: 12px;
-
-              .stat-item {
-                @include flex-center;
-                gap: 4px;
-                font-size: 11px;
-                color: $text-muted;
-                font-weight: 500;
-
-                svg {
-                  flex-shrink: 0;
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // Tasks Content
-    .tasks-content {
-      background: white;
-      border-radius: $border-radius-lg;
-      padding: 24px;
-      box-shadow: $shadow-md;
-
-      // No Employee Selected
-      .no-employee-selected {
-        @include flex-column;
-        @include flex-center;
-        gap: 16px;
-        height: 400px;
-        text-align: center;
-
-        svg {
-          color: $text-muted;
-          opacity: 0.5;
-        }
-
-        h3 {
-          color: $text-primary;
-          font-size: 24px;
-          margin: 0;
-        }
-
-        p {
-          color: $text-secondary;
-          margin: 0;
-        }
-      }
-
-      // Employee Header
-      .employee-header {
-        @include flex-between;
-        margin-bottom: 24px;
-        padding-bottom: 24px;
-        border-bottom: 1px solid $border-color;
-
-        @include responsive(mobile) {
-          flex-direction: column;
-          gap: 16px;
-          align-items: flex-start;
-        }
-
-        .employee-profile {
-          @include flex-center;
-          gap: 16px;
-
-          .profile-avatar {
-            @include flex-center;
-            width: 64px;
-            height: 64px;
-            background: linear-gradient(135deg, $primary-color, $primary-dark);
-            color: white;
-            border-radius: 16px;
-            font-size: 24px;
-            font-weight: 700;
-            box-shadow: $shadow-md;
-          }
-
-          .profile-info {
-            h2 {
-              margin: 0 0 4px 0;
-              color: $text-primary;
-              font-size: 24px;
-              font-weight: 700;
-            }
-
-            .email {
-              margin: 0 0 4px 0;
-              color: $text-secondary;
-              font-size: 14px;
-            }
-
-            .employee-id {
-              font-size: 12px;
-              color: $text-muted;
-              background: $light-bg;
-              padding: 4px 8px;
-              border-radius: 4px;
-              display: inline-block;
-            }
+          &::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: #7cd64b;
+            border-radius: 4px 0 0 4px;
           }
         }
 
-        .employee-actions {
-          .export-btn {
-            @include flex-center;
-            gap: 8px;
-            padding: 10px 20px;
-            background: $primary-color;
-            color: white;
-            border: none;
-            border-radius: $border-radius-md;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all $transition-base;
-
-            &:hover:not(:disabled) {
-              background: $primary-dark;
-              transform: translateY(-2px);
-              box-shadow: $shadow-md;
-            }
-
-            &:disabled {
-              opacity: 0.5;
-              cursor: not-allowed;
-            }
-          }
-        }
-      }
-
-      // Employee Stats Cards
-      .employee-stats-cards {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 16px;
-        margin-bottom: 24px;
-
-        @include responsive(small-mobile) {
-          grid-template-columns: repeat(2, 1fr);
+        .admin-employee-name {
+          font-size: 14px;
+          font-weight: 600;
+          color: #000;
+          margin-bottom: 4px;
         }
 
-        .stat-card {
-          @include flex-center;
-          gap: 12px;
-          background: $light-bg;
-          padding: 16px;
-          border-radius: $border-radius-md;
-          transition: all $transition-base;
-
-          &:hover {
-            background: lighten($primary-color, 45%);
-            transform: translateY(-2px);
-          }
-
-          .stat-icon {
-            @include flex-center;
-            width: 40px;
-            height: 40px;
-            background: white;
-            border-radius: 10px;
-            color: $primary-color;
-            box-shadow: $shadow-sm;
-          }
-
-          .stat-details {
-            @include flex-column;
-            flex: 1;
-
-            .stat-value {
-              font-size: 24px;
-              font-weight: 700;
-              color: $text-primary;
-              line-height: 1;
-            }
-
-            .stat-label {
-              font-size: 12px;
-              color: $text-secondary;
-              margin-top: 4px;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-              font-weight: 600;
-            }
-          }
-        }
-      }
-
-      // Filters Section
-      .filters-section {
-        @include flex-between;
-        gap: 16px;
-        margin-bottom: 24px;
-        padding: 16px;
-        background: $light-bg;
-        border-radius: $border-radius-md;
-
-        @include responsive(tablet) {
-          flex-direction: column;
-        }
-
-        .search-filter {
-          @include flex-center;
-          gap: 12px;
-          flex: 1;
-          background: white;
-          padding: 10px 16px;
-          border-radius: $border-radius-md;
-          border: 1px solid $border-color;
-          transition: all $transition-base;
-
-          &:focus-within {
-            border-color: $primary-color;
-            box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
-          }
-
-          svg {
-            color: $text-muted;
-            flex-shrink: 0;
-          }
-
-          input {
-            flex: 1;
-            border: none;
-            outline: none;
-            font-size: 14px;
-            color: $text-primary;
-            background: transparent;
-
-            &::placeholder {
-              color: $text-muted;
-            }
-          }
-        }
-
-        .filter-controls {
-          @include flex-center;
-          gap: 12px;
-
-          @include responsive(mobile) {
-            flex-wrap: wrap;
-          }
-
-          .filter-select {
-            padding: 10px 16px;
-            border: 1px solid $border-color;
-            border-radius: $border-radius-md;
-            background: white;
-            color: $text-primary;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all $transition-base;
-            min-width: 140px;
-
-            &:focus {
-              outline: none;
-              border-color: $primary-color;
-              box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
-            }
-          }
-
-          .clear-filters {
-            padding: 10px 16px;
-            background: transparent;
-            color: $danger-color;
-            border: 1px solid $danger-color;
-            border-radius: $border-radius-md;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all $transition-base;
-
-            &:hover {
-              background: $danger-color;
-              color: white;
-            }
-          }
-        }
-      }
-
-      // Tasks Timeline
-      .tasks-timeline {
-        .timeline-header {
-          @include flex-between;
-          margin-bottom: 24px;
-          padding-bottom: 16px;
-          border-bottom: 2px solid $primary-light;
-
-          h3 {
-            @include flex-center;
-            gap: 8px;
-            margin: 0;
-            color: $text-primary;
-            font-size: 20px;
-
-            svg {
-              color: $primary-color;
-            }
-          }
-
-          .count-badge {
-            background: $primary-light;
-            color: white;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-          }
-        }
-
-        .empty-tasks {
-          @include flex-column;
-          @include flex-center;
-          gap: 16px;
-          padding: 48px 24px;
-          text-align: center;
-          background: $light-bg;
-          border-radius: $border-radius-md;
-
-          svg {
-            color: $text-muted;
-            opacity: 0.5;
-          }
-
-          h4 {
-            margin: 0;
-            color: $text-primary;
-            font-size: 20px;
-          }
-
-          p {
-            margin: 0;
-            color: $text-secondary;
-          }
-        }
-
-        .timeline-content {
-          .date-group {
-            margin-bottom: 16px;
-            background: white;
-            border-radius: $border-radius-md;
-            overflow: hidden;
-            box-shadow: $shadow-sm;
-            transition: all $transition-base;
-
-            &:hover {
-              box-shadow: $shadow-md;
-            }
-
-            .date-header {
-              @include flex-between;
-              padding: 16px 20px;
-              background: $light-bg;
-              cursor: pointer;
-              transition: all $transition-base;
-
-              &:hover {
-                background: lighten($primary-color, 45%);
-              }
-
-              .date-info {
-                h4 {
-                  margin: 0 0 8px 0;
-                  color: $text-primary;
-                  font-size: 16px;
-                  font-weight: 600;
-                }
-
-                .date-stats {
-                  @include flex-center;
-                  gap: 16px;
-
-                  @include responsive(small-mobile) {
-                    flex-direction: column;
-                    gap: 4px;
-                    align-items: flex-start;
-                  }
-
-                  .stat {
-                    @include flex-center;
-                    gap: 6px;
-                    font-size: 13px;
-                    color: $text-secondary;
-
-                    svg {
-                      flex-shrink: 0;
-                      color: $primary-color;
-                    }
-                  }
-                }
-              }
-
-              .expand-toggle {
-                @include flex-center;
-                width: 32px;
-                height: 32px;
-                background: white;
-                border-radius: 8px;
-                color: $primary-color;
-                transition: all $transition-base;
-
-                svg {
-                  transition: transform $transition-base;
-                }
-              }
-            }
-
-            .tasks-list {
-              padding: 8px;
-
-              .task-item {
-                @include flex-center;
-                gap: 16px;
-                padding: 16px;
-                margin-bottom: 8px;
-                background: $light-bg;
-                border-radius: $border-radius-md;
-                border-left: 4px solid transparent;
-                cursor: pointer;
-                transition: all $transition-base;
-
-                &:hover {
-                  transform: translateX(4px);
-                  background: white;
-                  box-shadow: $shadow-sm;
-                }
-
-                &.completed {
-                  border-left-color: $secondary-color;
-                }
-
-                &.in_progress {
-                  border-left-color: $warning-color;
-                }
-
-                .task-icon {
-                  @include flex-center;
-                  width: 40px;
-                  height: 40px;
-                  background: white;
-                  border-radius: 10px;
-                  color: $primary-color;
-                  flex-shrink: 0;
-                  box-shadow: $shadow-sm;
-                }
-
-                .task-info {
-                  flex: 1;
-                  min-width: 0;
-
-                  .task-header {
-                    @include flex-between;
-                    margin-bottom: 8px;
-                    flex-wrap: wrap;
-                    gap: 8px;
-
-                    h5 {
-                      margin: 0;
-                      color: $text-primary;
-                      font-size: 15px;
-                      font-weight: 600;
-                    }
-
-                    .status-badge {
-                      @include flex-center;
-                      gap: 6px;
-                      padding: 4px 12px;
-                      border-radius: 20px;
-                      font-size: 12px;
-                      font-weight: 600;
-                      text-transform: uppercase;
-                      letter-spacing: 0.5px;
-
-                      &.completed {
-                        background: rgba($secondary-color, 0.1);
-                        color: $secondary-color;
-                        border: 1px solid rgba($secondary-color, 0.2);
-                      }
-
-                      &.in_progress {
-                        background: rgba($warning-color, 0.1);
-                        color: $warning-color;
-                        border: 1px solid rgba($warning-color, 0.2);
-                      }
-                    }
-                  }
-
-                  .task-description {
-                    margin: 0 0 12px 0;
-                    color: $text-secondary;
-                    font-size: 14px;
-                    line-height: 1.5;
-                    display: -webkit-box;
-                    -webkit-line-clamp: 2;
-                    -webkit-box-orient: vertical;
-                    overflow: hidden;
-                  }
-
-                  .task-meta {
-                    @include flex-center;
-                    gap: 16px;
-                    flex-wrap: wrap;
-
-                    .meta-item {
-                      @include flex-center;
-                      gap: 6px;
-                      font-size: 12px;
-                      color: $text-muted;
-
-                      svg {
-                        flex-shrink: 0;
-                      }
-                    }
-                  }
-                }
-
-                .task-actions {
-                  .view-btn {
-                    @include flex-center;
-                    width: 36px;
-                    height: 36px;
-                    background: transparent;
-                    border: 1px solid $border-color;
-                    border-radius: 8px;
-                    color: $text-muted;
-                    cursor: pointer;
-                    transition: all $transition-base;
-
-                    &:hover {
-                      background: $primary-color;
-                      color: white;
-                      border-color: $primary-color;
-                    }
-                  }
-                }
-              }
-            }
-          }
+        .admin-employee-email {
+          font-size: 12px;
+          color: #666;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
       }
     }
   }
 
-  // Modal Overlay
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-    z-index: 1000;
-    @include flex-center;
-    padding: 20px;
-    animation: fadeIn 0.3s ease;
+  /* ================= MAIN CONTENT ================= */
+  .admin-tasks-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 
-    .task-modal {
-      background: white;
-      border-radius: $border-radius-lg;
-      width: 100%;
-      max-width: 600px;
-      max-height: 90vh;
-      overflow: hidden;
-      box-shadow: $shadow-xl;
-      animation: slideDown 0.3s ease;
+    .admin-content-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #f0f0f0;
 
-      .modal-header {
-        @include flex-between;
-        padding: 20px 24px;
-        background: linear-gradient(135deg, $primary-light, $primary-dark);
-        color: white;
+      h2 {
+        margin: 0;
+        color: #000000;
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -0.3px;
+      }
 
-        h3 {
-          @include flex-center;
+      .admin-header-actions {
+        .admin-refresh-btn {
+          display: flex;
+          align-items: center;
           gap: 8px;
-          margin: 0;
-          font-size: 20px;
-        }
-
-        .close-modal {
-          background: none;
-          border: none;
-          color: white;
-          font-size: 28px;
-          cursor: pointer;
-          line-height: 1;
-          padding: 0;
-          width: 32px;
-          height: 32px;
-          @include flex-center;
+          padding: 10px 18px;
+          background: #f8f9fa;
+          border: 1px solid #e5e7eb;
           border-radius: 8px;
-          transition: all $transition-base;
+          color: #333333;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
 
-          &:hover {
-            background: rgba(255, 255, 255, 0.1);
+          &:hover:not(:disabled) {
+            background: #7cd64b;
+            color: #ffffff;
+            border-color: #7cd64b;
+            transform: translateY(-1px);
           }
-        }
-      }
 
-      .modal-body {
-        padding: 24px;
-        overflow-y: auto;
-        max-height: calc(90vh - 73px);
-
-        .task-details {
-          .detail-section {
-            margin-bottom: 24px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid $border-color;
-
-            &:last-child {
-              margin-bottom: 0;
-              padding-bottom: 0;
-              border-bottom: none;
-            }
-
-            h4 {
-              margin: 0 0 16px 0;
-              color: $text-primary;
-              font-size: 16px;
-              font-weight: 600;
-              display: flex;
-              align-items: center;
-              gap: 8px;
-
-              &::before {
-                content: '';
-                width: 4px;
-                height: 16px;
-                background: $primary-color;
-                border-radius: 2px;
-              }
-            }
-
-            .detail-grid {
-              display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-              gap: 16px;
-
-              .detail-item {
-                .label {
-                  display: block;
-                  font-size: 12px;
-                  color: $text-muted;
-                  text-transform: uppercase;
-                  letter-spacing: 0.5px;
-                  font-weight: 600;
-                  margin-bottom: 4px;
-                }
-
-                .value {
-                  display: block;
-                  font-size: 14px;
-                  color: $text-primary;
-                  font-weight: 500;
-
-                  &.status {
-                    display: inline-block;
-                    padding: 4px 12px;
-                    border-radius: 20px;
-                    font-size: 12px;
-                    font-weight: 600;
-
-                    &.completed {
-                      background: rgba($secondary-color, 0.1);
-                      color: $secondary-color;
-                    }
-
-                    &.in_progress {
-                      background: rgba($warning-color, 0.1);
-                      color: $warning-color;
-                    }
-                  }
-
-                  &.code {
-                    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-                    background: $light-bg;
-                    padding: 4px 8px;
-                    border-radius: 4px;
-                    font-size: 12px;
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        .modal-actions {
-          margin-top: 24px;
-          text-align: right;
-
-          .primary-btn {
-            padding: 10px 24px;
-            background: $primary-color;
-            color: white;
-            border: none;
-            border-radius: $border-radius-md;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all $transition-base;
-
-            &:hover {
-              background: $primary-dark;
-              transform: translateY(-2px);
-              box-shadow: $shadow-md;
-            }
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
           }
         }
       }
     }
-  }
 
-  // Loading State
-  &.loading {
-    position: relative;
+    /* ================= EMPLOYEE INFO ================= */
+    .admin-employee-info {
+      background: rgba(124, 214, 75, 0.08);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 25px;
+      border: 1px solid rgba(124, 214, 75, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
 
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-      animation: shimmer 1.5s infinite;
+      h3 {
+        margin: 0;
+        color: #000;
+        font-size: 20px;
+        font-weight: 600;
+      }
+
+      .admin-assignment-count {
+        background: #7cd64b;
+        color: #000;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 700;
+      }
+    }
+
+    /* ================= LOADING & ERROR ================= */
+    .admin-loading-spinner,
+    .admin-error-message,
+    .admin-no-data {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      text-align: center;
+      font-size: 16px;
+      color: #666;
+    }
+
+    .admin-error-message {
+      color: #ef4444;
+      font-weight: 500;
+    }
+
+    .admin-no-data {
+      background: #f8f9fa;
+      border-radius: 10px;
+      border: 1px dashed #e5e7eb;
+    }
+
+    /* ================= TABLE CONTAINER ================= */
+    .admin-assignments-container {
+      flex: 1;
+      overflow-y: auto;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+
+      &::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+      }
+    }
+
+    /* ================= TABLE STYLING ================= */
+    .admin-assignments-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 800px;
+
+      thead {
+        background: rgba(124, 214, 75, 0.08);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+
+        tr {
+          th {
+            padding: 16px 20px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+            color: #000000;
+            border-bottom: 2px solid #e5e7eb;
+            white-space: nowrap;
+            position: relative;
+
+            &:not(:last-child)::after {
+              content: "";
+              position: absolute;
+              right: 0;
+              top: 20%;
+              height: 60%;
+              width: 1px;
+              background: #e5e7eb;
+            }
+          }
+        }
+      }
+
+      tbody {
+        tr {
+          transition: background-color 0.2s ease;
+
+          &:nth-child(even) {
+            background: #fafafa;
+          }
+
+          &:hover {
+            background: rgba(124, 214, 75, 0.04);
+          }
+
+          td {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            color: #333333;
+            font-size: 14px;
+            vertical-align: middle;
+
+            &:first-child {
+              border-left: 4px solid transparent;
+            }
+
+            &.admin-client-name {
+              font-weight: 600;
+              color: #000;
+            }
+
+            &.admin-month-year {
+              color: #5a9e30;
+              font-weight: 600;
+            }
+
+            &.admin-task {
+              .admin-task-badge {
+                background: rgba(124, 214, 75, 0.1);
+                color: #5a9e30;
+                padding: 4px 10px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-weight: 600;
+                display: inline-block;
+              }
+            }
+
+            &.admin-status {
+              .admin-status-badge {
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                letter-spacing: 0.3px;
+                text-transform: uppercase;
+
+                &.admin-done {
+                  background: rgba(16, 185, 129, 0.1);
+                  color: #065f46;
+                  border: 1px solid rgba(16, 185, 129, 0.2);
+                }
+
+                &.admin-pending {
+                  background: rgba(245, 158, 11, 0.1);
+                  color: #92400e;
+                  border: 1px solid rgba(245, 158, 11, 0.2);
+                }
+              }
+            }
+
+            &.admin-assigned-date,
+            &.admin-completed-date {
+              color: #666;
+              font-size: 13px;
+            }
+
+            &.admin-assigned-by {
+              font-weight: 500;
+              color: #333;
+            }
+          }
+
+          &:last-child td {
+            border-bottom: none;
+          }
+        }
+      }
     }
   }
 }
 
-// Responsive Adjustments
-@media (max-width: 768px) {
-  .admin-employee-tasks {
-    padding: 12px;
+/* ================= MOBILE RESPONSIVE ================= */
+@media (max-width: 1024px) {
+  .admin-employee-tasks-module {
+    flex-direction: column;
+    gap: 20px;
 
-    .page-header {
-      padding: 16px;
+    .admin-tasks-sidebar {
+      width: 100%;
+      max-height: 300px;
 
-      .header-content {
-        h1 {
-          font-size: 24px;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 8px;
+      .admin-employee-list {
+        .admin-employee-item {
+          padding: 12px;
         }
       }
     }
 
-    .main-content {
-      gap: 16px;
+    .admin-tasks-main {
+      .admin-content-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
 
-      .employees-sidebar {
-        position: static;
+        .admin-header-actions {
+          align-self: stretch;
+
+          .admin-refresh-btn {
+            width: 100%;
+            justify-content: center;
+          }
+        }
       }
 
-      .tasks-content {
-        padding: 16px;
+      .admin-assignments-container {
+        overflow-x: auto;
+
+        .admin-assignments-table {
+          min-width: 1000px;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-employee-tasks-module {
+    padding: 16px;
+    margin: 10px;
+
+    .admin-tasks-sidebar {
+      .admin-sidebar-header {
+        padding: 15px;
+
+        h3 {
+          font-size: 16px;
+        }
+      }
+
+      .admin-employee-list {
+        .admin-employee-item {
+          margin-bottom: 8px;
+
+          .admin-employee-name {
+            font-size: 13px;
+          }
+
+          .admin-employee-email {
+            font-size: 11px;
+          }
+        }
+      }
+    }
+
+    .admin-tasks-main {
+      .admin-content-header {
+        h2 {
+          font-size: 20px;
+        }
+      }
+
+      .admin-employee-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 15px;
+
+        h3 {
+          font-size: 18px;
+        }
+
+        .admin-assignment-count {
+          align-self: flex-start;
+        }
+      }
+
+      .admin-assignments-table {
+        thead tr th,
+        tbody tr td {
+          padding: 12px 15px;
+          font-size: 13px;
+        }
+
+        tbody tr td {
+          &.admin-status .admin-status-badge {
+            padding: 4px 10px;
+            font-size: 11px;
+          }
+        }
       }
     }
   }
 }
 
 @media (max-width: 480px) {
-  .admin-employee-tasks {
-    .page-header {
-      .header-stats {
-        .stat-card {
-          flex-direction: column;
-          text-align: center;
-          gap: 12px;
+  .admin-employee-tasks-module {
+    padding: 12px;
+    margin: 8px;
 
-          .stat-info {
-            .stat-number {
-              font-size: 24px;
-            }
-          }
+    .admin-tasks-main {
+      .admin-content-header {
+        h2 {
+          font-size: 18px;
         }
       }
-    }
 
-    .main-content {
-      .tasks-content {
-        .employee-stats-cards {
-          grid-template-columns: 1fr;
+      .admin-employee-info {
+        padding: 12px;
 
-          .stat-card {
-            flex-direction: column;
-            text-align: center;
-            gap: 12px;
-          }
+        h3 {
+          font-size: 16px;
         }
 
-        .filters-section {
-          .filter-controls {
-            .filter-select {
-              min-width: 100%;
-            }
-
-            .clear-filters {
-              width: 100%;
-            }
-          }
-        }
-
-        .tasks-timeline {
-          .timeline-content {
-            .date-group {
-              .date-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 12px;
-
-                .expand-toggle {
-                  align-self: flex-end;
-                }
-              }
-
-              .tasks-list {
-                .task-item {
-                  flex-direction: column;
-                  align-items: flex-start;
-                  gap: 12px;
-
-                  .task-actions {
-                    align-self: flex-end;
-                  }
-                }
-              }
-            }
-          }
+        .admin-assignment-count {
+          padding: 6px 12px;
+          font-size: 12px;
         }
       }
-    }
 
-    .modal-overlay {
-      padding: 12px;
+      .admin-assignments-table {
+        min-width: 600px;
 
-      .task-modal {
-        max-height: 95vh;
-
-        .modal-body {
-          max-height: calc(95vh - 73px);
+        thead tr th,
+        tbody tr td {
+          padding: 10px 12px;
+          font-size: 12px;
         }
       }
     }
   }
+}
+
+/* ================= ANIMATIONS ================= */
+@keyframes admin-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }

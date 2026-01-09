@@ -28,16 +28,13 @@ import {
   FiInfo,
   FiClipboard,
   FiUpload,
-  FiCloud
+  FiCloud,
+  FiMessageSquare,
+  FiUserPlus,
+  FiEdit
 } from "react-icons/fi";
 import { Snackbar, Alert } from "@mui/material";
 import "./AdminClients.scss";
-
-import { pdfjs } from 'react-pdf';
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.js',
-  import.meta.url,
-).toString();
 
 const AdminClients = () => {
   const [clients, setClients] = useState([]);
@@ -48,6 +45,7 @@ const AdminClients = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [expandedFiles, setExpandedFiles] = useState({});
   const [expandedInfo, setExpandedInfo] = useState({});
+  const [expandedNotes, setExpandedNotes] = useState({});
 
   // Month dropdown states
   const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
@@ -60,12 +58,8 @@ const AdminClients = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const previewRef = useRef(null);
 
-
-
-  const [numPages, setNumPages] = useState(null);
-  const [pageNumber, setPageNumber] = useState(1);
-  const [pdfError, setPdfError] = useState(false);
-  const [pdfLoading, setPdfLoading] = useState(false);
+  // Debug states
+  const [debugData, setDebugData] = useState(null);
 
   // Snackbar states
   const [snackbar, setSnackbar] = useState({
@@ -78,7 +72,7 @@ const AdminClients = () => {
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
 
-  // Years array (current year and previous year)
+  // Years array
   const years = [currentYear, currentYear - 1];
 
   // Months array
@@ -115,20 +109,12 @@ const AdminClients = () => {
   const applyProtection = () => {
     if (!previewRef.current) return;
 
-    // Disable right-click
     const disableRightClick = (e) => {
       e.preventDefault();
       return false;
     };
 
-    // Disable drag start
     const disableDragStart = (e) => {
-      e.preventDefault();
-      return false;
-    };
-
-    // Disable text selection
-    const disableTextSelect = (e) => {
       e.preventDefault();
       return false;
     };
@@ -137,26 +123,11 @@ const AdminClients = () => {
     if (iframe) {
       iframe.addEventListener('contextmenu', disableRightClick);
       iframe.addEventListener('dragstart', disableDragStart);
-      iframe.addEventListener('selectstart', disableTextSelect);
-
-      // Make iframe non-draggable
       iframe.setAttribute('draggable', 'false');
     }
 
-    // Also protect the modal container
     previewRef.current.addEventListener('contextmenu', disableRightClick);
     previewRef.current.addEventListener('dragstart', disableDragStart);
-  };
-
-  const cleanupProtection = () => {
-    if (!previewRef.current) return;
-
-    const iframe = previewRef.current.querySelector('iframe, img');
-    if (iframe) {
-      iframe.removeEventListener('contextmenu', () => { });
-      iframe.removeEventListener('dragstart', () => { });
-      iframe.removeEventListener('selectstart', () => { });
-    }
   };
 
   const openDocumentPreview = (document) => {
@@ -168,16 +139,38 @@ const AdminClients = () => {
     setPreviewDoc(document);
     setIsPreviewOpen(true);
 
-    // Apply protection after a small delay (when DOM is ready)
     setTimeout(() => {
       applyProtection();
     }, 100);
   };
 
+
+  /* ================= HANDLE YEAR SELECTION ================= */
+  const handleYearSelect = (year) => {
+    setSelectedYear(year);
+    setYearDropdownOpen(false);
+    setSelectedMonth({
+      year: year,
+      month: selectedMonthNum
+    });
+  };
+
+  /* ================= HANDLE MONTH SELECTION ================= */
+  const handleMonthSelect = (month) => {
+    setSelectedMonthNum(month);
+    setMonthDropdownOpen(false);
+    setSelectedMonth({
+      year: selectedYear,
+      month: month
+    });
+  };
+
+
+
+
   const renderDocumentPreview = () => {
     if (!previewDoc || !isPreviewOpen) return null;
 
-    // Enhanced URL with security parameters
     const fileUrl = `${previewDoc.url}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`;
 
     return (
@@ -220,12 +213,8 @@ const AdminClients = () => {
               <span className="protection-text">
                 SECURE VIEW: Right-click disabled
               </span>
-              <span className="scroll-hint">
-                (Scroll with mouse wheel or drag scrollbar)
-              </span>
             </div>
 
-            {/* SIMPLE WORKING SOLUTION */}
             <div className="pdf-viewer-container">
               <iframe
                 src={fileUrl}
@@ -243,10 +232,6 @@ const AdminClients = () => {
                   e.preventDefault();
                   e.stopPropagation();
                   return false;
-                }}
-                onLoad={() => {
-                  // Simple protection - no complex injection
-                  console.log('PDF loaded securely');
                 }}
               />
             </div>
@@ -276,12 +261,8 @@ const AdminClients = () => {
     );
   };
 
-
   // Reset PDF state when closing
   const closeDocumentPreview = () => {
-    setPageNumber(1);
-    setNumPages(null);
-    setPdfError(false);
     setIsPreviewOpen(false);
     setPreviewDoc(null);
   }
@@ -307,19 +288,49 @@ const AdminClients = () => {
   const loadClientDetails = async (clientId) => {
     try {
       setLoading(true);
+      console.log("🔍 Loading client details for:", clientId);
+
       const res = await axios.get(
         `${import.meta.env.VITE_API_URL}/admin/clients/${clientId}`,
         { withCredentials: true }
       );
-      setSelectedClient(res.data);
 
-      // Set default selected month to current month
+      console.log("📦 Full API Response:", res.data);
+
+      // FIX: Handle both response formats
+      let clientData;
+      if (res.data.success && res.data.client) {
+        // New format: { success: true, client: data, metadata: {...} }
+        clientData = res.data.client;
+        console.log("✅ Using new format (success.client)");
+      } else if (res.data._id || res.data.clientId) {
+        // Old format: direct client object
+        clientData = res.data;
+        console.log("✅ Using old format (direct object)");
+      } else {
+        console.error("❌ Invalid response format:", res.data);
+        throw new Error("Invalid response format from server");
+      }
+
+      // Debug: Check notes in the data
+      console.log("📝 Client data received:", {
+        hasDocuments: !!clientData.documents,
+        documentKeys: clientData.documents ? Object.keys(clientData.documents) : [],
+        sampleNotes: clientData.documents?.["2026"]?.["3"]?.sales?.files?.[0]?.notes,
+        customCategory: clientData.documents?.["2026"]?.["3"]?.other?.[0]
+      });
+
+      setSelectedClient(clientData);
+
+      // Set default selected month
       setSelectedYear(currentYear);
       setSelectedMonthNum(currentMonth);
       setSelectedMonth({
         year: currentYear,
         month: currentMonth
       });
+
+      showSnackbar("Client data loaded successfully", "success");
 
     } catch (error) {
       console.error("Error loading client details:", error);
@@ -329,55 +340,6 @@ const AdminClients = () => {
     }
   };
 
-  /* ================= SAFE ACCESS HELPER ================= */
-  const safeGet = (obj, path, defaultValue = null) => {
-    if (!obj) return defaultValue;
-
-    const keys = path.split('.');
-    let result = obj;
-
-    for (const key of keys) {
-      if (result === null || result === undefined) return defaultValue;
-
-      // Check if it's a Map
-      if (result instanceof Map || (typeof result.get === 'function')) {
-        result = result.get(key);
-      }
-      // Check if it's a plain object
-      else if (typeof result === 'object' && key in result) {
-        result = result[key];
-      }
-      // Try to access as array index
-      else if (Array.isArray(result) && !isNaN(key)) {
-        result = result[parseInt(key)];
-      }
-      else {
-        return defaultValue;
-      }
-    }
-
-    return result !== undefined ? result : defaultValue;
-  };
-
-  /* ================= HANDLE MONTH SELECTION ================= */
-  const handleYearSelect = (year) => {
-    setSelectedYear(year);
-    setYearDropdownOpen(false);
-    setSelectedMonth({
-      year: year,
-      month: selectedMonthNum
-    });
-  };
-
-  const handleMonthSelect = (month) => {
-    setSelectedMonthNum(month);
-    setMonthDropdownOpen(false);
-    setSelectedMonth({
-      year: selectedYear,
-      month: month
-    });
-  };
-
   /* ================= GET MONTH DATA ================= */
   const getMonthData = () => {
     if (!selectedClient || !selectedMonth) return null;
@@ -385,7 +347,28 @@ const AdminClients = () => {
     const yearKey = String(selectedMonth.year);
     const monthKey = String(selectedMonth.month);
 
-    return safeGet(selectedClient.documents, `${yearKey}.${monthKey}`);
+    console.log("📊 Getting month data for:", {
+      yearKey,
+      monthKey,
+      hasDocuments: !!selectedClient.documents,
+      hasYear: selectedClient.documents?.[yearKey] !== undefined,
+      hasMonth: selectedClient.documents?.[yearKey]?.[monthKey] !== undefined
+    });
+
+    const monthData = selectedClient.documents?.[yearKey]?.[monthKey];
+
+    if (monthData) {
+      console.log("📁 Month data found:", {
+        salesFiles: monthData.sales?.files?.length || 0,
+        purchaseFiles: monthData.purchase?.files?.length || 0,
+        bankFiles: monthData.bank?.files?.length || 0,
+        otherCategories: monthData.other?.length || 0,
+        customCategory: monthData.other?.[0]?.categoryName,
+        customFiles: monthData.other?.[0]?.document?.files?.length || 0
+      });
+    }
+
+    return monthData || null;
   };
 
   /* ================= GET EMPLOYEE ASSIGNMENT ================= */
@@ -409,12 +392,11 @@ const AdminClients = () => {
     const monthData = getMonthData();
     if (!monthData) return "pending";
 
-    // Check if all main documents (sales, purchase, bank) are uploaded
-    const salesUploaded = monthData.sales?.url ? true : false;
-    const purchaseUploaded = monthData.purchase?.url ? true : false;
-    const bankUploaded = monthData.bank?.url ? true : false;
+    const salesHasFiles = monthData.sales?.files?.length > 0;
+    const purchaseHasFiles = monthData.purchase?.files?.length > 0;
+    const bankHasFiles = monthData.bank?.files?.length > 0;
 
-    if (salesUploaded && purchaseUploaded && bankUploaded) {
+    if (salesHasFiles && purchaseHasFiles && bankHasFiles) {
       return "completed";
     }
 
@@ -537,7 +519,6 @@ const AdminClients = () => {
   const getAccountingStatus = () => {
     if (!selectedClient || !selectedMonth) return { done: false };
 
-    // Check in employee assignments first
     const assignment = selectedClient.employeeAssignments?.find(
       a => a.year === selectedMonth.year && a.month === selectedMonth.month
     );
@@ -559,6 +540,179 @@ const AdminClients = () => {
     return { done: false, task: "Not assigned" };
   };
 
+  /* ================= RENDER NOTES SECTION ================= */
+  const renderNotesSection = (notes, title = "Notes", notesKey = "default") => {
+    if (!notes || notes.length === 0) return null;
+
+    console.log(`📝 Rendering notes for ${title}:`, notes);
+
+    const isExpanded = expandedNotes[notesKey];
+
+    return (
+      <div className="notes-section">
+        <div className="notes-header" onClick={() => setExpandedNotes(prev => ({
+          ...prev,
+          [notesKey]: !prev[notesKey]
+        }))}>
+          <div className="notes-title">
+            <FiMessageSquare size={16} />
+            <span>{title} ({notes.length})</span>
+          </div>
+          <button className="notes-toggle-btn">
+            {isExpanded ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
+          </button>
+        </div>
+
+        {isExpanded && (
+          <div className="notes-list">
+            {notes.map((note, index) => (
+              <div key={index} className="note-item">
+                <div className="note-content">
+                  <p className="note-text">{note.note}</p>
+                  <div className="note-meta">
+                    <span className="note-author">
+                      <FiUser size={12} />
+                      {note.employeeName || note.addedBy || 'Unknown'}
+                    </span>
+                    <span className="note-date">
+                      <FiClock size={12} />
+                      {new Date(note.addedAt).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  /* ================= RENDER CATEGORY NOTES ================= */
+  const renderCategoryNotes = (categoryData, categoryType, categoryName = null) => {
+    if (!categoryData || !categoryData.categoryNotes || categoryData.categoryNotes.length === 0) {
+      return null;
+    }
+
+    console.log(`📋 Category notes found for ${categoryType} ${categoryName || ''}:`,
+      categoryData.categoryNotes);
+
+    const notesKey = `category-${categoryType}-${categoryName || 'main'}-${selectedMonth.year}-${selectedMonth.month}`;
+    return renderNotesSection(categoryData.categoryNotes, "📝 Client Notes", notesKey);
+  };
+
+  /* ================= RENDER FILE NOTES ================= */
+  const renderFileNotes = (file, fileIndex, categoryType, categoryName = null) => {
+    if (!file || !file.notes || file.notes.length === 0) {
+      return null;
+    }
+
+    console.log(`📄 File notes found for ${categoryType}/${categoryName}:`, file.notes);
+
+    const notesKey = `file-${categoryType}-${categoryName || 'main'}-${fileIndex}-${selectedMonth.year}-${selectedMonth.month}`;
+    return renderNotesSection(file.notes, "👤 Employee Notes", notesKey);
+  };
+
+  /* ================= RENDER FILES IN CATEGORY ================= */
+  const renderFilesInCategory = (files, categoryType, categoryName = null) => {
+    console.log(`📁 Rendering files for ${categoryType} ${categoryName || ''}:`,
+      files?.length || 0, "files");
+
+    if (!files || files.length === 0) {
+      return (
+        <div className="empty-files">
+          <FiFileText size={20} />
+          <p>No files uploaded</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="files-list">
+        {files.map((file, fileIndex) => {
+          const fileId = `${categoryType}-${categoryName || 'main'}-${fileIndex}-${selectedMonth.year}-${selectedMonth.month}`;
+          const isExpanded = expandedFiles[fileId];
+
+          return (
+            <div key={fileIndex} className="file-item">
+              <div className="file-item-header">
+                <div className="file-item-info">
+                  <div className="file-icon-small">
+                    <FiFileText size={16} />
+                  </div>
+                  <div>
+                    <p className="file-name">{file.fileName || 'Unnamed File'}</p>
+                    <div className="file-item-meta">
+                      <span className="meta-item">
+                        <FiClock size={12} />
+                        {file.uploadedAt ? new Date(file.uploadedAt).toLocaleDateString() : 'N/A'}
+                      </span>
+                      <span className="meta-item">
+                        <FiUser size={12} />
+                        {file.uploadedBy || 'Unknown'}
+                      </span>
+                      {file.fileSize && (
+                        <span className="meta-item">
+                          <FiFile size={12} />
+                          {(file.fileSize / 1024).toFixed(1)} KB
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="file-item-actions">
+                  {file.url && (
+                    <button
+                      className="view-btn-small"
+                      onClick={() => openDocumentPreview(file)}
+                      title="Preview"
+                    >
+                      <FiEye size={14} />
+                    </button>
+                  )}
+                  <button
+                    className="expand-btn-small"
+                    onClick={() => toggleFileExpansion(fileId)}
+                  >
+                    {isExpanded ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              {isExpanded && (
+                <div className="file-item-details">
+                  {/* File Notes (Employee Notes) */}
+                  {renderFileNotes(file, fileIndex, categoryType, categoryName)}
+
+                  <div className="file-detail-grid">
+                    <div className="detail-item">
+                      <span className="label">File Type:</span>
+                      <span className="value">{file.fileType || 'Not specified'}</span>
+                    </div>
+                    {file.uploadedAt && (
+                      <div className="detail-item">
+                        <span className="label">Uploaded:</span>
+                        <span className="value">
+                          {new Date(file.uploadedAt).toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                    {file.uploadedBy && (
+                      <div className="detail-item">
+                        <span className="label">Uploaded By:</span>
+                        <span className="value">{file.uploadedBy}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   /* ================= TOGGLE EXPANSION ================= */
   const toggleFileExpansion = (fileId) => {
     setExpandedFiles(prev => ({
@@ -576,12 +730,10 @@ const AdminClients = () => {
 
   /* ================= FILTERED CLIENTS ================= */
   const filteredClients = clients.filter(client => {
-    // Search filter
     const matchesSearch = searchTerm === '' ||
       client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.email.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // Status filter
     const matchesStatus = statusFilter === 'all' ||
       (statusFilter === 'active' && client.isActive) ||
       (statusFilter === 'inactive' && !client.isActive);
@@ -592,6 +744,22 @@ const AdminClients = () => {
   useEffect(() => {
     loadClients();
   }, []);
+
+  // Debug effect
+  useEffect(() => {
+    if (selectedClient && selectedMonth) {
+      const monthData = getMonthData();
+      console.log("🔄 DEBUG - Current State:", {
+        selectedClientId: selectedClient.clientId,
+        selectedMonth,
+        monthData,
+        salesFiles: monthData?.sales?.files,
+        otherCategories: monthData?.other,
+        notesInSales: monthData?.sales?.files?.[0]?.notes,
+        notesInCustom: monthData?.other?.[0]?.document?.files?.[0]?.notes
+      });
+    }
+  }, [selectedClient, selectedMonth]);
 
   const monthData = getMonthData();
   const employeeAssignment = getEmployeeAssignment();
@@ -983,301 +1151,159 @@ const AdminClients = () => {
                         </h3>
                         <span className="count-badge">
                           {monthData ? (
-                            (monthData.sales?.url ? 1 : 0) +
-                            (monthData.purchase?.url ? 1 : 0) +
-                            (monthData.bank?.url ? 1 : 0) +
-                            (monthData.other?.reduce((acc, o) => acc + (o.document?.url ? 1 : 0), 0) || 0)
+                            (monthData.sales?.files?.length || 0) +
+                            (monthData.purchase?.files?.length || 0) +
+                            (monthData.bank?.files?.length || 0) +
+                            (monthData.other?.reduce((acc, o) => acc + (o.document?.files?.length || 0), 0) || 0)
                           ) : 0} files
                         </span>
                       </div>
 
-                      {/* Main Files */}
-                      <div className="files-category">
-                        <h4 className="category-title">Main Documents</h4>
-                        <div className="files-grid">
-                          {["sales", "purchase", "bank"].map((type) => {
-                            const file = monthData?.[type];
-                            const fileId = `${type}-${selectedMonth.year}-${selectedMonth.month}`;
-                            const isExpanded = expandedFiles[fileId];
+                      {/* Main Categories */}
+                      {['sales', 'purchase', 'bank'].map((category) => {
+                        const categoryData = monthData?.[category];
+                        const categoryId = `${category}-${selectedMonth.year}-${selectedMonth.month}`;
+                        const isExpanded = expandedFiles[categoryId];
 
-                            return (
-                              <div key={type} className="file-card">
-                                <div className="file-header">
-                                  <div className="file-icon">
-                                    {getFileIcon(type)}
-                                  </div>
-                                  <div className="file-info">
-                                    <h5>{type.charAt(0).toUpperCase() + type.slice(1)}</h5>
-                                    {file?.url ? (
-                                      <>
-                                        <p className="file-name">{file.fileName}</p>
-                                        <div className="file-meta">
-                                          <span className="meta-item">
-                                            <FiClock size={12} />
-                                            {file.uploadedAt ? new Date(file.uploadedAt).toLocaleDateString() : 'N/A'}
-                                          </span>
-                                          {getLockBadge(file.isLocked)}
-                                        </div>
-                                      </>
-                                    ) : (
-                                      <p className="file-status">Not Uploaded</p>
-                                    )}
-                                  </div>
-                                  <div className="file-actions">
-                                    {file?.url && (
-                                      <button
-                                        className="view-btn"
-                                        onClick={() => openDocumentPreview(file)}
-                                        title="Preview Document"
-                                      >
-                                        <FiEye size={16} />
-                                      </button>
-                                    )}
+                        return (
+                          <div key={category} className="files-category">
+                            <div className="category-header">
+                              <div className="category-title">
+                                <div className="category-icon">
+                                  {getFileIcon(category)}
+                                </div>
+                                <h4>{category.charAt(0).toUpperCase() + category.slice(1)} Documents</h4>
+                                <span className="file-count-badge">
+                                  {categoryData?.files?.length || 0} files
+                                </span>
+                                {categoryData?.isLocked && (
+                                  <span className="category-lock-badge">
+                                    <FiLock size={12} /> Locked
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                className="expand-category-btn"
+                                onClick={() => toggleFileExpansion(categoryId)}
+                              >
+                                {isExpanded ? (
+                                  <FiChevronUp size={16} />
+                                ) : (
+                                  <FiChevronDown size={16} />
+                                )}
+                              </button>
+                            </div>
+
+                            {isExpanded && (
+                              <div className="category-content">
+                                {/* Category Notes (Client Notes) */}
+                                {renderCategoryNotes(categoryData, category)}
+
+                                {/* Files in this category */}
+                                {renderFilesInCategory(categoryData?.files, category)}
+
+                                {/* Category Lock Controls */}
+                                {categoryData && (
+                                  <div className="category-controls">
                                     <button
-                                      className="expand-btn"
-                                      onClick={() => toggleFileExpansion(fileId)}
+                                      className="control-btn lock"
+                                      onClick={() => toggleFileLock(category, true)}
+                                      disabled={categoryData?.isLocked}
                                     >
-                                      {isExpanded ? (
-                                        <FiChevronUp size={16} />
-                                      ) : (
-                                        <FiChevronDown size={16} />
-                                      )}
+                                      <FiLock size={14} /> {categoryData?.isLocked ? "Already Locked" : "Lock Category"}
+                                    </button>
+                                    <button
+                                      className="control-btn unlock"
+                                      onClick={() => toggleFileLock(category, false)}
+                                      disabled={!categoryData?.isLocked}
+                                    >
+                                      <FiUnlock size={14} /> {!categoryData?.isLocked ? "Already Unlocked" : "Unlock Category"}
                                     </button>
                                   </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* Other Documents */}
+                      <div className="files-category">
+                        <div className="category-header">
+                          <div className="category-title">
+                            <div className="category-icon">
+                              <FiFileText />
+                            </div>
+                            <h4>Other Documents</h4>
+                            <span className="file-count-badge">
+                              {monthData?.other?.reduce((acc, o) => acc + (o.document?.files?.length || 0), 0) || 0} files
+                            </span>
+                          </div>
+                        </div>
+
+                        {monthData?.other && monthData.other.length > 0 ? (
+                          monthData.other.map((otherCategory, index) => {
+                            const categoryId = `other-${otherCategory.categoryName}-${selectedMonth.year}-${selectedMonth.month}`;
+                            const isExpanded = expandedFiles[categoryId];
+
+                            return (
+                              <div key={index} className="other-category-item">
+                                <div className="other-category-header">
+                                  <div className="other-category-title">
+                                    <h5>{otherCategory.categoryName}</h5>
+                                    <span className="file-count-badge">
+                                      {otherCategory.document?.files?.length || 0} files
+                                    </span>
+                                    {otherCategory.document?.isLocked && (
+                                      <span className="category-lock-badge">
+                                        <FiLock size={12} /> Locked
+                                      </span>
+                                    )}
+                                  </div>
+                                  <button
+                                    className="expand-category-btn"
+                                    onClick={() => toggleFileExpansion(categoryId)}
+                                  >
+                                    {isExpanded ? (
+                                      <FiChevronUp size={16} />
+                                    ) : (
+                                      <FiChevronDown size={16} />
+                                    )}
+                                  </button>
                                 </div>
 
                                 {isExpanded && (
-                                  <div className="file-details">
-                                    <div className="detail-grid">
-                                      <div className="detail-item">
-                                        <span className="label">File Status:</span>
-                                        <span className="value">
-                                          {file?.url ? (
-                                            <span className="uploaded-status">
-                                              <FiCheckCircle size={12} /> Uploaded
-                                            </span>
-                                          ) : (
-                                            <span className="pending-status">
-                                              <FiAlertCircle size={12} /> Not Uploaded
-                                            </span>
-                                          )}
-                                        </span>
-                                      </div>
-                                      {file?.fileName && (
-                                        <div className="detail-item">
-                                          <span className="label">File Name:</span>
-                                          <span className="value">{file.fileName}</span>
-                                        </div>
-                                      )}
-                                      {file?.uploadedAt && (
-                                        <div className="detail-item">
-                                          <span className="label">Uploaded:</span>
-                                          <span className="value">
-                                            {new Date(file.uploadedAt).toLocaleString()}
-                                          </span>
-                                        </div>
-                                      )}
-                                      {file?.uploadedBy && (
-                                        <div className="detail-item">
-                                          <span className="label">Uploaded By:</span>
-                                          <span className="value">{file.uploadedBy}</span>
-                                        </div>
-                                      )}
-                                      <div className="detail-item">
-                                        <span className="label">Lock Status:</span>
-                                        {getLockBadge(file?.isLocked || false)}
-                                      </div>
-                                      {file?.lockedAt && (
-                                        <div className="detail-item">
-                                          <span className="label">Locked At:</span>
-                                          <span className="value">{new Date(file.lockedAt).toLocaleString()}</span>
-                                        </div>
-                                      )}
-                                      {file?.lockedBy && (
-                                        <div className="detail-item">
-                                          <span className="label">Locked By:</span>
-                                          <span className="value">{file.lockedBy}</span>
-                                        </div>
-                                      )}
-                                    </div>
+                                  <div className="other-category-content">
+                                    {/* Category Notes (Client Notes) */}
+                                    {renderCategoryNotes(otherCategory.document, 'other', otherCategory.categoryName)}
 
-                                    <div className="file-controls">
-                                      <button
-                                        className="control-btn lock"
-                                        onClick={() => toggleFileLock(type, true)}
-                                        disabled={file?.isLocked}
-                                      >
-                                        <FiLock size={14} /> {file?.isLocked ? "Already Locked" : "Lock File"}
-                                      </button>
-                                      <button
-                                        className="control-btn unlock"
-                                        onClick={() => toggleFileLock(type, false)}
-                                        disabled={!file?.isLocked}
-                                      >
-                                        <FiUnlock size={14} /> {!file?.isLocked ? "Already Unlocked" : "Unlock File"}
-                                      </button>
-                                      {file?.url && (
+                                    {/* Files in this category */}
+                                    {renderFilesInCategory(otherCategory.document?.files, 'other', otherCategory.categoryName)}
+
+                                    {/* Category Lock Controls */}
+                                    {otherCategory.document && (
+                                      <div className="category-controls">
                                         <button
-                                          className="control-btn preview"
-                                          onClick={() => openDocumentPreview(file)}
+                                          className="control-btn lock"
+                                          onClick={() => toggleFileLock("other", true, otherCategory.categoryName)}
+                                          disabled={otherCategory.document?.isLocked}
                                         >
-                                          <FiEye size={14} /> Preview
+                                          <FiLock size={14} /> {otherCategory.document?.isLocked ? "Already Locked" : "Lock Category"}
                                         </button>
-                                      )}
-                                    </div>
+                                        <button
+                                          className="control-btn unlock"
+                                          onClick={() => toggleFileLock("other", false, otherCategory.categoryName)}
+                                          disabled={!otherCategory.document?.isLocked}
+                                        >
+                                          <FiUnlock size={14} /> {!otherCategory.document?.isLocked ? "Already Unlocked" : "Unlock Category"}
+                                        </button>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
                             );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Other Documents */}
-                      <div className="files-category">
-                        <h4 className="category-title">Other Documents</h4>
-                        {(monthData?.other?.length > 0 || monthData?.other) ? (
-                          <div className="files-grid">
-                            {monthData.other?.map((otherDoc) => {
-                              const file = otherDoc.document;
-                              const fileId = `other-${otherDoc.categoryName}-${selectedMonth.year}-${selectedMonth.month}`;
-                              const isExpanded = expandedFiles[fileId];
-
-                              return (
-                                <div key={otherDoc.categoryName} className="file-card">
-                                  <div className="file-header">
-                                    <div className="file-icon">
-                                      <FiFileText />
-                                    </div>
-                                    <div className="file-info">
-                                      <h5>{otherDoc.categoryName}</h5>
-                                      {file?.url ? (
-                                        <>
-                                          <p className="file-name">{file.fileName}</p>
-                                          <div className="file-meta">
-                                            <span className="meta-item">
-                                              <FiClock size={12} />
-                                              {file.uploadedAt ? new Date(file.uploadedAt).toLocaleDateString() : 'N/A'}
-                                            </span>
-                                            {getLockBadge(file.isLocked)}
-                                          </div>
-                                        </>
-                                      ) : (
-                                        <p className="file-status">Not Uploaded</p>
-                                      )}
-                                    </div>
-                                    <div className="file-actions">
-                                      {file?.url && (
-                                        <button
-                                          className="view-btn"
-                                          onClick={() => openDocumentPreview(file)}
-                                          title="Preview Document"
-                                        >
-                                          <FiEye size={16} />
-                                        </button>
-                                      )}
-                                      <button
-                                        className="expand-btn"
-                                        onClick={() => toggleFileExpansion(fileId)}
-                                      >
-                                        {isExpanded ? (
-                                          <FiChevronUp size={16} />
-                                        ) : (
-                                          <FiChevronDown size={16} />
-                                        )}
-                                      </button>
-                                    </div>
-                                  </div>
-
-                                  {isExpanded && (
-                                    <div className="file-details">
-                                      <div className="detail-grid">
-                                        <div className="detail-item">
-                                          <span className="label">Category:</span>
-                                          <span className="value">{otherDoc.categoryName}</span>
-                                        </div>
-                                        <div className="detail-item">
-                                          <span className="label">File Status:</span>
-                                          <span className="value">
-                                            {file?.url ? (
-                                              <span className="uploaded-status">
-                                                <FiCheckCircle size={12} /> Uploaded
-                                              </span>
-                                            ) : (
-                                              <span className="pending-status">
-                                                <FiAlertCircle size={12} /> Not Uploaded
-                                              </span>
-                                            )}
-                                          </span>
-                                        </div>
-                                        {file?.fileName && (
-                                          <div className="detail-item">
-                                            <span className="label">File Name:</span>
-                                            <span className="value">{file.fileName}</span>
-                                          </div>
-                                        )}
-                                        {file?.uploadedAt && (
-                                          <div className="detail-item">
-                                            <span className="label">Uploaded:</span>
-                                            <span className="value">
-                                              {new Date(file.uploadedAt).toLocaleString()}
-                                            </span>
-                                          </div>
-                                        )}
-                                        {file?.uploadedBy && (
-                                          <div className="detail-item">
-                                            <span className="label">Uploaded By:</span>
-                                            <span className="value">{file.uploadedBy}</span>
-                                          </div>
-                                        )}
-                                        <div className="detail-item">
-                                          <span className="label">Lock Status:</span>
-                                          {getLockBadge(file?.isLocked || false)}
-                                        </div>
-                                        {file?.lockedAt && (
-                                          <div className="detail-item">
-                                            <span className="label">Locked At:</span>
-                                            <span className="value">{new Date(file.lockedAt).toLocaleString()}</span>
-                                          </div>
-                                        )}
-                                        {file?.lockedBy && (
-                                          <div className="detail-item">
-                                            <span className="label">Locked By:</span>
-                                            <span className="value">{file.lockedBy}</span>
-                                          </div>
-                                        )}
-                                      </div>
-
-                                      <div className="file-controls">
-                                        <button
-                                          className="control-btn lock"
-                                          onClick={() => toggleFileLock("other", true, otherDoc.categoryName)}
-                                          disabled={file?.isLocked}
-                                        >
-                                          <FiLock size={14} /> {file?.isLocked ? "Already Locked" : "Lock File"}
-                                        </button>
-                                        <button
-                                          className="control-btn unlock"
-                                          onClick={() => toggleFileLock("other", false, otherDoc.categoryName)}
-                                          disabled={!file?.isLocked}
-                                        >
-                                          <FiUnlock size={14} /> {!file?.isLocked ? "Already Unlocked" : "Unlock File"}
-                                        </button>
-                                        {file?.url && (
-                                          <button
-                                            className="control-btn preview"
-                                            onClick={() => openDocumentPreview(file)}
-                                          >
-                                            <FiEye size={14} /> Preview
-                                          </button>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
+                          })
                         ) : (
                           <div className="empty-state">
                             <FiFileText size={32} />
