@@ -162,7 +162,7 @@ const AdminAuth = () => {
           </div>
 
           {/* Auth Type Toggle */}
-          <div className="auth-type-toggle">
+          {/* <div className="auth-type-toggle">
             <div className="toggle-container">
               <button
                 className={`toggle-option ${authType === "login" ? "active" : ""}`}
@@ -182,7 +182,7 @@ const AdminAuth = () => {
               </button>
               <div className={`toggle-slider ${authType === "register" ? "slider-right" : "slider-left"}`}></div>
             </div>
-          </div>
+          </div> */}
 
           {/* Server Error Message */}
           {serverError && (
