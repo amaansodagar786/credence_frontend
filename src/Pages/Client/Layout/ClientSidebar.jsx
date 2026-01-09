@@ -33,7 +33,7 @@ const ClientSidebar = ({ children }) => {
     setIsLoggedIn(!!token);
   }, []);
 
-  const handleLogin = () => navigate("/client/login");
+  const handleLogin = () => navigate("/login");
   
   const handleLogout = async () => {
     try {
@@ -48,7 +48,7 @@ const ClientSidebar = ({ children }) => {
     localStorage.removeItem("clientToken");
     document.cookie = "clientToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     setIsLoggedIn(false);
-    navigate("/client/login");
+    navigate("/login");
   };
 
   // Auto-collapse sidebar on route change (mobile only)
@@ -67,11 +67,11 @@ const ClientSidebar = ({ children }) => {
   const menuData = [
     { icon: <MdOutlineDashboard />, title: "Dashboard", path: "/client/dashboard" },
     { icon: <FiUploadCloud />, title: "Upload Files", path: "/client/upload" },
-    { icon: <FiFileText />, title: "My Documents", path: "/client/documents" },
-    { icon: <TbFileInvoice />, title: "Invoices", path: "/client/invoices" },
-    { icon: <FiDollarSign />, title: "Payments", path: "/client/payments" },
-    { icon: <FiCalendar />, title: "Appointments", path: "/client/appointments" },
-    { icon: <FiSettings />, title: "Settings", path: "/client/settings" },
+    // { icon: <FiFileText />, title: "My Documents", path: "/client/documents" }, 
+    // { icon: <TbFileInvoice />, title: "Invoices", path: "/client/invoices" },
+    // { icon: <FiDollarSign />, title: "Payments", path: "/client/payments" },
+    // { icon: <FiCalendar />, title: "Appointments", path: "/client/appointments" },
+    // { icon: <FiSettings />, title: "Settings", path: "/client/settings" },
   ];
 
   return (

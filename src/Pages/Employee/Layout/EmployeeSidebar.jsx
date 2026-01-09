@@ -29,7 +29,7 @@ const EmployeeSidebar = ({ children }) => {
     setIsLoggedIn(!!token);
   }, []);
 
-  const handleLogin = () => navigate("/employee/login");
+  const handleLogin = () => navigate("/login");
   
   const handleLogout = async () => {
     try {
@@ -44,7 +44,7 @@ const EmployeeSidebar = ({ children }) => {
     localStorage.removeItem("employeeToken");
     document.cookie = "employeeToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     setIsLoggedIn(false);
-    navigate("/employee/login");
+    navigate("/login");
   };
 
   // Auto-collapse sidebar on route change (mobile only)
@@ -63,7 +63,7 @@ const EmployeeSidebar = ({ children }) => {
   const menuData = [
     { icon: <MdOutlineDashboard />, title: "Dashboard", path: "/employee/dashboard" },
     { icon: <FiUsers />, title: "Clients", path: "/employee/assigned" },
-    { icon: <FiCheckSquare />, title: "Tasks", path: "/employee/tasks" },
+    // { icon: <FiCheckSquare />, title: "Tasks", path: "/employee/tasks" }, 
   ];
 
   return (

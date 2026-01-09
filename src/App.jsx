@@ -18,6 +18,7 @@ import AdminClients from './Pages/Admin/ClientsInfo/AdminClients';
 import ClientFilesUpload from './Pages/Client/Upload/ClientFilesUpload';
 import ClientEmpLogin from './Pages/Authentication/Client&EmployeeLogin/ClientEmpLogin';
 import AdminAuth from './Pages/Admin/Authentication/AdminAuth';
+import Home from './Pages/Home/Home';
 
 
 
@@ -26,7 +27,10 @@ function App() {
     <BrowserRouter>
       <Routes>
 
+        <Route path="/" element={<Home />} />
+
         {/* ADMIN ROUTES  */}
+
         <Route path="/admin/login" element={<AdminAuth />} />
         <Route path="/admin/register" element={<AdminRegister />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
@@ -51,7 +55,7 @@ function App() {
 
         <Route path="/login" element={<ClientEmpLogin />} />
 
-        
+
 
       </Routes>
     </BrowserRouter>
