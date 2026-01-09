@@ -12,7 +12,7 @@ const EmployeeLayout = ({ children }) => {
         withCredentials: true
       })
       .then(() => setLoading(false))
-      .catch(() => (window.location.href = "/employee/login"));
+      .catch(() => (window.location.href = "/login"));
   }, []);
 
   if (loading) return (

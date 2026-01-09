@@ -12,7 +12,7 @@ const ClientLayout = ({ children }) => {
         withCredentials: true
       })
       .then(() => setLoading(false))
-      .catch(() => (window.location.href = "/client/login"));
+      .catch(() => (window.location.href = "/login"));
   }, []);
 
   if (loading) return (
