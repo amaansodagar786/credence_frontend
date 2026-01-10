@@ -1,353 +1,193 @@
-.packages {
-  background:
-    radial-gradient(circle at left,
-      rgba(124, 214, 75, 0.25),
-      transparent 55%),
-    #000;
+/* ===== FONTS IMPORT ===== */
+@import url('https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400..700;1,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
-  padding: 80px 20px;
-  color: #fff;
-  font-family: "Poppins", sans-serif;
+@font-face {
+  font-family: "Heading";
+  src: url("../../../assets/fonts/cy-grotesk-wide.ttf") format("truetype");
+  font-style: normal;
+  font-display: swap;
 }
 
-/* ===== HEADER ===== */
-.packages-header {
-  text-align: center;
-  margin-bottom: 50px;
-
-  h2 {
-    font-size: 36px;
-    margin: 0;
-  }
-
-  .underline {
-    width: 60px;
-    height: 3px;
-    background: #7cd64b;
-    margin: 10px auto 18px;
-    display: block;
-  }
-
-  p {
-    font-size: 15px;
-    opacity: 0.9;
-  }
-}
-
-/* ===== TABLE WRAPPER ===== */
-.table-wrapper {
-  overflow-x: auto;
-
-  width: 1250px;
-  height: 400px;
-  margin: 0 auto;
-}
-
-/* ===== TABLE ===== */
-.pricing-table {
-  width: 100%;
-  min-width: 1100px;
-
-  border-collapse: collapse;
-  border: 2px solid #7cd64b;
-
-  th {
-    background: #7cd64b;
-    /* ✅ HEADER ALWAYS GREEN */
-    color: #000;
-    padding: 14px;
-    font-weight: 600;
-    border: 1px solid #000;
-  }
-
-  td {
-    padding: 14px;
-    border: 1px solid #7cd64b;
-    text-align: center;
-    font-size: 14px;
-  }
-
-  td:first-child {
-    text-align: left;
-    font-weight: 500;
-  }
-
-  /* ===== BODY COLUMN COLORS ONLY ===== */
-  .features {
-    background: #555;
-  }
-
-  .lite {
-    background: #000;
-  }
-
-  .taxi {
-    background: #555;
-  }
-
-  .premium {
-    background: #000;
-  }
-
-  .pro {
-    background: #555;
-  }
-
-  .restaurant {
-    background: #000;
-  }
-
-  .yes {
-    color: #7cd64b;
-    font-weight: 600;
-  }
-
-  .no {
-    color: #ff4d4d;
-    font-weight: 600;
-  }
-
-  /* ===== ACTION ROW ===== */
-  .action-row td {
-    border-top: 2px solid #7cd64b;
-  }
-
-  button {
-    background: transparent;
-    border: 2px solid #7cd64b;
-    color: #7cd64b;
-    padding: 6px 18px;
-    border-radius: 20px;
-    font-size: 12px;
-    cursor: pointer;
-  }
-}
-
-
-
-/* ===== ACTION ROW ===== */
-.action-row td {
-  position: relative;
-  padding: 10px 0 0;
-  /* remove vertical gap */
-  border-top: 2px solid #7cd64b;
-}
-
-/* Button sits ON the border line */
-.action-row button {
-  position: relative;
-  top: 50%;
-  /* pushes it onto the border */
-  transform: translateY(50%);
-  background: #000;
-  border: 2px solid #7cd64b;
-  color: #7cd64b;
-  padding: 6px 18px;
-  border-radius: 20px;
-  font-size: 12px;
-  cursor: pointer;
-  z-index: 2;
-  /* above the border line */
-}
-
-/* ===== MOBILE ===== */
-@media (max-width: 768px) {
-  .packages {
-    padding: 60px 16px;
-  }
-
-  .packages-header h2 {
-    font-size: 30px;
-  }
-}
-
-.packages {
+/* ===== SHARED BACKGROUND FOR BOTH SECTIONS ===== */
+.packages,
+.additional-services {
   background:
     radial-gradient(circle at left, rgba(124, 214, 75, 0.25), transparent 55%),
     #000;
-  padding: 80px 20px;
   color: #fff;
-  font-family: "Poppins", sans-serif;
 }
 
-/* ===== HEADER ===== */
+/* ===== PACKAGES SECTION ===== */
+.packages {
+  padding: 40px 20px 00px 20px;
+}
+
+/* HEADING */
 .packages-header {
   text-align: center;
   margin-bottom: 50px;
-
-  h2 {
-    font-size: 36px;
-    margin: 0;
-  }
-
-  .underline {
-    width: 60px;
-    height: 3px;
-    background: #7cd64b;
-    margin: 10px auto 18px;
-    display: block;
-  }
-
-  p {
-    font-size: 15px;
-    opacity: 0.9;
-  }
 }
 
-/* ===== TABLE WRAPPER ===== */
+.packages-header h2 {
+  font-family: "Heading", sans-serif;
+  font-size: 36px;
+  margin: 0;
+}
+
+.underline {
+  width: 60px;
+  height: 3px;
+  background: #7cd64b;
+  margin: 10px auto 18px;
+  display: block;
+}
+
+/* SUBHEADING */
+.packages-header p {
+  font-family: "Arimo", sans-serif;
+  font-size: 15px;
+  opacity: 0.9;
+}
+
+/* TABLE WRAPPER - HORIZONTAL SCROLL ON MOBILE */
 .table-wrapper {
   overflow-x: auto;
+  width: 100%;
+  max-width: 1250px;
+  height: 380px;
+  margin: 0 auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* ===== TABLE ===== */
+/* PRICING TABLE */
 .pricing-table {
   width: 100%;
   min-width: 1100px;
   border-collapse: collapse;
   border: 2px solid #7cd64b;
+  font-family: "Inter", sans-serif;
+}
 
-  th {
+.pricing-table th {
+  background: #7cd64b;
+  color: #000;
+  padding: 14px;
+  font-weight: 600;
+  border: 1px solid #000;
+  font-family: "Inter", sans-serif;
+}
+
+.pricing-table td {
+  padding: 14px;
+  border: 1px solid #7cd64b;
+  text-align: center;
+  font-size: 14px;
+  font-family: "Inter", sans-serif;
+}
+
+.pricing-table td:first-child {
+  text-align: left;
+  font-weight: 500;
+}
+
+/* COLUMN COLORS */
+.features {
+  background: #555;
+}
+
+.lite {
+  background: #000;
+}
+
+.taxi {
+  background: #555;
+}
+
+.premium {
+  background: #000;
+}
+
+.pro {
+  background: #555;
+}
+
+.restaurant {
+  background: #000;
+}
+
+/* YES/NO */
+.yes {
+  color: #7cd64b;
+  font-weight: 600;
+}
+
+.no {
+  color: #ff4d4d;
+  font-weight: 600;
+}
+
+/* INVOICE CELL WITH BUTTON */
+.invoice-cell {
+  position: relative;
+  padding-bottom: 30px!important;
+}
+
+.cell-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.pricing-table button {
+  position: absolute;
+  bottom: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #000;
+  border: 2px solid #7cd64b;
+  color: #7cd64b;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 3;
+  font-family: "Arimo", sans-serif;
+  transition: all 0.3s ease;
+  
+  &:hover {
     background: #7cd64b;
     color: #000;
-    padding: 14px;
-    font-weight: 600;
-    border: 1px solid #000;
-  }
-
-  td {
-    padding: 14px;
-    border: 1px solid #7cd64b;
-    text-align: center;
-    font-size: 14px;
-  }
-
-  td:first-child {
-    text-align: left;
-    font-weight: 500;
-  }
-
-  /* COLUMN COLORS (BODY ONLY) */
-  .features {
-    background: #555;
-  }
-
-  .lite {
-    background: #000;
-  }
-
-  .taxi {
-    background: #555;
-  }
-
-  .premium {
-    background: #000;
-  }
-
-  .pro {
-    background: #555;
-  }
-
-  .restaurant {
-    background: #000;
-  }
-
-  .yes {
-    color: #7cd64b;
-    font-weight: 600;
-  }
-
-  .no {
-    color: #ff4d4d;
-    font-weight: 600;
-  }
-
-  /* SAME CELL LAYOUT */
-  .invoice-cell {
-    position: relative;
-    padding-bottom: 30px;
-  }
-
-  .cell-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-  }
-
-  button {
-    position: absolute;
-    bottom: -14px;
-    /* 👈 THIS puts it on the border line */
-    left: 50%;
-    transform: translateX(-50%);
-    background: #000;
-    border: 2px solid #7cd64b;
-    color: #7cd64b;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    cursor: pointer;
-    z-index: 3;
-    /* above border */
   }
 }
 
-/* ===== MOBILE ===== */
-@media (max-width: 768px) {
-  .packages {
-    padding: 60px 16px;
-  }
-
-  .packages-header h2 {
-    font-size: 30px;
-  }
-}
-
-
-
-
-
-
-
-
-
+/* ===== ADDITIONAL SERVICES SECTION ===== */
 .additional-services {
-  background:
-    radial-gradient(circle at right, rgba(124, 214, 75, 0.2), transparent 55%),
-    #000;
-  padding: 10px 20px;
-  color: #fff;
-  font-family: "Poppins", sans-serif;
+  padding: 80px 20px;
+  position: relative;
 }
 
-/* ===== HEADER ===== */
 .section-header {
   text-align: center;
   margin-bottom: 50px;
-
-  h2 {
-    font-size: 34px;
-    margin: 0;
-  }
-
-  .underline {
-    width: 70px;
-    height: 3px;
-    background: #7cd64b;
-    margin: 10px auto 16px;
-    display: block;
-  }
-
-  p {
-    font-size: 14px;
-    opacity: 0.9;
-  }
 }
 
-/* ===== MAIN BOX ===== */
+.section-header h2 {
+  font-family: "Heading", sans-serif;
+  font-size: 34px;
+  margin: 0;
+}
+
+.section-header p {
+  font-family: "Arimo", sans-serif;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+/* SERVICES BOX */
 .services-box {
   max-width: 1000px;
-  margin: 0 auto;
+  margin: 0 auto 50px;
   border: 1.5px solid #7cd64b;
   border-radius: 22px;
   padding: 40px;
@@ -356,65 +196,254 @@
   background: rgba(0, 0, 0, 0.75);
 }
 
-/* ===== COLUMNS ===== */
+/* COLUMNS */
 .service-col {
   flex: 1;
-
-  h3 {
-    font-size: 22px;
-    color: #7cd64b;
-    margin-bottom: 18px;
-  }
-
-  ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-
-    li {
-      position: relative;
-      padding-left: 18px;
-      margin-bottom: 14px;
-      font-size: 14px;
-      line-height: 1.6;
-
-      &::before {
-        content: "•";
-        position: absolute;
-        left: 0;
-        color: #7cd64b;
-        font-size: 18px;
-        line-height: 1;
-      }
-    }
-  }
 }
 
-/* ===== DIVIDER ===== */
+.service-col h3 {
+  font-size: 22px;
+  color: #7cd64b;
+  margin-bottom: 18px;
+  font-family: "Arimo", sans-serif;
+}
+
+.service-col ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-family: "Inter", sans-serif;
+}
+
+.service-col ul li {
+  position: relative;
+  padding-left: 18px;
+  margin-bottom: 14px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.service-col ul li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #7cd64b;
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* DIVIDER */
 .divider {
   width: 1px;
   background: #7cd64b;
   margin: 0 40px;
 }
 
+/* ===== CONNECT US BUTTON ===== */
+.connect-us-container {
+  text-align: center;
+  margin-top: 40px;
+}
+
+.connect-us-btn {
+  background: #7cd64b;
+  color: #000;
+  border: none;
+  padding: 14px 36px;
+  border-radius: 30px;
+  font-family: "Arimo", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: #6ac94c;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(124, 214, 75, 0.3);
+  }
+}
+
+/* ===== CONNECT US MODAL ===== */
+.connect-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.connect-modal-container {
+  background: #000;
+  border: 2px solid #7cd64b;
+  border-radius: 12px;
+  padding: 40px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+  color: #fff;
+  margin: auto;
+}
+
+.connect-modal-close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: none;
+  border: none;
+  color: #7cd64b;
+  font-size: 28px;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: rgba(124, 214, 75, 0.2);
+  }
+}
+
+.connect-modal-heading {
+  font-family: "Heading", sans-serif;
+  color: #7cd64b;
+  font-size: 28px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.connect-modal-subtitle {
+  font-family: "Arimo", sans-serif;
+  text-align: center;
+  color: #ccc;
+  margin-bottom: 30px;
+  font-size: 14px;
+}
+
+/* CONNECT FORM */
+.connect-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.connect-form-row {
+  width: 100%;
+}
+
+.connect-form-input {
+  width: 94%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 14px;
+  color: #fff;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  transition: all 0.3s ease;
+
+  &::placeholder {
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #7cd64b;
+    box-shadow: 0 0 0 2px rgba(124, 214, 75, 0.2);
+  }
+}
+
+.connect-form-select {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 14px;
+  color: #fff;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  appearance: none;
+  cursor: pointer;
+
+  option {
+    background: #000;
+    color: #fff;
+    font-size: 14px;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #7cd64b;
+  }
+}
+
+.connect-submit-btn {
+  width: 100%;
+  padding: 16px;
+  background: #7cd64b;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-family: "Arimo", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: #6ac94c;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(124, 214, 75, 0.4);
+  }
+}
+
+/* ===== MOBILE RESPONSIVE ===== */
 @media (max-width: 768px) {
+  .packages,
+  .additional-services {
+    padding: 60px 16px;
+  }
+
+  .packages-header h2,
+  .section-header h2 {
+    font-size: 30px;
+  }
+
+  /* Table stays scrollable horizontally on mobile */
+  .table-wrapper {
+    overflow-x: auto;
+  }
+
+  .pricing-table {
+    min-width: 1100px;
+  }
+
+  /* Additional Services - stacked on mobile */
   .services-box {
+    flex-direction: column;
     border: none;
-    /* remove main wrapper border */
     border-radius: 0;
     padding: 0;
     background: transparent;
-    flex-direction: column;
-  }
-
-  .divider {
-    display: none;
-    /* remove center divider */
+    margin-bottom: 30px;
   }
 
   .service-col {
     border: 1.5px solid #7cd64b;
-    /* ✅ each column has its own border */
     border-radius: 18px;
     padding: 24px;
     margin-bottom: 24px;
@@ -423,5 +452,55 @@
 
   .service-col:last-child {
     margin-bottom: 0;
+  }
+
+  .divider {
+    display: none;
+  }
+
+  /* Connect Us Button */
+  .connect-us-btn {
+    padding: 12px 28px;
+    font-size: 14px;
+  }
+
+  /* Connect Modal */
+  .connect-modal-container {
+    padding: 30px 20px;
+    margin: 10px;
+  }
+
+  .connect-modal-heading {
+    font-size: 24px;
+  }
+
+  .connect-modal-subtitle {
+    font-size: 13px;
+  }
+
+  .connect-form-input,
+  .connect-form-select {
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  .connect-form-input
+  {
+    width: 91%;
+  }
+
+  .connect-submit-btn {
+    padding: 14px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .connect-modal-container {
+    padding: 25px 16px;
+  }
+  
+  .connect-modal-heading {
+    font-size: 22px;
   }
 }

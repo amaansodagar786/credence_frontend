@@ -1,7 +1,65 @@
-import React from "react";
+import React, { useState } from "react";
 import "./PackagePlans.scss";
+import { useModal } from "../Model/ModalProvider";
 
 const PackagePlans = () => {
+  const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    mobile: "",
+    companyName: "",
+    selectedService: ""
+  });
+
+  // Get modal functions
+  const { openAgreementModal } = useModal();
+
+  const serviceOptions = [
+    "New Tax Card / New Tax Declaration / Amendment",
+    "Salary Processing (Palkka)",
+    "Financial Statement (Interim / Year-End) – Toiminimi",
+    "Financial Statement (Interim / Year-End) – OY",
+    "Tax Return (Year-End)",
+    "Other Accounting Services"
+  ];
+
+  // Handle Select Plan button click
+  const handleSelectPlan = (planName) => {
+    console.log('Selected plan:', planName);
+    openAgreementModal(planName);
+  };
+
+  const handleOpenModal = () => {
+    setIsConnectModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsConnectModalOpen(false);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log("Form submitted:", formData);
+    alert("Thank you! We will connect with you shortly.");
+    setFormData({
+      name: "",
+      email: "",
+      mobile: "",
+      companyName: "",
+      selectedService: ""
+    });
+    handleCloseModal();
+  };
+
   return (
     <>
       <section className="packages">
@@ -70,42 +128,46 @@ const PackagePlans = () => {
                 <td className="restaurant">Mon–Fri (9am–4pm)</td>
               </tr>
 
-              {/* ✅ SAME CELL: Yes/No + Button */}
               <tr>
                 <td className="features invoice-cell">Invoice Generation via Email</td>
-
                 <td className="lite invoice-cell">
                   <div className="cell-content">
                     <span className="yes">✔ Yes</span>
-                    <button>Select Plan</button>
+                    <button onClick={() => handleSelectPlan('Lite')}>
+                      Select Plan
+                    </button>
                   </div>
                 </td>
-
                 <td className="taxi invoice-cell">
                   <div className="cell-content">
                     <span className="yes">✔ Yes</span>
-                    <button>Select Plan</button>
+                    <button onClick={() => handleSelectPlan('Taxi')}>
+                      Select Plan
+                    </button>
                   </div>
                 </td>
-
                 <td className="premium invoice-cell">
                   <div className="cell-content">
                     <span className="yes">✔ Yes</span>
-                    <button>Select Plan</button>
+                    <button onClick={() => handleSelectPlan('Premium')}>
+                      Select Plan
+                    </button>
                   </div>
                 </td>
-
                 <td className="pro invoice-cell">
                   <div className="cell-content">
                     <span className="yes">✔ Yes</span>
-                    <button>Select Plan</button>
+                    <button onClick={() => handleSelectPlan('Pro')}>
+                      Select Plan
+                    </button>
                   </div>
                 </td>
-
                 <td className="restaurant invoice-cell">
                   <div className="cell-content">
                     <span className="no">✖ No</span>
-                    <button>Select Plan</button>
+                    <button onClick={() => handleSelectPlan('Restaurant')}>
+                      Select Plan
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -113,8 +175,6 @@ const PackagePlans = () => {
           </table>
         </div>
       </section>
-
-
 
       <section className="additional-services">
         <div className="section-header">
@@ -124,7 +184,6 @@ const PackagePlans = () => {
         </div>
 
         <div className="services-box">
-          {/* LEFT */}
           <div className="service-col">
             <h3>Additional Service</h3>
             <ul>
@@ -137,23 +196,112 @@ const PackagePlans = () => {
             </ul>
           </div>
 
-          {/* DIVIDER */}
           <div className="divider"></div>
 
-          {/* RIGHT */}
           <div className="service-col">
             <h3>Price (Excl. VAT)</h3>
             <ul>
               <li>€25</li>
               <li>€20 per salary</li>
-              <li>Equivalent to <b>1 month’s accounting fee</b></li>
+              <li>Equivalent to <b>1 month's accounting fee</b></li>
               <li>€150</li>
-              <li>Equivalent to <b>1 month’s accounting fee</b></li>
+              <li>Equivalent to <b>1 month's accounting fee</b></li>
               <li>€50 per hour</li>
             </ul>
           </div>
         </div>
+
+        {/* CONNECT US BUTTON */}
+        <div className="connect-us-container">
+          <button className="connect-us-btn" onClick={handleOpenModal}>
+            CONNECT US
+          </button>
+        </div>
       </section>
+
+      {/* CONNECT US MODAL */}
+      {isConnectModalOpen && (
+        <div className="connect-modal-overlay" onClick={handleCloseModal}>
+          <div className="connect-modal-container" onClick={(e) => e.stopPropagation()}>
+            <button className="connect-modal-close-btn" onClick={handleCloseModal}>
+              ×
+            </button>
+
+            <h2 className="connect-modal-heading">Connect With Us</h2>
+            <p className="connect-modal-subtitle">Get a quote for additional services</p>
+
+            <form onSubmit={handleSubmit} className="connect-form">
+              <div className="connect-form-row">
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="FULL NAME*"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required
+                  className="connect-form-input"
+                />
+              </div>
+
+              <div className="connect-form-row">
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="EMAIL ADDRESS*"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                  className="connect-form-input"
+                />
+              </div>
+
+              <div className="connect-form-row">
+                <input
+                  type="tel"
+                  name="mobile"
+                  placeholder="MOBILE NUMBER*"
+                  value={formData.mobile}
+                  onChange={handleInputChange}
+                  required
+                  className="connect-form-input"
+                />
+              </div>
+
+              <div className="connect-form-row">
+                <input
+                  type="text"
+                  name="companyName"
+                  placeholder="COMPANY NAME"
+                  value={formData.companyName}
+                  onChange={handleInputChange}
+                  className="connect-form-input"
+                />
+              </div>
+
+              <div className="connect-form-row">
+                <select
+                  name="selectedService"
+                  value={formData.selectedService}
+                  onChange={handleInputChange}
+                  required
+                  className="connect-form-select"
+                >
+                  <option value="">SELECT SERVICE*</option>
+                  {serviceOptions.map((service, index) => (
+                    <option key={index} value={service}>
+                      {service}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button type="submit" className="connect-submit-btn">
+                SEND REQUEST
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 };

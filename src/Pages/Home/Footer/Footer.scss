@@ -1,0 +1,237 @@
+// ===== FONT IMPORTS =====
+@import url('https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400..700;1,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+@font-face {
+  font-family: "LightHeading";
+  src: url("../../../assets/fonts/cy-grotesk-wide-light.ttf") format("truetype");
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Heading";
+  src: url("../../../assets/fonts/cy-grotesk-wide.ttf") format("truetype");
+  font-style: normal;
+  font-display: swap;
+}
+
+// ===== MAIN FOOTER =====
+.credence-global-footer {
+  width: 100%;
+  background: #000;
+  display: flex;
+  justify-content: center;
+  padding: 55px 0 10px;
+  color: #fff;
+}
+
+.fgf-wrapper {
+  width: 100%;
+  max-width: 1150px;
+  padding: 0 20px;
+
+  @media (max-width: 768px) {
+    padding: 0 20px;
+  }
+}
+
+// ===== TOP SECTION =====
+.fgf-top-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 80px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 30px;
+    text-align: center;
+  }
+}
+
+// ===== COLUMNS =====
+.fgf-col {
+  flex: 1;
+}
+
+// ===== BRAND COLUMN =====
+.fgf-brand-col {
+  @media (max-width: 768px) {
+    order: 1;
+  }
+
+  h2 {
+    font-family: "Heading", sans-serif;
+    color: #7cd64b;
+    letter-spacing: 6px;
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    margin-top: 0px;
+  }
+
+  p {
+    font-family: "Inter", sans-serif;
+    margin-top: 14px;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #ccc;
+  }
+}
+
+// ===== LINKS COLUMN =====
+.fgf-links-col {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+
+  @media (max-width: 768px) {
+    order: 2;
+    align-items: center;
+  }
+
+  a {
+    font-family: "Heading", sans-serif;
+    color: #fff;
+    text-decoration: none;
+    font-size: 15px;
+    position: relative;
+    width: fit-content;
+    transition: color 0.3s ease;
+
+    &:hover {
+      color: #7cd64b;
+    }
+
+    &::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -7px;
+      width: 45px;
+      height: 2px;
+      background: #7cd64b;
+      transition: width 0.3s ease;
+    }
+
+    &:hover::after {
+      width: 100%;
+    }
+  }
+}
+
+// ===== CONTACT COLUMN =====
+.fgf-contact-col {
+  @media (max-width: 768px) {
+    order: 3;
+    text-align: center;
+  }
+
+  p {
+    font-family: "Heading", sans-serif;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #ccc;
+
+    @media (max-width: 768px) {
+      justify-content: center;
+    }
+  }
+
+  svg {
+    color: #7cd64b;
+    margin-top: 4px;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+}
+
+// ===== DIVIDER LINE =====
+.fgf-divider-line {
+  width: 100%;
+  height: 1px;
+  background: #7cd64b;
+  margin: 15px 0 15px;
+
+  @media (max-width: 768px) {
+    margin: 25px 0 18px;
+  }
+}
+
+// ===== SOCIAL ICONS ROW - RIGHT ALIGNED =====
+.fgf-social-row {
+  display: flex;
+  justify-content: flex-end; // ✅ RIGHT ALIGNED
+  margin-bottom: 10px;
+
+  @media (max-width: 768px) {
+    justify-content: center; // ✅ CENTERED ON MOBILE
+    margin-bottom: 25px;
+  }
+}
+
+// ===== SOCIAL ICONS =====
+.fgf-social-icons {
+  display: flex;
+  gap: 16px;
+
+  svg {
+    color: #7cd64b;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      color: #fff;
+      transform: translateY(-2px);
+    }
+  }
+}
+
+// ===== COPYRIGHT ROW - CENTERED =====
+.fgf-copyright-row {
+  display: flex;
+  justify-content: center; // ✅ ALWAYS CENTERED
+  text-align: center;
+  
+}
+
+// ===== COPYRIGHT TEXT =====
+.fgf-copyright-text {
+  .desktop-view {
+    display: block;
+    font-family: "Inter", sans-serif;
+    font-size: 13px;
+    color: #ccc;
+
+    @media (max-width: 768px) {
+      display: none; // ✅ HIDE ON MOBILE
+    }
+
+    span {
+      color: #7cd64b;
+      margin-left: 6px;
+      font-weight: 600;
+    }
+  }
+
+  .mobile-view {
+    display: none; // ✅ HIDE ON DESKTOP
+
+    @media (max-width: 768px) {
+      display: block; // ✅ SHOW ON MOBILE
+      font-family: "Inter", sans-serif;
+      font-size: 13px;
+      color: #ccc;
+      line-height: 1.6;
+    }
+
+    span {
+      color: #7cd64b;
+      font-weight: 600;
+    }
+  }
+}
