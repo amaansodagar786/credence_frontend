@@ -263,26 +263,37 @@ const EmployeeAssignedClients = () => {
     try {
       setAddingNote(true);
 
-      // Determine category type - if it's a custom category, use 'other'
-      const categoryType = selectedFileForNote.categoryType === 'main'
-        ? 'other'  // Custom categories should be 'other'
-        : selectedFileForNote.categoryType;
+      // Debug log
+      console.log("Selected file data:", selectedFileForNote);
 
       const noteData = {
         clientId: selectedFileForNote.clientId,
         year: selectedFileForNote.year,
         month: selectedFileForNote.month,
-        categoryType: categoryType,  // Fixed: should be 'other' for custom categories
-        categoryName: selectedFileForNote.categoryName, // For 'other' categories
+        categoryType: selectedFileForNote.categoryType, // Should be 'sales', 'purchase', 'bank', or 'other'
         fileName: selectedFileForNote.file.fileName,
         note: newNoteText.trim()
       };
 
-      await axios.post(
-        `${import.meta.env.VITE_API_URL}/employee/add-file-note`,
+      // Only add categoryName if categoryType is 'other'
+      if (selectedFileForNote.categoryType === 'other') {
+        noteData.categoryName = selectedFileForNote.categoryName;
+      }
+
+      console.log("Sending note data:", noteData);
+
+      const response = await axios.post(
+        `http://localhost:5000/employee/add-file-note`,
         noteData,
-        { withCredentials: true }
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
       );
+
+      console.log("Response:", response.data);
 
       // Refresh the files data
       await loadAssignmentFiles(
@@ -294,7 +305,8 @@ const EmployeeAssignedClients = () => {
       closeAddNoteModal();
     } catch (error) {
       console.error("Error adding note:", error);
-      alert("Failed to add note. Please try again.");
+      console.error("Error response:", error.response?.data);
+      alert(`Failed to add note: ${error.response?.data?.message || error.message}`);
     } finally {
       setAddingNote(false);
     }
@@ -543,8 +555,15 @@ const EmployeeAssignedClients = () => {
                   <button
                     className="action-btn add-note"
                     onClick={() => {
-                      // Determine the correct category type
-                      const catType = categoryName ? 'other' : category?.categoryType || 'main';
+                      // For main categories, extract first word (e.g., "Purchase Documents" -> "purchase")
+                      // For other categories, we need 'other' as categoryType
+                      let catType;
+                      if (categoryName) {
+                        catType = 'other';
+                      } else {
+                        // Extract first word and convert to lowercase
+                        catType = title.toLowerCase().split(' ')[0];
+                      }
                       openAddNoteModal(file, catType, categoryName);
                     }}
                     title="Add Employee Note"
@@ -610,7 +629,7 @@ const EmployeeAssignedClients = () => {
                 "Sales Documents",
                 activeFilesData.categories?.sales?.files,
                 activeFilesData.categories?.sales,
-                "sales"
+                null  // Main categories don't need categoryName
               )}
 
               {/* Purchase Files */}
@@ -618,15 +637,14 @@ const EmployeeAssignedClients = () => {
                 "Purchase Documents",
                 activeFilesData.categories?.purchase?.files,
                 activeFilesData.categories?.purchase,
-                "purchase"
+                null  // Changed from "purchase"
               )}
 
-              {/* Bank Files */}
               {renderFilesSection(
                 "Bank Documents",
                 activeFilesData.categories?.bank?.files,
                 activeFilesData.categories?.bank,
-                "bank"
+                null  // Changed from "bank"
               )}
 
               {/* Other Categories */}
