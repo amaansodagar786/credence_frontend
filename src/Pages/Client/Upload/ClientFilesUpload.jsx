@@ -165,7 +165,7 @@ const ClientFilesUpload = () => {
 
         try {
             const monthResponse = await axios.get(
-                `${import.meta.env.VITE_API_URL}/client-upload/month-data`,
+                `${import.meta.env.VITE_API_URL}/clientupload/month-data`,
                 {
                     params: { year: y, month: m },
                     withCredentials: true
@@ -183,7 +183,7 @@ const ClientFilesUpload = () => {
             })));
 
             const employeeResponse = await axios.get(
-                `${import.meta.env.VITE_API_URL}/client-upload/employee-assignment`,
+                `${import.meta.env.VITE_API_URL}/clientupload/employee-assignment`,
                 {
                     params: { year: y, month: m },
                     withCredentials: true
@@ -219,7 +219,7 @@ const ClientFilesUpload = () => {
 
         try {
             const response = await axios.get(
-                `${import.meta.env.VITE_API_URL}/client-upload/deleted-files`,
+                `${import.meta.env.VITE_API_URL}/clientupload/deleted-files`,
                 {
                     params: { year, month },
                     withCredentials: true
@@ -389,7 +389,7 @@ const ClientFilesUpload = () => {
 
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_API_URL}/client-upload/upload`,
+                `${import.meta.env.VITE_API_URL}/clientupload/upload`,
                 formData,
                 {
                     withCredentials: true,
@@ -440,7 +440,7 @@ const ClientFilesUpload = () => {
 
         try {
             const response = await axios.delete(
-                `${import.meta.env.VITE_API_URL}/client-upload/delete-file`,
+                `${import.meta.env.VITE_API_URL}/clientupload/delete-file`,
                 {
                     data: {
                         year,
@@ -488,7 +488,7 @@ const ClientFilesUpload = () => {
 
         try {
             await axios.post(
-                `${import.meta.env.VITE_API_URL}/client-upload/save-lock`,
+                `${import.meta.env.VITE_API_URL}/clientupload/save-lock`,
                 { year, month },
                 { withCredentials: true }
             );
