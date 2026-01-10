@@ -623,7 +623,7 @@ const ClientFilesUpload = () => {
                                 </button>
                                 {canUpdateCategory(categoryType, categoryName) && !category.isLocked && (
                                     <>
-                                        <button
+                                        {/* <button
                                             className="btn-replace-small"
                                             onClick={() => {
                                                 const fileInput = document.createElement('input');
@@ -646,7 +646,7 @@ const ClientFilesUpload = () => {
                                             title="Replace this file"
                                         >
                                             <FiRotateCw size={14} />
-                                        </button>
+                                        </button> */}
                                         <button
                                             className="btn-delete-small"
                                             onClick={() => deleteFile(categoryType, file.fileName, categoryName)}

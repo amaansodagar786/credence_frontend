@@ -19,7 +19,6 @@
 
   h2 {
     font-size: 36px;
-    font-weight: 600;
     margin: 0;
   }
 
@@ -27,7 +26,8 @@
     width: 60px;
     height: 3px;
     background: #7cd64b;
-    margin: 8px auto 14px;
+    margin: 10px auto 18px;
+    display: block;
   }
 
   p {
@@ -38,24 +38,24 @@
 
 /* ===== TABLE WRAPPER ===== */
 .table-wrapper {
-    width: 1250px;
   overflow-x: auto;
+  width: 1250px;
   margin: 0 auto;
 }
 
 /* ===== TABLE ===== */
 .pricing-table {
   width: 100%;
-  min-width: 900px;
+  min-width: 1100px;
   border-collapse: collapse;
-  border: 1px solid #7cd64b;
+  border: 2px solid #7cd64b;
 
   th {
-    background: #7cd64b;
+    background: #7cd64b; /* ✅ HEADER ALWAYS GREEN */
     color: #000;
     padding: 14px;
     font-weight: 600;
-    border-right: 1px solid #000;
+    border: 1px solid #000;
   }
 
   td {
@@ -70,38 +70,55 @@
     font-weight: 500;
   }
 
-  tbody tr:nth-child(even) td:not(:first-child) {
-    background: #555;
-  }
+  /* ===== BODY COLUMN COLORS ONLY ===== */
+  .features { background: #555; }
+  .lite { background: #000; }
+  .taxi { background: #555; }
+  .premium { background: #000; }
+  .pro { background: #555; }
+  .restaurant { background: #000; }
 
-  tbody tr:nth-child(odd) td:not(:first-child) {
-    background: #000;
-  }
+  .yes { color: #7cd64b; font-weight: 600; }
+  .no { color: #ff4d4d; font-weight: 600; }
 
-  .yes {
-    color: #7cd64b;
-    font-weight: 600;
-  }
-
-  .no {
-    color: #ff4d4d;
-    font-weight: 600;
-  }
-
+  /* ===== ACTION ROW ===== */
   .action-row td {
-    background: #000;
-    border-top: none;
+    border-top: 2px solid #7cd64b;
   }
 
   button {
     background: transparent;
     border: 2px solid #7cd64b;
     color: #7cd64b;
-    padding: 6px 16px;
+    padding: 6px 18px;
     border-radius: 20px;
     font-size: 12px;
     cursor: pointer;
   }
+}
+
+
+
+/* ===== ACTION ROW ===== */
+.action-row td {
+  position: relative;
+  padding: 10px 0 0;     /* remove vertical gap */
+  border-top: 2px solid #7cd64b;
+}
+
+/* Button sits ON the border line */
+.action-row button {
+  position: relative;
+  top: 50%;              /* pushes it onto the border */
+  transform: translateY(50%);
+  background: #000;
+  border: 2px solid #7cd64b;
+  color: #7cd64b;
+  padding: 6px 18px;
+  border-radius: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 2;            /* above the border line */
 }
 
 /* ===== MOBILE ===== */
@@ -112,9 +129,5 @@
 
   .packages-header h2 {
     font-size: 30px;
-  }
-
-  .table-wrapper {
-    -webkit-overflow-scrolling: touch;
   }
 }

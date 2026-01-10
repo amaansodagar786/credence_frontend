@@ -9,8 +9,8 @@ const Home = () => {
     <>
  
         <Hero/>
-        {/* <Services/>
-        <PackagePlans/> */}
+        <Services/>
+        <PackagePlans/>
     
         
     </>

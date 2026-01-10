@@ -4,14 +4,12 @@ import "./PackagePlans.scss";
 const PackagePlans = () => {
   return (
     <section className="packages">
-      {/* Header */}
       <div className="packages-header">
         <h2>Package Plans</h2>
-        <span className="underline" />
+        <span className="underline"></span>
         <p>Monthly Fixed Pricing | VAT Excluded</p>
       </div>
 
-      {/* Table Wrapper for scroll */}
       <div className="table-wrapper">
         <table className="pricing-table">
           <thead>
@@ -27,66 +25,66 @@ const PackagePlans = () => {
 
           <tbody>
             <tr>
-              <td>Monthly Price</td>
-              <td>€40</td>
-              <td>€45</td>
-              <td>€50</td>
-              <td>€60</td>
-              <td>€80</td>
+              <td className="features">Monthly Price</td>
+              <td className="lite">€40</td>
+              <td className="taxi">€45</td>
+              <td className="premium">€50</td>
+              <td className="pro">€60</td>
+              <td className="restaurant">€80</td>
             </tr>
 
             <tr>
-              <td>Income Sources Covered</td>
-              <td>1</td>
-              <td>1</td>
-              <td>2</td>
-              <td>3</td>
-              <td>1</td>
+              <td className="features">Income Sources Covered</td>
+              <td className="lite">1</td>
+              <td className="taxi">1</td>
+              <td className="premium">2</td>
+              <td className="pro">3</td>
+              <td className="restaurant">1</td>
             </tr>
 
             <tr>
-              <td>Outgoing Invoices</td>
-              <td>Up to 2</td>
-              <td>Up to 4</td>
-              <td>Up to 4</td>
-              <td>Up to 8</td>
-              <td>Up to 10</td>
+              <td className="features">Outgoing Invoices</td>
+              <td className="lite">Up to 2</td>
+              <td className="taxi">Up to 4</td>
+              <td className="premium">Up to 4</td>
+              <td className="pro">Up to 8</td>
+              <td className="restaurant">Up to 10</td>
             </tr>
 
             <tr>
-              <td>Expense Receipts</td>
-              <td>Up to 10</td>
-              <td>Up to 40</td>
-              <td>Up to 40</td>
-              <td>Up to 50</td>
-              <td>Up to 50</td>
+              <td className="features">Expense Receipts</td>
+              <td className="lite">Up to 10</td>
+              <td className="taxi">Up to 40</td>
+              <td className="premium">Up to 40</td>
+              <td className="pro">Up to 50</td>
+              <td className="restaurant">Up to 50</td>
             </tr>
 
             <tr>
-              <td>Support Availability</td>
-              <td>Mon–Fri (9am–4pm)</td>
-              <td>Mon–Fri (9am–4pm)</td>
-              <td>Mon–Fri (9am–4pm)</td>
-              <td>Mon–Fri (9am–4pm)</td>
-              <td>Mon–Fri (9am–4pm)</td>
+              <td className="features">Support Availability</td>
+              <td className="lite">Mon–Fri (9am–4pm)</td>
+              <td className="taxi">Mon–Fri (9am–4pm)</td>
+              <td className="premium">Mon–Fri (9am–4pm)</td>
+              <td className="pro">Mon–Fri (9am–4pm)</td>
+              <td className="restaurant">Mon–Fri (9am–4pm)</td>
             </tr>
 
             <tr>
-              <td>Invoice Generation via Email</td>
-              <td className="yes">✔ Yes</td>
-              <td className="yes">✔ Yes</td>
-              <td className="yes">✔ Yes</td>
-              <td className="yes">✔ Yes</td>
-              <td className="no">✖ No</td>
+              <td className="features">Invoice Generation via Email</td>
+              <td className="lite yes">✔ Yes</td>
+              <td className="taxi yes">✔ Yes</td>
+              <td className="premium yes">✔ Yes</td>
+              <td className="pro yes">✔ Yes</td>
+              <td className="restaurant no">✖ No</td>
             </tr>
 
             <tr className="action-row">
-              <td></td>
-              <td><button>Select Plan</button></td>
-              <td><button>Select Plan</button></td>
-              <td><button>Select Plan</button></td>
-              <td><button>Select Plan</button></td>
-              <td><button>Select Plan</button></td>
+              <td className="features"></td>
+              <td className="lite"><button>Select Plan</button></td>
+              <td className="taxi"><button>Select Plan</button></td>
+              <td className="premium"><button>Select Plan</button></td>
+              <td className="pro"><button>Select Plan</button></td>
+              <td className="restaurant"><button>Select Plan</button></td>
             </tr>
           </tbody>
         </table>
