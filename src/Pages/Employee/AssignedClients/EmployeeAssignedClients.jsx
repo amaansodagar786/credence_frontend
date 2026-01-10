@@ -283,7 +283,7 @@ const EmployeeAssignedClients = () => {
       console.log("Sending note data:", noteData);
 
       const response = await axios.post(
-        `http://localhost:5000/employee/add-file-note`,
+        `${import.meta.env.VITE_API_URL}/employee/add-file-note`,
         noteData,
         {
           withCredentials: true,
