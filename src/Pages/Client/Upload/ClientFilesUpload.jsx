@@ -633,29 +633,29 @@ const ClientFilesUpload = () => {
                                 {showEmployeeNotes[categoryName
                                     ? `${categoryType}-${categoryName}-${index}`
                                     : `${categoryType}-${index}`] && file.notes && file.notes.length > 0 && (
-                                    <div className="employee-notes-section">
-                                        <div className="notes-label">
-                                            <FiUser size={14} /> Employee Feedback:
-                                        </div>
-                                        <div className="notes-list">
-                                            {file.notes.map((note, noteIndex) => (
-                                                <div key={noteIndex} className="employee-note-item">
-                                                    <div className="employee-note-text">
-                                                        <strong>Note:</strong> {note.note}
+                                        <div className="employee-notes-section">
+                                            <div className="notes-label">
+                                                <FiUser size={14} /> Employee Feedback:
+                                            </div>
+                                            <div className="notes-list">
+                                                {file.notes.map((note, noteIndex) => (
+                                                    <div key={noteIndex} className="employee-note-item">
+                                                        <div className="employee-note-text">
+                                                            <strong>Note:</strong> {note.note}
+                                                        </div>
+                                                        <div className="employee-note-meta">
+                                                            <span className="employee-note-by">
+                                                                <FiUser size={12} /> {note.employeeName || note.addedBy || 'Employee'}
+                                                            </span>
+                                                            <span className="employee-note-date">
+                                                                <FiClock size={12} /> {new Date(note.addedAt).toLocaleDateString()}
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                    <div className="employee-note-meta">
-                                                        <span className="employee-note-by">
-                                                            <FiUser size={12} /> {note.employeeName || note.addedBy || 'Employee'}
-                                                        </span>
-                                                        <span className="employee-note-date">
-                                                            <FiClock size={12} /> {new Date(note.addedAt).toLocaleDateString()}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
                             </div>
                             <div className="file-actions">
                                 <button
@@ -774,10 +774,21 @@ const ClientFilesUpload = () => {
     const renderDeleteModal = () => {
         if (!deleteModal.isOpen) return null;
 
+        // Handle overlay click - only close when clicking on overlay itself
+        const handleOverlayClick = (e) => {
+            // Only close if clicking directly on the overlay (not its children)
+            if (e.target === e.currentTarget) {
+                closeDeleteModal();
+            }
+        };
+
         return (
             <div className="delete-confirmation-modal">
-                <div className="modal-overlay" onClick={closeDeleteModal}></div>
-                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                <div
+                    className="modal-overlay"
+                    onClick={handleOverlayClick}
+                ></div>
+                <div className="modal-content">
                     <div className="modal-header">
                         <h3>
                             <FiAlertCircle size={20} /> Confirm Delete
@@ -850,8 +861,8 @@ const ClientFilesUpload = () => {
         const noteRequired = isNoteRequired(type);
         const hasNewFiles = newFiles[type] && newFiles[type].length > 0;
         const updateMode = isUpdateMode(type);
-        
-        const hasNotesInCategory = category?.files?.some(file => 
+
+        const hasNotesInCategory = category?.files?.some(file =>
             file.notes && file.notes.length > 0
         );
 
@@ -940,7 +951,7 @@ const ClientFilesUpload = () => {
                                 )}
                             </button>
                         ) : null}
-                        
+
                         {updateMode ? (
                             <button
                                 className="btn-upload-lock"
@@ -965,8 +976,8 @@ const ClientFilesUpload = () => {
         const noteRequired = isNoteRequired("other", cat.categoryName);
         const hasNewFiles = cat.newFiles && cat.newFiles.length > 0;
         const updateMode = isUpdateMode("other", cat.categoryName);
-        
-        const hasNotesInCategory = category?.files?.some(file => 
+
+        const hasNotesInCategory = category?.files?.some(file =>
             file.notes && file.notes.length > 0
         );
 
@@ -1057,7 +1068,7 @@ const ClientFilesUpload = () => {
                                 )}
                             </button>
                         ) : null}
-                        
+
                         {updateMode ? (
                             <button
                                 className="btn-upload-lock"
