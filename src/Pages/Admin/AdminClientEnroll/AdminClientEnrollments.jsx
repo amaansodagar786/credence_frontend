@@ -8,6 +8,15 @@ const AdminClientEnrollments = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [modalData, setModalData] = useState({
+    enrollId: null,
+    name: "",
+    action: "",
+    actionText: ""
+  });
+  const [processing, setProcessing] = useState(false);
+  const [processingId, setProcessingId] = useState(null); // Track which enrollment is being processed
 
   const fetchEnrollments = async () => {
     try {
@@ -29,27 +38,101 @@ const AdminClientEnrollments = () => {
     fetchEnrollments();
   }, []);
 
-  const handleAction = async (enrollId, action, name) => {
+  const openConfirmationModal = (enrollId, action, name) => {
     const actionText = action === "APPROVE" ? "approve" : "reject";
-    const confirmation = window.confirm(
-      `Are you sure you want to ${actionText} the enrollment request for "${name}"?`
-    );
+    setModalData({
+      enrollId,
+      name,
+      action,
+      actionText
+    });
+    setShowModal(true);
+  };
 
-    if (!confirmation) return;
+  const closeModal = () => {
+    setShowModal(false);
+    setModalData({
+      enrollId: null,
+      name: "",
+      action: "",
+      actionText: ""
+    });
+  };
+
+  const handleAction = async () => {
+    if (!modalData.enrollId || !modalData.action) return;
+    
+    setProcessing(true);
+    setProcessingId(modalData.enrollId);
 
     try {
       await axios.post(
         `${import.meta.env.VITE_API_URL}/client-enrollment/action`,
-        { enrollId, action },
+        { enrollId: modalData.enrollId, action: modalData.action },
         { withCredentials: true }
       );
 
-      // Show success message
-      alert(`Client enrollment ${actionText}d successfully!`);
+      // Success - refresh data and close modal
       fetchEnrollments();
+      setShowModal(false);
+      
+      // Show success toast (you can replace this with a proper toast component)
+      const toast = document.createElement('div');
+      toast.className = 'success-toast';
+      toast.textContent = `Client enrollment ${modalData.actionText}d successfully!`;
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #10b981;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        z-index: 10000;
+        animation: slideIn 0.3s ease;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      `;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+          document.body.removeChild(toast);
+        }, 300);
+      }, 3000);
+
     } catch (error) {
-      alert(`Failed to ${actionText} enrollment. Please try again.`);
+      // Show error toast
+      const toast = document.createElement('div');
+      toast.className = 'error-toast';
+      toast.textContent = `Failed to ${modalData.actionText} enrollment. Please try again.`;
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #ef4444;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        z-index: 10000;
+        animation: slideIn 0.3s ease;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+      `;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+          document.body.removeChild(toast);
+        }, 300);
+      }, 3000);
+      
       console.error("Action error:", error);
+    } finally {
+      setProcessing(false);
+      setProcessingId(null);
     }
   };
 
@@ -79,6 +162,63 @@ const AdminClientEnrollments = () => {
   return (
     <AdminLayout>
       <div className="admin-enrollments">
+        {/* Confirmation Modal */}
+        {showModal && (
+          <div className="confirmation-modal-overlay">
+            <div className="confirmation-modal">
+              <div className="modal-header">
+                <h3>Confirm Action</h3>
+                <button className="modal-close-btn" onClick={closeModal} disabled={processing}>
+                  &times;
+                </button>
+              </div>
+              <div className="modal-body">
+                <div className="modal-icon">
+                  {modalData.action === "APPROVE" ? (
+                    <FiCheckCircle className="modal-icon-approve" />
+                  ) : (
+                    <FiXCircle className="modal-icon-reject" />
+                  )}
+                </div>
+                <p className="modal-message">
+                  Are you sure you want to {modalData.actionText} the enrollment request for 
+                  <strong> "{modalData.name}"</strong>?
+                </p>
+                <p className="modal-warning">
+                  This action cannot be undone.
+                </p>
+              </div>
+              <div className="modal-footer">
+                <button
+                  className="modal-btn modal-cancel-btn"
+                  onClick={closeModal}
+                  disabled={processing}
+                >
+                  Cancel
+                </button>
+                <button
+                  className={`modal-btn ${
+                    modalData.action === "APPROVE" 
+                      ? "modal-approve-btn" 
+                      : "modal-reject-btn"
+                  }`}
+                  onClick={handleAction}
+                  disabled={processing}
+                >
+                  {processing ? (
+                    <>
+                      <div className="modal-btn-spinner"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    `${modalData.actionText.charAt(0).toUpperCase() + modalData.actionText.slice(1)}`
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="enrollments-header">
           <div className="header-left">
             <h2>Client Enrollment Requests</h2>
@@ -125,7 +265,6 @@ const AdminClientEnrollments = () => {
                     <td className="name-cell">
                       <div className="client-name">
                         <strong>{item.name}</strong>
-                        {/* <small className="enroll-id">ID: {item.enrollId}</small> */}
                       </div>
                     </td>
                     <td className="email-cell">
@@ -146,18 +285,38 @@ const AdminClientEnrollments = () => {
                       {item.status === "PENDING" ? (
                         <div className="action-buttons">
                           <button
-                            className="action-btn approve-btn"
-                            onClick={() => handleAction(item.enrollId, "APPROVE", item.name)}
+                            className={`action-btn approve-btn ${processingId === item.enrollId && processing ? 'processing' : ''}`}
+                            onClick={() => processingId !== item.enrollId && openConfirmationModal(item.enrollId, "APPROVE", item.name)}
+                            disabled={processing && processingId === item.enrollId}
                           >
-                            <FiCheckCircle />
-                            <span>Approve</span>
+                            {processingId === item.enrollId && processing ? (
+                              <>
+                                <div className="btn-spinner"></div>
+                                <span>Processing...</span>
+                              </>
+                            ) : (
+                              <>
+                                <FiCheckCircle />
+                                <span>Approve</span>
+                              </>
+                            )}
                           </button>
                           <button
-                            className="action-btn reject-btn"
-                            onClick={() => handleAction(item.enrollId, "REJECT", item.name)}
+                            className={`action-btn reject-btn ${processingId === item.enrollId && processing ? 'processing' : ''}`}
+                            onClick={() => processingId !== item.enrollId && openConfirmationModal(item.enrollId, "REJECT", item.name)}
+                            disabled={processing && processingId === item.enrollId}
                           >
-                            <FiXCircle />
-                            <span>Reject</span>
+                            {processingId === item.enrollId && processing ? (
+                              <>
+                                <div className="btn-spinner"></div>
+                                <span>Processing...</span>
+                              </>
+                            ) : (
+                              <>
+                                <FiXCircle />
+                                <span>Reject</span>
+                              </>
+                            )}
                           </button>
                         </div>
                       ) : (

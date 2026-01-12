@@ -28,9 +28,7 @@ import {
     FiPlus,
     FiSave,
     FiMessageSquare,
-    // FiRefresh, 
-    FiDownload,
-    FiRotateCw 
+    FiBell
 } from "react-icons/fi";
 
 const ClientFilesUpload = () => {
@@ -77,17 +75,26 @@ const ClientFilesUpload = () => {
     const [previewDoc, setPreviewDoc] = useState(null);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-    // NEW: State for deleted files audit trail
+    // State for deleted files audit trail
     const [deletedFiles, setDeletedFiles] = useState([]);
 
-    // NEW: State for showing employee notes
+    // State for showing employee notes
     const [showEmployeeNotes, setShowEmployeeNotes] = useState({});
 
-    // NEW: State for showing category notes
+    // State for showing category notes
     const [showCategoryNotes, setShowCategoryNotes] = useState({});
 
-    // NEW: State for showing deleted files section
+    // State for showing deleted files section
     const [showDeletedFiles, setShowDeletedFiles] = useState(false);
+
+    // Delete modal state
+    const [deleteModal, setDeleteModal] = useState({
+        isOpen: false,
+        fileName: "",
+        fileType: "",
+        categoryName: null,
+        deleteNote: ""
+    });
 
     // Messages
     const [successMessage, setSuccessMessage] = useState("");
@@ -100,6 +107,69 @@ const ClientFilesUpload = () => {
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
     ];
+
+    /* ================= DELETE MODAL FUNCTIONS ================= */
+    const openDeleteModal = (type, fileName, categoryName = null) => {
+        setDeleteModal({
+            isOpen: true,
+            fileName,
+            fileType: type,
+            categoryName,
+            deleteNote: ""
+        });
+    };
+
+    const closeDeleteModal = () => {
+        setDeleteModal({
+            isOpen: false,
+            fileName: "",
+            fileType: "",
+            categoryName: null,
+            deleteNote: ""
+        });
+    };
+
+    const confirmDelete = async () => {
+        const { fileName, fileType, categoryName, deleteNote } = deleteModal;
+
+        if (!deleteNote.trim()) {
+            setErrorMessage("Please provide a reason for deletion");
+            return;
+        }
+
+        setLoading(true);
+        setErrorMessage("");
+
+        try {
+            const response = await axios.delete(
+                `${import.meta.env.VITE_API_URL}/clientupload/delete-file`,
+                {
+                    data: {
+                        year,
+                        month,
+                        type: fileType,
+                        fileName,
+                        categoryName,
+                        deleteNote
+                    },
+                    withCredentials: true
+                }
+            );
+
+            setSuccessMessage(`File "${fileName}" deleted successfully.`);
+            setTimeout(() => setSuccessMessage(""), 3000);
+
+            fetchMonthData(year, month);
+            fetchDeletedFiles();
+            closeDeleteModal();
+
+        } catch (error) {
+            console.error("Delete error:", error);
+            setErrorMessage(error.response?.data?.message || "Failed to delete file");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     /* ================= PROTECTION FUNCTIONS ================= */
     const applyProtection = () => {
@@ -235,7 +305,7 @@ const ClientFilesUpload = () => {
     useEffect(() => {
         if (year && month) {
             fetchMonthData(year, month);
-            fetchDeletedFiles(); // Fetch deleted files audit trail
+            fetchDeletedFiles();
         }
     }, [year, month]);
 
@@ -243,23 +313,18 @@ const ClientFilesUpload = () => {
     const canUpdateCategory = (categoryType, categoryName = null) => {
         if (!monthData) return true;
 
-        // If month is locked, check individual category lock status
         if (monthData.isLocked) {
             if (categoryType === "other" && categoryName) {
-                // Find the specific other category
                 const otherCat = monthData.other?.find(
                     cat => cat.categoryName === categoryName
                 );
-                // Return true if category exists AND is NOT locked
                 return otherCat && !otherCat.document?.isLocked;
             } else {
-                // For sales, purchase, bank
                 const category = monthData[categoryType];
                 return category && !category.isLocked;
             }
         }
 
-        // If month is NOT locked, all categories can be updated
         return true;
     };
 
@@ -274,6 +339,12 @@ const ClientFilesUpload = () => {
             const category = monthData[categoryType];
             return category && category.files && category.files.length > 0;
         }
+    };
+
+    /* ================= CHECK IF UPDATE MODE ================= */
+    const isUpdateMode = (categoryType, categoryName = null) => {
+        if (!monthData) return false;
+        return monthData.wasLockedOnce && isUpdate(categoryType, categoryName);
     };
 
     /* ================= CHECK IF NOTE IS REQUIRED ================= */
@@ -340,7 +411,7 @@ const ClientFilesUpload = () => {
     };
 
     /* ================= UPLOAD FILES ================= */
-    const uploadFiles = async (type, files, categoryName = null, isReplacement = false, replacedFileName = null) => {
+    const uploadFiles = async (type, files, categoryName = null, isReplacement = false, replacedFileName = null, lockAfterUpload = false) => {
         if (!files || files.length === 0) return;
 
         const noteRequired = isNoteRequired(type, categoryName);
@@ -384,12 +455,20 @@ const ClientFilesUpload = () => {
             formData.append("note", note || "");
         }
 
+        if (lockAfterUpload) {
+            formData.append("lockAfterUpload", "true");
+        }
+
         setLoading(true);
         setErrorMessage("");
 
         try {
+            const endpoint = lockAfterUpload
+                ? `${import.meta.env.VITE_API_URL}/clientupload/upload-and-lock`
+                : `${import.meta.env.VITE_API_URL}/clientupload/upload`;
+
             const response = await axios.post(
-                `${import.meta.env.VITE_API_URL}/clientupload/upload`,
+                endpoint,
                 formData,
                 {
                     withCredentials: true,
@@ -401,7 +480,7 @@ const ClientFilesUpload = () => {
             setTimeout(() => setSuccessMessage(""), 3000);
 
             fetchMonthData(year, month);
-            fetchDeletedFiles(); // Refresh deleted files list
+            fetchDeletedFiles();
 
             if (categoryName) {
                 const updatedCategories = otherCategories.map(cat =>
@@ -418,51 +497,6 @@ const ClientFilesUpload = () => {
         } catch (error) {
             console.error("Upload error:", error);
             setErrorMessage(error.response?.data?.message || "Upload failed");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    /* ================= DELETE FILE ================= */
-    const deleteFile = async (type, fileName, categoryName = null) => {
-        if (!window.confirm(`Are you sure you want to delete "${fileName}"? This action will be recorded in the audit trail.`)) {
-            return;
-        }
-
-        const deleteNote = prompt("Please provide a reason for deleting this file:");
-        if (!deleteNote) {
-            alert("Deletion cancelled. Reason is required for audit trail.");
-            return;
-        }
-
-        setLoading(true);
-        setErrorMessage("");
-
-        try {
-            const response = await axios.delete(
-                `${import.meta.env.VITE_API_URL}/clientupload/delete-file`,
-                {
-                    data: {
-                        year,
-                        month,
-                        type,
-                        fileName,
-                        categoryName,
-                        deleteNote
-                    },
-                    withCredentials: true
-                }
-            );
-
-            setSuccessMessage(`File "${fileName}" deleted successfully.`);
-            setTimeout(() => setSuccessMessage(""), 3000);
-
-            fetchMonthData(year, month);
-            fetchDeletedFiles(); // Refresh deleted files list
-
-        } catch (error) {
-            console.error("Delete error:", error);
-            setErrorMessage(error.response?.data?.message || "Failed to delete file");
         } finally {
             setLoading(false);
         }
@@ -552,9 +586,21 @@ const ClientFilesUpload = () => {
                         <div key={index} className="file-item">
                             <div className="file-icon">
                                 {getFileIcon(categoryType)}
+                                {file.notes && file.notes.length > 0 && (
+                                    <span className="file-icon-badge">
+                                        <FiBell size={8} />
+                                    </span>
+                                )}
                             </div>
                             <div className="file-details">
-                                <div className="file-name">{file.fileName}</div>
+                                <div className="file-name">
+                                    {file.fileName}
+                                    {file.notes && file.notes.length > 0 && (
+                                        <span className="file-notification-text">
+                                            <FiBell size={12} /> {file.notes.length} note{file.notes.length !== 1 ? 's' : ''}
+                                        </span>
+                                    )}
+                                </div>
                                 <div className="file-meta">
                                     <span className="file-size">
                                         <FiFile size={12} /> {(file.fileSize / 1024).toFixed(1)} KB
@@ -563,7 +609,6 @@ const ClientFilesUpload = () => {
                                         <FiClock size={12} /> {new Date(file.uploadedAt).toLocaleDateString()}
                                     </span>
 
-                                    {/* NEW: Employee notes badge */}
                                     {file.notes && file.notes.length > 0 && (
                                         <span
                                             className="notes-badge"
@@ -578,14 +623,13 @@ const ClientFilesUpload = () => {
                                                 }));
                                             }}
                                             style={{ cursor: 'pointer' }}
+                                            title={`${file.notes.length} employee note(s) - Click to view`}
                                         >
-                                            <FiMessageSquare size={12} />
-                                            {file.notes.length} employee note{file.notes.length !== 1 ? 's' : ''}
+                                            <FiMessageSquare size={12} /> View notes
                                         </span>
                                     )}
                                 </div>
 
-                                {/* NEW: Display employee notes */}
                                 {showEmployeeNotes[categoryName
                                     ? `${categoryType}-${categoryName}-${index}`
                                     : `${categoryType}-${index}`] && file.notes && file.notes.length > 0 && (
@@ -622,46 +666,19 @@ const ClientFilesUpload = () => {
                                     <FiEye size={14} />
                                 </button>
                                 {canUpdateCategory(categoryType, categoryName) && !category.isLocked && (
-                                    <>
-                                        {/* <button
-                                            className="btn-replace-small"
-                                            onClick={() => {
-                                                const fileInput = document.createElement('input');
-                                                fileInput.type = 'file';
-                                                fileInput.multiple = false;
-                                                fileInput.accept = ".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png";
-                                                fileInput.onchange = (e) => {
-                                                    if (e.target.files.length > 0) {
-                                                        uploadFiles(
-                                                            categoryType,
-                                                            e.target.files,
-                                                            categoryName,
-                                                            true,
-                                                            file.fileName
-                                                        );
-                                                    }
-                                                };
-                                                fileInput.click();
-                                            }}
-                                            title="Replace this file"
-                                        >
-                                            <FiRotateCw size={14} />
-                                        </button> */}
-                                        <button
-                                            className="btn-delete-small"
-                                            onClick={() => deleteFile(categoryType, file.fileName, categoryName)}
-                                            title="Delete this file"
-                                        >
-                                            <FiTrash2 size={14} />
-                                        </button>
-                                    </>
+                                    <button
+                                        className="btn-delete-small"
+                                        onClick={() => openDeleteModal(categoryType, file.fileName, categoryName)}
+                                        title="Delete this file"
+                                    >
+                                        <FiTrash2 size={14} />
+                                    </button>
                                 )}
                             </div>
                         </div>
                     ))}
                 </div>
 
-                {/* Category notes (client update history) */}
                 {category.categoryNotes && category.categoryNotes.length > 0 && (
                     <div className="category-notes-section">
                         <div
@@ -699,83 +716,6 @@ const ClientFilesUpload = () => {
                         )}
                     </div>
                 )}
-            </div>
-        );
-    };
-
-    /* ================= RENDER MONTH NOTES ================= */
-    const renderMonthNotes = () => {
-        if (!monthData?.monthNotes || monthData.monthNotes.length === 0) return null;
-
-        return (
-            <div className="month-notes-section">
-                <h4 className="month-notes-title">
-                    <FiInfo size={18} /> Month Update History
-                </h4>
-                <div className="month-notes-list">
-                    {monthData.monthNotes.map((noteItem, index) => (
-                        <div key={index} className="month-note-item">
-                            <div className="month-note-text">{noteItem.note}</div>
-                            <div className="month-note-meta">
-                                <span className="month-note-by">By: {noteItem.employeeName || noteItem.addedBy || 'Unknown'}</span>
-                                <span className="month-note-date">
-                                    {new Date(noteItem.addedAt).toLocaleDateString()}
-                                </span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    };
-
-    /* ================= RENDER EMPLOYEE INFO ================= */
-    const renderEmployeeInfo = () => {
-        if (!employeeAssignment) return null;
-
-        return (
-            <div className="employee-info-section">
-                <h4 className="employee-info-title">
-                    <FiUser size={18} /> Assigned Employee
-                </h4>
-                <div className="employee-info-grid">
-                    <div className="info-item">
-                        <span className="info-label">Employee Name:</span>
-                        <span className="info-value">{employeeAssignment.employeeName || "N/A"}</span>
-                    </div>
-                    <div className="info-item">
-                        <span className="info-label">Employee ID:</span>
-                        <span className="info-value">{employeeAssignment.employeeId || "N/A"}</span>
-                    </div>
-                    <div className="info-item">
-                        <span className="info-label">Assigned On:</span>
-                        <span className="info-value">
-                            {employeeAssignment.assignedAt
-                                ? new Date(employeeAssignment.assignedAt).toLocaleDateString()
-                                : "N/A"}
-                        </span>
-                    </div>
-                    <div className="info-item">
-                        <span className="info-label">Assigned By:</span>
-                        <span className="info-value">{employeeAssignment.adminName || "N/A"}</span>
-                    </div>
-                    <div className="info-item status-item">
-                        <span className="info-label">Accounting Status:</span>
-                        <span className={`accounting-status ${employeeAssignment.accountingDone ? 'done' : 'pending'}`}>
-                            {employeeAssignment.accountingDone ? (
-                                <>
-                                    <FiCheckCircle size={14} /> Done on {employeeAssignment.accountingDoneAt
-                                        ? new Date(employeeAssignment.accountingDoneAt).toLocaleDateString()
-                                        : "N/A"}
-                                </>
-                            ) : (
-                                <>
-                                    <FiAlertCircle size={14} /> Pending
-                                </>
-                            )}
-                        </span>
-                    </div>
-                </div>
             </div>
         );
     };
@@ -830,74 +770,74 @@ const ClientFilesUpload = () => {
         );
     };
 
-    /* ================= RENDER DELETED FILES AUDIT TRAIL ================= */
-    const renderDeletedFilesSection = () => {
-        if (deletedFiles.length === 0) return null;
+    /* ================= RENDER DELETE MODAL ================= */
+    const renderDeleteModal = () => {
+        if (!deleteModal.isOpen) return null;
 
         return (
-            <div className="deleted-files-section">
-                <div className="section-header">
-                    <h3>
-                        <FiTrash2 size={20} /> Deleted Files Audit Trail
-                    </h3>
-                    <div className="header-actions">
-                        <span className="count-badge">{deletedFiles.length}</span>
+            <div className="delete-confirmation-modal">
+                <div className="modal-overlay" onClick={closeDeleteModal}></div>
+                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal-header">
+                        <h3>
+                            <FiAlertCircle size={20} /> Confirm Delete
+                        </h3>
+                        <button className="close-modal-btn" onClick={closeDeleteModal}>
+                            <FiX size={20} />
+                        </button>
+                    </div>
+
+                    <div className="modal-body">
+                        <div className="warning-message">
+                            <FiAlertCircle className="warning-icon" />
+                            <p>Are you sure you want to delete <strong>"{deleteModal.fileName}"</strong>?</p>
+                            <p className="warning-text">This action will be recorded in the audit trail and cannot be undone.</p>
+                        </div>
+
+                        <div className="delete-reason-section">
+                            <label className="reason-label">
+                                Reason for deletion <span className="required-asterisk">*</span>
+                            </label>
+                            <textarea
+                                className="reason-textarea"
+                                placeholder="Please provide a reason for deleting this file..."
+                                value={deleteModal.deleteNote}
+                                onChange={(e) => setDeleteModal(prev => ({
+                                    ...prev,
+                                    deleteNote: e.target.value
+                                }))}
+                                rows={3}
+                                required
+                            />
+                            <small className="reason-hint">This reason will be saved in the audit trail</small>
+                        </div>
+                    </div>
+
+                    <div className="modal-footer">
                         <button
-                            className="btn-toggle-deleted"
-                            onClick={() => setShowDeletedFiles(!showDeletedFiles)}
+                            className="btn-cancel"
+                            onClick={closeDeleteModal}
+                            disabled={loading}
                         >
-                            {showDeletedFiles ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
+                            Cancel
+                        </button>
+                        <button
+                            className="btn-delete-confirm"
+                            onClick={confirmDelete}
+                            disabled={loading || !deleteModal.deleteNote.trim()}
+                        >
+                            {loading ? (
+                                <>
+                                    <span className="spinner"></span> Deleting...
+                                </>
+                            ) : (
+                                <>
+                                    <FiTrash2 size={16} /> Delete File
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>
-
-                {showDeletedFiles && (
-                    <div className="deleted-files-list">
-                        {deletedFiles.map((file, index) => (
-                            <div key={index} className="deleted-file-item">
-                                <div className="deleted-file-icon">
-                                    <FiFileText size={16} />
-                                </div>
-                                <div className="deleted-file-details">
-                                    <div className="deleted-file-name">
-                                        <span className="file-name">{file.fileName}</span>
-                                        {file.wasReplaced && (
-                                            <span className="replaced-badge">
-                                                <FiRotateCw size={12} /> Replaced
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="deleted-file-meta">
-                                        <span className="meta-item">
-                                            <FiFolder size={12} />
-                                            {file.categoryType}
-                                            {file.categoryName ? ` (${file.categoryName})` : ''}
-                                        </span>
-                                        <span className="meta-item">
-                                            <FiCalendar size={12} /> {file.month}/{file.year}
-                                        </span>
-                                        <span className="meta-item">
-                                            <FiUser size={12} /> Deleted by: {file.deletedBy}
-                                        </span>
-                                        <span className="meta-item">
-                                            <FiClock size={12} /> {new Date(file.deletedAt).toLocaleDateString()}
-                                        </span>
-                                    </div>
-                                    {file.deleteNote && (
-                                        <div className="delete-note">
-                                            <strong>Reason:</strong> {file.deleteNote}
-                                        </div>
-                                    )}
-                                    {file.wasReplaced && file.replacedByFile && (
-                                        <div className="replaced-info">
-                                            <strong>Replaced by:</strong> {file.replacedByFile}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
             </div>
         );
     };
@@ -909,11 +849,23 @@ const ClientFilesUpload = () => {
         const fileUpdate = isUpdate(type);
         const noteRequired = isNoteRequired(type);
         const hasNewFiles = newFiles[type] && newFiles[type].length > 0;
+        const updateMode = isUpdateMode(type);
+        
+        const hasNotesInCategory = category?.files?.some(file => 
+            file.notes && file.notes.length > 0
+        );
 
         return (
             <div className="file-upload-card" key={type}>
                 <div className="file-header">
-                    <h4 className="file-title">{getFileIcon(type)} {label}</h4>
+                    <h4 className="file-title">
+                        {getFileIcon(type)} {label}
+                        {hasNotesInCategory && (
+                            <span className="category-notes-alert" title="Some files have employee notes">
+                                <FiBell size={14} /> Notes
+                            </span>
+                        )}
+                    </h4>
                     {category?.isLocked && (
                         <span className="locked-label">
                             <FiLock size={14} /> Category Locked
@@ -933,7 +885,7 @@ const ClientFilesUpload = () => {
                             onChange={(e) => handleFilesChange(type, e.target.files)}
                         />
                         <span className={`file-input-button ${!canUpload || loading ? 'disabled' : ''}`}>
-                            <FiUpload size={16} /> Choose Files
+                            <FiUpload size={18} /> Choose Files
                         </span>
                         <span className="file-input-hint">(Multiple files allowed)</span>
                     </label>
@@ -970,21 +922,36 @@ const ClientFilesUpload = () => {
                 )}
 
                 {hasNewFiles && canUpload && (
-                    <button
-                        className="btn-upload-single"
-                        onClick={() => uploadFiles(type, newFiles[type])}
-                        disabled={loading}
-                    >
-                        {loading ? (
-                            <>
-                                <span className="spinner"></span> Uploading...
-                            </>
-                        ) : fileUpdate ? (
-                            `Upload ${newFiles[type].length} Additional File(s)`
-                        ) : (
-                            `Upload ${newFiles[type].length} File(s)`
-                        )}
-                    </button>
+                    <div className="upload-buttons">
+                        {!updateMode ? (
+                            <button
+                                className="btn-upload"
+                                onClick={() => uploadFiles(type, newFiles[type])}
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <>
+                                        <span className="spinner"></span> Uploading...
+                                    </>
+                                ) : fileUpdate ? (
+                                    `Upload ${newFiles[type].length} Additional File(s)`
+                                ) : (
+                                    `Upload ${newFiles[type].length} File(s)`
+                                )}
+                            </button>
+                        ) : null}
+                        
+                        {updateMode ? (
+                            <button
+                                className="btn-upload-lock"
+                                onClick={() => uploadFiles(type, newFiles[type], null, false, null, true)}
+                                disabled={loading}
+                                title="Upload and lock this category"
+                            >
+                                <FiLock size={16} /> Upload & Lock File
+                            </button>
+                        ) : null}
+                    </div>
                 )}
             </div>
         );
@@ -997,12 +964,22 @@ const ClientFilesUpload = () => {
         const isCatUpdate = isUpdate("other", cat.categoryName);
         const noteRequired = isNoteRequired("other", cat.categoryName);
         const hasNewFiles = cat.newFiles && cat.newFiles.length > 0;
+        const updateMode = isUpdateMode("other", cat.categoryName);
+        
+        const hasNotesInCategory = category?.files?.some(file => 
+            file.notes && file.notes.length > 0
+        );
 
         return (
             <div className="file-upload-card other-category" key={index}>
                 <div className="category-header">
                     <h5 className="category-title">
                         <FiFolder size={16} /> {cat.categoryName}
+                        {hasNotesInCategory && (
+                            <span className="category-notes-alert" title="Some files have employee notes">
+                                <FiBell size={12} /> Notes
+                            </span>
+                        )}
                     </h5>
                     {category?.isLocked && (
                         <span className="locked-label">
@@ -1023,7 +1000,7 @@ const ClientFilesUpload = () => {
                             onChange={(e) => handleFilesChange("other", e.target.files, cat.categoryName)}
                         />
                         <span className={`file-input-button ${!canUploadCat || loading ? 'disabled' : ''}`}>
-                            <FiUpload size={16} /> Choose Files
+                            <FiUpload size={18} /> Choose Files
                         </span>
                         <span className="file-input-hint">(Multiple files allowed)</span>
                     </label>
@@ -1062,21 +1039,36 @@ const ClientFilesUpload = () => {
                 )}
 
                 {hasNewFiles && canUploadCat && (
-                    <button
-                        className="btn-upload-single"
-                        onClick={() => uploadFiles("other", cat.newFiles, cat.categoryName)}
-                        disabled={loading}
-                    >
-                        {loading ? (
-                            <>
-                                <span className="spinner"></span> Uploading...
-                            </>
-                        ) : isCatUpdate ? (
-                            `Upload ${cat.newFiles.length} Additional File(s)`
-                        ) : (
-                            `Upload ${cat.newFiles.length} File(s)`
-                        )}
-                    </button>
+                    <div className="upload-buttons">
+                        {!updateMode ? (
+                            <button
+                                className="btn-upload"
+                                onClick={() => uploadFiles("other", cat.newFiles, cat.categoryName)}
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <>
+                                        <span className="spinner"></span> Uploading...
+                                    </>
+                                ) : isCatUpdate ? (
+                                    `Upload ${cat.newFiles.length} Additional File(s)`
+                                ) : (
+                                    `Upload ${cat.newFiles.length} File(s)`
+                                )}
+                            </button>
+                        ) : null}
+                        
+                        {updateMode ? (
+                            <button
+                                className="btn-upload-lock"
+                                onClick={() => uploadFiles("other", cat.newFiles, cat.categoryName, false, null, true)}
+                                disabled={loading}
+                                title="Upload and lock this category"
+                            >
+                                <FiLock size={16} /> Upload & Lock File
+                            </button>
+                        ) : null}
+                    </div>
                 )}
             </div>
         );
@@ -1431,9 +1423,6 @@ const ClientFilesUpload = () => {
                                     )}
                                 </div>
 
-                                {/* Deleted Files Audit Trail */}
-                                {deletedFiles.length > 0 && renderDeletedFilesSection()}
-
                                 {/* Month Note Section */}
                                 {monthData?.wasLockedOnce &&
                                     (Object.values(newFiles).some(f => f.length > 0) ||
@@ -1498,13 +1487,13 @@ const ClientFilesUpload = () => {
                                         </small>
                                     )}
                                 </div>
-
-                                {/* Month Notes History */}
-                                {/* {renderMonthNotes()}  */}
                             </>
                         )}
                     </div>
                 </div>
+
+                {/* Delete Confirmation Modal */}
+                {renderDeleteModal()}
 
                 {/* Document Preview Modal */}
                 {renderDocumentPreview()}
