@@ -27,7 +27,8 @@ import {
   FiCheckCircle,
   FiXCircle,
   FiArchive,
-  FiFileText
+  FiFileText,
+  FiInfo
 } from "react-icons/fi";
 import "./AdminEmployees.scss";
 
@@ -89,6 +90,10 @@ const AdminEmployees = () => {
   const [confirmAction, setConfirmAction] = useState(""); // "deactivate" or "activate"
   const [confirmMessage, setConfirmMessage] = useState("");
   const [assignmentToRemove, setAssignmentToRemove] = useState(null);
+
+  // Client task status state (NEW)
+  const [clientTaskStatus, setClientTaskStatus] = useState(null);
+  const [loadingTaskStatus, setLoadingTaskStatus] = useState(false);
 
   // Task options
   const taskOptions = [
@@ -201,6 +206,24 @@ const AdminEmployees = () => {
       try {
         setLoading(true);
 
+        // NEW: First check if client has documents
+        const documentCheck = await checkClientDocuments(
+          values.clientId,
+          values.year,
+          values.month
+        );
+
+        if (!documentCheck.hasDocuments) {
+          toast.error(documentCheck.message || "No documents uploaded for selected month", {
+            position: "top-right",
+            autoClose: 5000,
+            theme: "dark"
+          });
+          setLoading(false);
+          return;
+        }
+
+        // If documents exist, proceed with assignment
         const response = await axios.post(
           `${import.meta.env.VITE_API_URL}/admin-employee/assign-client`,
           {
@@ -213,7 +236,7 @@ const AdminEmployees = () => {
           { withCredentials: true }
         );
 
-        toast.success(response.data.message || "Client assigned successfully!", {
+        toast.success(response.data.message || "Task assigned successfully!", {
           position: "top-right",
           autoClose: 3000,
           theme: "dark"
@@ -221,8 +244,13 @@ const AdminEmployees = () => {
 
         resetAssignForm();
         loadEmployees();
+
+        // Refresh client task status after assignment
+        if (values.clientId && values.year && values.month) {
+          loadClientTaskStatus(values.clientId, values.year, values.month);
+        }
       } catch (error) {
-        console.error("Error assigning client:", error);
+        console.error("Error assigning task:", error);
         toast.error(error.response?.data?.message || "An error occurred", {
           position: "top-right",
           autoClose: 5000,
@@ -267,6 +295,38 @@ const AdminEmployees = () => {
     }
   };
 
+  // NEW: Load client task status
+  const loadClientTaskStatus = async (clientId, year, month) => {
+    try {
+      setLoadingTaskStatus(true);
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_URL}/admin-employee/client-tasks-status/${clientId}?year=${year}&month=${month}`,
+        { withCredentials: true }
+      );
+      setClientTaskStatus(res.data);
+    } catch (error) {
+      console.error("Error loading client task status:", error);
+      setClientTaskStatus(null);
+    } finally {
+      setLoadingTaskStatus(false);
+    }
+  };
+
+
+  // NEW: Check if client has documents for month
+  const checkClientDocuments = async (clientId, year, month) => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_URL}/admin-employee/check-client-documents/${clientId}?year=${year}&month=${month}`,
+        { withCredentials: true }
+      );
+      return res.data; // { hasDocuments: true/false, message: "...", details: {...} }
+    } catch (error) {
+      console.error("Error checking documents:", error);
+      return { hasDocuments: false, message: "Error checking documents" };
+    }
+  };
+
   useEffect(() => {
     loadEmployees();
     loadClients();
@@ -293,6 +353,7 @@ const AdminEmployees = () => {
       month: currentMonth.month,
       task: ""
     });
+    setClientTaskStatus(null); // Reset task status
     setShowAssignModal(true);
   };
 
@@ -300,7 +361,7 @@ const AdminEmployees = () => {
   const openDeactivateConfirm = (employee) => {
     setEmployeeToConfirm(employee);
     setConfirmAction("deactivate");
-    setConfirmMessage(`Are you sure you want to deactivate "${employee.name}"? This will remove their current month assignments from clients.`);
+    setConfirmMessage(`Are you sure you want to deactivate "${employee.name}"? This will remove their current month task assignments from clients.`);
     setShowConfirmModal(true);
   };
 
@@ -308,7 +369,7 @@ const AdminEmployees = () => {
   const openActivateConfirm = (employee) => {
     setEmployeeToConfirm(employee);
     setConfirmAction("activate");
-    setConfirmMessage(`Activate "${employee.name}"? Employee will be available for new assignments.`);
+    setConfirmMessage(`Activate "${employee.name}"? Employee will be available for new task assignments.`);
     setShowConfirmModal(true);
   };
 
@@ -318,7 +379,7 @@ const AdminEmployees = () => {
     setShowRemoveConfirmModal(true);
   };
 
-  // Handle Remove Assignment
+  // Handle Remove Assignment (UPDATED FOR TASK-SPECIFIC REMOVAL)
   const handleRemoveAssignment = async () => {
     if (!assignmentToRemove || !assigningEmployee) return;
 
@@ -332,13 +393,14 @@ const AdminEmployees = () => {
             clientId: assignmentToRemove.clientId,
             employeeId: assigningEmployee.employeeId,
             year: assignmentToRemove.year,
-            month: assignmentToRemove.month
+            month: assignmentToRemove.month,
+            task: assignmentToRemove.task // ADDED: Task is now required
           },
           withCredentials: true
         }
       );
 
-      toast.success(response.data.message || "Assignment removed successfully!", {
+      toast.success(response.data.message || "Task assignment removed successfully!", {
         position: "top-right",
         autoClose: 3000,
         theme: "dark"
@@ -346,6 +408,11 @@ const AdminEmployees = () => {
 
       loadEmployees();
       closeRemoveConfirmModal();
+
+      // Refresh client task status after removal
+      if (assignmentToRemove.clientId && assignmentToRemove.year && assignmentToRemove.month) {
+        loadClientTaskStatus(assignmentToRemove.clientId, assignmentToRemove.year, assignmentToRemove.month);
+      }
     } catch (error) {
       console.error("Error removing assignment:", error);
       toast.error(error.response?.data?.message || "Failed to remove assignment", {
@@ -437,6 +504,7 @@ const AdminEmployees = () => {
       }
     });
     setAssigningEmployee(null);
+    setClientTaskStatus(null);
     setShowAssignModal(false);
   };
 
@@ -463,7 +531,7 @@ const AdminEmployees = () => {
     return phone;
   };
 
-  // Get assigned clients count
+  // Get assigned clients count (UPDATED: Now counts tasks, not clients)
   const getAssignedCount = (employee) => {
     return employee.assignedClients?.filter(ac => !ac.isRemoved).length || 0;
   };
@@ -499,6 +567,53 @@ const AdminEmployees = () => {
       });
   };
 
+  // Handle client selection change in assign modal
+  const handleClientChange = async (clientId) => {
+    if (!clientId || !assignFormik.values.year || !assignFormik.values.month) {
+      setClientTaskStatus(null);
+      return;
+    }
+
+    try {
+      await loadClientTaskStatus(clientId, assignFormik.values.year, assignFormik.values.month);
+    } catch (error) {
+      console.error("Error loading task status:", error);
+    }
+  };
+
+  // Handle year/month change in assign modal
+  const handleDateChange = async () => {
+    const { clientId, year, month } = assignFormik.values;
+    if (clientId && year && month) {
+      await loadClientTaskStatus(clientId, year, month);
+    } else {
+      setClientTaskStatus(null);
+    }
+  };
+
+  // Get available tasks (filter out already assigned tasks)
+  const getAvailableTasks = () => {
+    if (!clientTaskStatus || !clientTaskStatus.taskStatus) {
+      return taskOptions;
+    }
+
+    const assignedTasks = clientTaskStatus.taskStatus
+      .filter(task => task.isAssigned)
+      .map(task => task.task);
+
+    return taskOptions.filter(taskOption =>
+      !assignedTasks.includes(taskOption.value)
+    );
+  };
+
+  // Check if task is already assigned
+  const isTaskAlreadyAssigned = (task) => {
+    if (!clientTaskStatus || !clientTaskStatus.taskStatus) return false;
+
+    const taskStatus = clientTaskStatus.taskStatus.find(t => t.task === task);
+    return taskStatus ? taskStatus.isAssigned : false;
+  };
+
   return (
     <AdminLayout>
       <ToastContainer />
@@ -510,7 +625,7 @@ const AdminEmployees = () => {
               <FiUsers size={28} /> Employee Management
             </h1>
             <p className="page-subtitle">
-              Manage employees and assign clients month-wise with specific tasks
+              Manage employees and assign tasks month-wise to clients
             </p>
           </div>
 
@@ -537,7 +652,7 @@ const AdminEmployees = () => {
                   {employees.filter(e => e.isActive).length} active
                 </span>
                 <span className="assignments-badge">
-                  {employees.reduce((total, emp) => total + getAssignedCount(emp), 0)} total assignments
+                  {employees.reduce((total, emp) => total + getAssignedCount(emp), 0)} total task assignments
                 </span>
               </div>
             </div>
@@ -581,7 +696,7 @@ const AdminEmployees = () => {
                   <tr>
                     <th>Employee</th>
                     <th>Contact</th>
-                    <th>Assignments</th>
+                    <th>Task Assignments</th>
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>
@@ -616,11 +731,11 @@ const AdminEmployees = () => {
                           <div className="assignments-info">
                             <div className="assignments-count">
                               <FiBriefcase size={16} />
-                              <span>{getAssignedCount(employee)} assigned</span>
+                              <span>{getAssignedCount(employee)} tasks assigned</span>
                             </div>
                             {hasCurrentAssignments && (
                               <div className="recent-assignment">
-                                {currentAssignments.length} current month
+                                {currentAssignments.length} current month tasks
                               </div>
                             )}
                             {getPastAssignments(employee).length > 0 && (
@@ -659,11 +774,11 @@ const AdminEmployees = () => {
                                 <button
                                   className="assign-btn"
                                   onClick={() => openAssignModal(employee)}
-                                  title="Assign client"
+                                  title="Assign task to client"
                                   disabled={loading}
                                 >
                                   <FiBriefcase size={16} />
-                                  <span>Assign</span>
+                                  <span>Assign Task</span>
                                 </button>
                                 <button
                                   className="delete-btn"
@@ -697,7 +812,7 @@ const AdminEmployees = () => {
           )}
         </div>
 
-        {/* Add Employee Modal */}
+        {/* Add Employee Modal - NO CHANGES */}
         {(showAddModal || showEditModal) && (
           <div className="modal-overlay">
             <div className="modal">
@@ -884,7 +999,7 @@ const AdminEmployees = () => {
               <div className="modal-header">
                 <h3>
                   <FiBriefcase size={24} />
-                  Assign Client to {assigningEmployee.name}
+                  Assign Task to {assigningEmployee.name}
                 </h3>
                 <button
                   className="close-modal"
@@ -904,7 +1019,7 @@ const AdminEmployees = () => {
                     <h4>{assigningEmployee.name}</h4>
                     <p>{assigningEmployee.email}</p>
                     <small className="current-assignments">
-                      Currently assigned to {getAssignedCount(assigningEmployee)} clients
+                      Currently assigned to {getAssignedCount(assigningEmployee)} tasks
                     </small>
                   </div>
                 </div>
@@ -919,7 +1034,10 @@ const AdminEmployees = () => {
                       id="clientId"
                       name="clientId"
                       value={assignFormik.values.clientId}
-                      onChange={assignFormik.handleChange}
+                      onChange={(e) => {
+                        assignFormik.handleChange(e);
+                        handleClientChange(e.target.value);
+                      }}
                       onBlur={assignFormik.handleBlur}
                       className={
                         assignFormik.touched.clientId && assignFormik.errors.clientId
@@ -940,36 +1058,6 @@ const AdminEmployees = () => {
                     )}
                   </div>
 
-                  {/* Task Selection */}
-                  <div className="form-group">
-                    <label htmlFor="task">
-                      <FiFileText size={16} /> Select Task *
-                    </label>
-                    <select
-                      id="task"
-                      name="task"
-                      value={assignFormik.values.task}
-                      onChange={assignFormik.handleChange}
-                      onBlur={assignFormik.handleBlur}
-                      className={
-                        assignFormik.touched.task && assignFormik.errors.task
-                          ? "error"
-                          : ""
-                      }
-                      disabled={loading}
-                    >
-                      <option value="">-- Select task to assign --</option>
-                      {taskOptions.map((task) => (
-                        <option key={task.value} value={task.value}>
-                          {task.label}
-                        </option>
-                      ))}
-                    </select>
-                    {assignFormik.touched.task && assignFormik.errors.task && (
-                      <div className="error-text">{assignFormik.errors.task}</div>
-                    )}
-                  </div>
-
                   {/* Date Selection */}
                   <div className="date-selection">
                     <div className="form-group">
@@ -982,7 +1070,10 @@ const AdminEmployees = () => {
                         type="number"
                         placeholder="e.g., 2024"
                         value={assignFormik.values.year}
-                        onChange={assignFormik.handleChange}
+                        onChange={(e) => {
+                          assignFormik.handleChange(e);
+                          handleDateChange();
+                        }}
                         onBlur={assignFormik.handleBlur}
                         className={
                           assignFormik.touched.year && assignFormik.errors.year
@@ -1006,7 +1097,10 @@ const AdminEmployees = () => {
                         id="month"
                         name="month"
                         value={assignFormik.values.month}
-                        onChange={assignFormik.handleChange}
+                        onChange={(e) => {
+                          assignFormik.handleChange(e);
+                          handleDateChange();
+                        }}
                         onBlur={assignFormik.handleBlur}
                         className={
                           assignFormik.touched.month && assignFormik.errors.month
@@ -1028,9 +1122,77 @@ const AdminEmployees = () => {
                     </div>
                   </div>
 
+                  {/* Task Selection with status info */}
+                  <div className="form-group">
+                    <div className="task-selection-header">
+                      <label htmlFor="task">
+                        <FiFileText size={16} /> Select Task *
+                      </label>
+                      {clientTaskStatus && (
+                        <div className="task-status-info">
+                          <FiInfo size={14} />
+                          <span>{clientTaskStatus.totalAssigned}/4 tasks assigned</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <select
+                      id="task"
+                      name="task"
+                      value={assignFormik.values.task}
+                      onChange={assignFormik.handleChange}
+                      onBlur={assignFormik.handleBlur}
+                      className={
+                        assignFormik.touched.task && assignFormik.errors.task
+                          ? "error"
+                          : ""
+                      }
+                      disabled={loading || loadingTaskStatus}
+                    >
+                      <option value="">-- Select task to assign --</option>
+                      {getAvailableTasks().map((task) => (
+                        <option
+                          key={task.value}
+                          value={task.value}
+                          disabled={isTaskAlreadyAssigned(task.value)}
+                        >
+                          {task.label} {isTaskAlreadyAssigned(task.value) ? "(Already assigned)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                    {assignFormik.touched.task && assignFormik.errors.task && (
+                      <div className="error-text">{assignFormik.errors.task}</div>
+                    )}
+
+                    {/* Task Status Display */}
+                    {clientTaskStatus && clientTaskStatus.taskStatus && (
+                      <div className="task-status-display">
+                        <h5>Current Task Status for {getMonthName(assignFormik.values.month)} {assignFormik.values.year}:</h5>
+                        <div className="task-status-grid">
+                          {clientTaskStatus.taskStatus.map((task) => (
+                            <div key={task.task} className={`task-status-item ${task.isAssigned ? 'assigned' : 'unassigned'}`}>
+                              <div className="task-name">{task.task}</div>
+                              <div className="task-details">
+                                {task.isAssigned ? (
+                                  <>
+                                    <span className="assigned-to">
+                                      {task.accountingDone ? '✓ Completed' : '🔄 In Progress'} by {task.assignedTo.employeeName}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="unassigned">Not assigned</span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Assignment Summary */}
                   <div className="assignment-summary">
-                    <h4>Assignment Summary</h4>
+                    <h4>Task Assignment Summary</h4>
                     <div className="summary-details">
                       <p>
                         <strong>Employee:</strong> {assigningEmployee.name}
@@ -1058,9 +1220,48 @@ const AdminEmployees = () => {
                         </p>
                       )}
                     </div>
+
+
                   </div>
 
-                  {/* ===== MOVED BUTTONS HERE (AFTER ASSIGNMENT SUMMARY) ===== */}
+                  {/* ===== DOCUMENT STATUS CHECK ===== */}
+                  {clientTaskStatus && assignFormik.values.clientId && assignFormik.values.year && assignFormik.values.month && (
+                    <div className="document-status-check">
+                      <button
+                        type="button"
+                        className="check-docs-btn"
+                        onClick={async () => {
+                          const docCheck = await checkClientDocuments(
+                            assignFormik.values.clientId,
+                            assignFormik.values.year,
+                            assignFormik.values.month
+                          );
+                          if (docCheck.hasDocuments) {
+                            toast.success("✅ " + docCheck.message, {
+                              position: "top-right",
+                              autoClose: 3000,
+                              theme: "dark"
+                            });
+                          } else {
+                            toast.warning("⚠️ " + docCheck.message, {
+                              position: "top-right",
+                              autoClose: 5000,
+                              theme: "dark"
+                            });
+                          }
+                        }}
+                        disabled={loading || loadingTaskStatus}
+                      >
+                        <FiInfo size={16} />
+                        Check Document Status
+                      </button>
+                      <small className="document-hint">
+                        Documents must be uploaded before assigning tasks
+                      </small>
+                    </div>
+                  )}
+
+                  {/* ===== BUTTONS ===== */}
                   <div className="modal-actions">
                     <button
                       type="button"
@@ -1073,23 +1274,23 @@ const AdminEmployees = () => {
                     <button
                       type="submit"
                       className="primary-btn"
-                      disabled={loading || !assignFormik.isValid}
+                      disabled={loading || loadingTaskStatus || !assignFormik.isValid}
                     >
-                      {loading ? (
+                      {loading || loadingTaskStatus ? (
                         <span className="spinner"></span>
                       ) : (
                         <>
-                          <FiBriefcase size={18} /> Assign Client
+                          <FiBriefcase size={18} /> Assign Task
                         </>
                       )}
                     </button>
                   </div>
 
-                  {/* Past Assignments Table (SHOW ALL - NOT JUST 5) */}
+                  {/* Past Assignments Table */}
                   {getPastAssignments(assigningEmployee).length > 0 && (
                     <div className="past-assignments">
                       <h4>
-                        <FiClock size={18} /> Past Assignments
+                        <FiClock size={18} /> Past Task Assignments
                         <span className="count-badge">{getPastAssignments(assigningEmployee).length}</span>
                       </h4>
                       <div className="assignments-table-container">
@@ -1104,7 +1305,6 @@ const AdminEmployees = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {/* SHOW ALL ASSIGNMENTS (REMOVED .slice(0, 5)) */}
                             {getPastAssignments(assigningEmployee).map((assignment, index) => (
                               <tr key={index}>
                                 <td className="client-name">
@@ -1136,7 +1336,7 @@ const AdminEmployees = () => {
                                     <button
                                       className="remove-assignment-btn"
                                       onClick={() => openRemoveAssignmentConfirm(assignment)}
-                                      title="Remove this assignment"
+                                      title="Remove this task assignment"
                                       disabled={loading}
                                     >
                                       <FiTrash2 size={14} />
@@ -1198,7 +1398,8 @@ const AdminEmployees = () => {
                       <div className="warning-note">
                         <FiAlertTriangle size={16} />
                         <span>
-                          <strong>Note:</strong> This will remove all current month assignments from clients.
+                          <strong>Note:</strong> This will remove all current month task assignments from clients.
+                          Other employees' tasks for the same clients will not be affected.
                         </span>
                       </div>
                     )}
@@ -1245,7 +1446,7 @@ const AdminEmployees = () => {
               <div className="modal-header">
                 <h3>
                   <FiArchive size={24} />
-                  Remove Assignment
+                  Remove Task Assignment
                 </h3>
                 <button
                   className="close-modal"
@@ -1265,7 +1466,7 @@ const AdminEmployees = () => {
                   </div>
 
                   <div className="confirmation-details">
-                    <h4>Remove Assignment</h4>
+                    <h4>Remove Task Assignment</h4>
                     <div className="assignment-details">
                       <p><strong>Employee:</strong> {assigningEmployee?.name}</p>
                       <p><strong>Client:</strong> {assignmentToRemove.clientName}</p>
@@ -1277,8 +1478,8 @@ const AdminEmployees = () => {
                     <div className="warning-note">
                       <FiAlertTriangle size={16} />
                       <span>
-                        <strong>Note:</strong> This will remove this assignment from both employee and client records.
-                        This action can only be performed for pending assignments.
+                        <strong>Note:</strong> This will remove ONLY this specific task assignment.
+                        Other tasks for the same client-month will not be affected.
                       </span>
                     </div>
                   </div>
@@ -1303,7 +1504,7 @@ const AdminEmployees = () => {
                       <span className="spinner"></span>
                     ) : (
                       <>
-                        <FiTrash2 size={18} /> Yes, Remove Assignment
+                        <FiTrash2 size={18} /> Yes, Remove Task Assignment
                       </>
                     )}
                   </button>

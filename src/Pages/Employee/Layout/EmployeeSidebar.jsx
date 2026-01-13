@@ -153,7 +153,7 @@ const EmployeeSidebar = ({ children }) => {
 
           <div className="employee-nav-right">
             {!isLoggedIn ? (
-              <button className="employee-icon-button" onClick={handleLogin}>
+              <button className="employee-icon-button" onClick={handleLogout}>
                 <BiLogIn />
               </button>
             ) : (

@@ -36,13 +36,24 @@ const AdminSidebar = ({ children }) => {
   const handleLogin = () => navigate("/admin/login");
 
   const handleLogout = async () => {
-    await fetch(`${import.meta.env.VITE_API_URL}/admin/logout`, {
-      method: "POST",
-      credentials: "include"
-    });
+    console.log("🔥 LOGOUT BUTTON CLICKED");
 
-    window.location.href = "/admin/login";
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/admin/logout`,
+        {
+          method: "POST",
+          credentials: "include"
+        }
+      );
+
+      console.log("🔥 LOGOUT API RESPONSE:", res.status);
+    } catch (err) {
+      console.error("❌ LOGOUT FETCH ERROR:", err);
+    }
   };
+
+
 
 
   // Auto-collapse sidebar on route change (mobile only)
@@ -112,7 +123,7 @@ const AdminSidebar = ({ children }) => {
             <li className="admin-logout-menu-item">
               <button className="admin-sidebar-logout-btn" onClick={handleLogout}>
                 <BiLogOut />
-                <span>Logout</span>
+                <span>Logouttt</span>
               </button>
             </li>
           )}
@@ -158,7 +169,7 @@ const AdminSidebar = ({ children }) => {
 
           <div className="admin-nav-right">
             {!isLoggedIn ? (
-              <button className="admin-icon-button" onClick={handleLogin}>
+              <button className="admin-icon-button" onClick={handleLogout}>
                 <BiLogIn />
               </button>
             ) : (

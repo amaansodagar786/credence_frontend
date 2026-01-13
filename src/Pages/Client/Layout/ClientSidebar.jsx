@@ -165,7 +165,7 @@ const ClientSidebar = ({ children }) => {
 
           <div className="client-nav-right">
             {!isLoggedIn ? (
-              <button className="client-icon-button" onClick={handleLogin}>
+              <button className="client-icon-button" onClick={handleLogout}>
                 <BiLogIn />
               </button>
             ) : (
