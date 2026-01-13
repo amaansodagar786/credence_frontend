@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef , useCallback  } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import axios from "axios";
 import AdminLayout from "../Layout/AdminLayout";
 import {
@@ -1505,14 +1505,14 @@ const AdminClients = () => {
                                       onClick={() => toggleFileLock(category, true)}
                                       disabled={categoryData?.isLocked}
                                     >
-                                      <FiLock size={14} /> {categoryData?.isLocked ? "Already Locked" : "Lock Category"}
+                                      <FiLock size={14} /> {categoryData?.isLocked ? `${category.charAt(0).toUpperCase() + category.slice(1)} Already Locked` : `Lock ${category.charAt(0).toUpperCase() + category.slice(1)}`}
                                     </button>
                                     <button
                                       className="control-btn unlock"
                                       onClick={() => toggleFileLock(category, false)}
                                       disabled={!categoryData?.isLocked}
                                     >
-                                      <FiUnlock size={14} /> {!categoryData?.isLocked ? "Already Unlocked" : "Unlock Category"}
+                                      <FiUnlock size={14} /> {!categoryData?.isLocked ? `${category.charAt(0).toUpperCase() + category.slice(1)} Already Unlocked` : `Unlock ${category.charAt(0).toUpperCase() + category.slice(1)}`}
                                     </button>
                                   </div>
                                 )}
@@ -1591,14 +1591,14 @@ const AdminClients = () => {
                                           onClick={() => toggleFileLock("other", true, otherCategory.categoryName)}
                                           disabled={otherCategory.document?.isLocked}
                                         >
-                                          <FiLock size={14} /> {otherCategory.document?.isLocked ? "Already Locked" : "Lock Category"}
+                                          <FiLock size={14} /> {otherCategory.document?.isLocked ? `${otherCategory.categoryName} Already Locked` : `Lock ${otherCategory.categoryName}`}
                                         </button>
                                         <button
                                           className="control-btn unlock"
                                           onClick={() => toggleFileLock("other", false, otherCategory.categoryName)}
                                           disabled={!otherCategory.document?.isLocked}
                                         >
-                                          <FiUnlock size={14} /> {!otherCategory.document?.isLocked ? "Already Unlocked" : "Unlock Category"}
+                                          <FiUnlock size={14} /> {!otherCategory.document?.isLocked ? `${otherCategory.categoryName} Already Unlocked` : `Unlock ${otherCategory.categoryName}`}
                                         </button>
                                       </div>
                                     )}
