@@ -123,6 +123,20 @@ const ClientSidebar = ({ children }) => {
             </li>
           )}
         </ul>
+
+        {/* SIDEBAR FOOTER */}
+<div className="client-sidebar-footer">
+  <span>Designed & Developed By</span>
+  <a
+    href="https://techorses.com"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="client-footer-link"
+  >
+    Techorses
+  </a>
+</div>
+
       </div>
 
       {/* MAIN CONTENT AREA */}

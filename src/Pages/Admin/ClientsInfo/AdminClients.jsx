@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef , useCallback  } from "react";
 import axios from "axios";
 import AdminLayout from "../Layout/AdminLayout";
 import {
@@ -31,9 +31,19 @@ import {
   FiCloud,
   FiMessageSquare,
   FiUserPlus,
-  FiEdit
+  FiEdit,
+  FiMapPin,
+  FiBriefcase,
+  FiCreditCard as FiCard,
+  FiGlobe,
+  FiShield,
+  FiDollarSign,
+  FiFilePlus,
+  FiBook,
+  FiExternalLink,
+  FiBell
 } from "react-icons/fi";
-import { Snackbar, Alert } from "@mui/material";
+import { Snackbar, Alert, Modal, Box, Typography } from "@mui/material";
 import "./AdminClients.scss";
 
 const AdminClients = () => {
@@ -58,8 +68,13 @@ const AdminClients = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const previewRef = useRef(null);
 
-  // Debug states
-  const [debugData, setDebugData] = useState(null);
+  // Client Details Modal
+  const [clientDetailsModal, setClientDetailsModal] = useState(false);
+
+  // Alert tracking states
+  const [clientAlerts, setClientAlerts] = useState({});
+  const [monthAlerts, setMonthAlerts] = useState({});
+  const [categoryAlerts, setCategoryAlerts] = useState({});
 
   // Snackbar states
   const [snackbar, setSnackbar] = useState({
@@ -144,7 +159,6 @@ const AdminClients = () => {
     }, 100);
   };
 
-
   /* ================= HANDLE YEAR SELECTION ================= */
   const handleYearSelect = (year) => {
     setSelectedYear(year);
@@ -164,9 +178,6 @@ const AdminClients = () => {
       month: month
     });
   };
-
-
-
 
   const renderDocumentPreview = () => {
     if (!previewDoc || !isPreviewOpen) return null;
@@ -276,12 +287,122 @@ const AdminClients = () => {
         { withCredentials: true }
       );
       setClients(res.data);
+
+      // Check for employee notes in each client
+      checkForEmployeeNotes(res.data);
     } catch (error) {
       console.error("Error loading clients:", error);
       showSnackbar("Error loading clients", "error");
     } finally {
       setLoading(false);
     }
+  };
+
+  /* ================= CHECK FOR EMPLOYEE NOTES ================= */
+  const checkForEmployeeNotes = (clientsData) => {
+    const alerts = {};
+
+    clientsData.forEach(client => {
+      if (!client.documents) return;
+
+      let hasNotes = false;
+
+      // Check all documents for employee notes
+      Object.keys(client.documents).forEach(year => {
+        Object.keys(client.documents[year]).forEach(month => {
+          const monthData = client.documents[year][month];
+
+          // Check main categories
+          ['sales', 'purchase', 'bank'].forEach(category => {
+            if (monthData[category]?.files) {
+              monthData[category].files.forEach(file => {
+                if (file.notes && file.notes.length > 0) {
+                  hasNotes = true;
+                }
+              });
+            }
+          });
+
+          // Check other categories
+          if (monthData.other) {
+            monthData.other.forEach(otherCat => {
+              if (otherCat.document?.files) {
+                otherCat.document.files.forEach(file => {
+                  if (file.notes && file.notes.length > 0) {
+                    hasNotes = true;
+                  }
+                });
+              }
+            });
+          }
+        });
+      });
+
+      if (hasNotes) {
+        alerts[client.clientId] = true;
+      }
+    });
+
+    setClientAlerts(alerts);
+  };
+
+  /* ================= CHECK MONTH ALERTS ================= */
+  const checkMonthAlerts = (monthData) => {
+    if (!monthData) return false;
+
+    let hasNotes = false;
+
+    // Check main categories
+    ['sales', 'purchase', 'bank'].forEach(category => {
+      if (monthData[category]?.files) {
+        monthData[category].files.forEach(file => {
+          if (file.notes && file.notes.length > 0) {
+            hasNotes = true;
+          }
+        });
+      }
+    });
+
+    // Check other categories
+    if (monthData.other) {
+      monthData.other.forEach(otherCat => {
+        if (otherCat.document?.files) {
+          otherCat.document.files.forEach(file => {
+            if (file.notes && file.notes.length > 0) {
+              hasNotes = true;
+            }
+          });
+        }
+      });
+    }
+
+    return hasNotes;
+  };
+
+  /* ================= CHECK CATEGORY ALERTS ================= */
+  const checkCategoryAlerts = (monthData, category, categoryName = null) => {
+    if (!monthData) return false;
+
+    let hasNotes = false;
+
+    if (category === 'other' && categoryName) {
+      const otherCat = monthData.other?.find(o => o.categoryName === categoryName);
+      if (otherCat?.document?.files) {
+        otherCat.document.files.forEach(file => {
+          if (file.notes && file.notes.length > 0) {
+            hasNotes = true;
+          }
+        });
+      }
+    } else if (monthData[category]?.files) {
+      monthData[category].files.forEach(file => {
+        if (file.notes && file.notes.length > 0) {
+          hasNotes = true;
+        }
+      });
+    }
+
+    return hasNotes;
   };
 
   /* ================= LOAD SINGLE CLIENT ================= */
@@ -295,41 +416,30 @@ const AdminClients = () => {
         { withCredentials: true }
       );
 
-      console.log("📦 Full API Response:", res.data);
-
-      // FIX: Handle both response formats
+      // Handle response format
       let clientData;
       if (res.data.success && res.data.client) {
-        // New format: { success: true, client: data, metadata: {...} }
         clientData = res.data.client;
-        console.log("✅ Using new format (success.client)");
       } else if (res.data._id || res.data.clientId) {
-        // Old format: direct client object
         clientData = res.data;
-        console.log("✅ Using old format (direct object)");
       } else {
-        console.error("❌ Invalid response format:", res.data);
         throw new Error("Invalid response format from server");
       }
-
-      // Debug: Check notes in the data
-      console.log("📝 Client data received:", {
-        hasDocuments: !!clientData.documents,
-        documentKeys: clientData.documents ? Object.keys(clientData.documents) : [],
-        sampleNotes: clientData.documents?.["2026"]?.["3"]?.sales?.files?.[0]?.notes,
-        customCategory: clientData.documents?.["2026"]?.["3"]?.other?.[0]
-      });
 
       setSelectedClient(clientData);
 
       // Set default selected month
-      setSelectedYear(currentYear);
-      setSelectedMonthNum(currentMonth);
+      const newSelectedYear = currentYear;
+      const newSelectedMonth = currentMonth;
+
+      setSelectedYear(newSelectedYear);
+      setSelectedMonthNum(newSelectedMonth);
       setSelectedMonth({
-        year: currentYear,
-        month: currentMonth
+        year: newSelectedYear,
+        month: newSelectedMonth
       });
 
+      // Don't update alerts here - they'll be updated by useEffect
       showSnackbar("Client data loaded successfully", "success");
 
     } catch (error) {
@@ -347,29 +457,45 @@ const AdminClients = () => {
     const yearKey = String(selectedMonth.year);
     const monthKey = String(selectedMonth.month);
 
-    console.log("📊 Getting month data for:", {
-      yearKey,
-      monthKey,
-      hasDocuments: !!selectedClient.documents,
-      hasYear: selectedClient.documents?.[yearKey] !== undefined,
-      hasMonth: selectedClient.documents?.[yearKey]?.[monthKey] !== undefined
-    });
-
-    const monthData = selectedClient.documents?.[yearKey]?.[monthKey];
-
-    if (monthData) {
-      console.log("📁 Month data found:", {
-        salesFiles: monthData.sales?.files?.length || 0,
-        purchaseFiles: monthData.purchase?.files?.length || 0,
-        bankFiles: monthData.bank?.files?.length || 0,
-        otherCategories: monthData.other?.length || 0,
-        customCategory: monthData.other?.[0]?.categoryName,
-        customFiles: monthData.other?.[0]?.document?.files?.length || 0
-      });
-    }
-
-    return monthData || null;
+    return selectedClient.documents?.[yearKey]?.[monthKey] || null;
   };
+
+  /* ================= CHECK AND UPDATE ALERTS ================= */
+  const updateAlerts = useCallback(() => {
+    if (!selectedClient || !selectedMonth) return;
+
+    const monthData = getMonthData();
+
+    if (monthData && selectedClient) {
+      // Check month alerts
+      const hasMonthAlerts = checkMonthAlerts(monthData);
+      const monthAlertKey = `${selectedClient.clientId}-${selectedMonth.year}-${selectedMonth.month}`;
+
+      if (monthAlerts[monthAlertKey] !== hasMonthAlerts) {
+        setMonthAlerts(prev => ({
+          ...prev,
+          [monthAlertKey]: hasMonthAlerts
+        }));
+      }
+
+      // Update category alerts
+      const catAlerts = {};
+      ['sales', 'purchase', 'bank'].forEach(cat => {
+        catAlerts[cat] = checkCategoryAlerts(monthData, cat);
+      });
+
+      if (monthData.other) {
+        monthData.other.forEach(otherCat => {
+          catAlerts[`other-${otherCat.categoryName}`] = checkCategoryAlerts(monthData, 'other', otherCat.categoryName);
+        });
+      }
+
+      // Only update if changed
+      if (JSON.stringify(catAlerts) !== JSON.stringify(categoryAlerts)) {
+        setCategoryAlerts(catAlerts);
+      }
+    }
+  }, [selectedClient, selectedMonth, categoryAlerts, monthAlerts]);
 
   /* ================= GET EMPLOYEE ASSIGNMENT ================= */
   const getEmployeeAssignment = () => {
@@ -544,8 +670,6 @@ const AdminClients = () => {
   const renderNotesSection = (notes, title = "Notes", notesKey = "default") => {
     if (!notes || notes.length === 0) return null;
 
-    console.log(`📝 Rendering notes for ${title}:`, notes);
-
     const isExpanded = expandedNotes[notesKey];
 
     return (
@@ -594,9 +718,6 @@ const AdminClients = () => {
       return null;
     }
 
-    console.log(`📋 Category notes found for ${categoryType} ${categoryName || ''}:`,
-      categoryData.categoryNotes);
-
     const notesKey = `category-${categoryType}-${categoryName || 'main'}-${selectedMonth.year}-${selectedMonth.month}`;
     return renderNotesSection(categoryData.categoryNotes, "📝 Client Notes", notesKey);
   };
@@ -607,17 +728,12 @@ const AdminClients = () => {
       return null;
     }
 
-    console.log(`📄 File notes found for ${categoryType}/${categoryName}:`, file.notes);
-
     const notesKey = `file-${categoryType}-${categoryName || 'main'}-${fileIndex}-${selectedMonth.year}-${selectedMonth.month}`;
     return renderNotesSection(file.notes, "👤 Employee Notes", notesKey);
   };
 
   /* ================= RENDER FILES IN CATEGORY ================= */
   const renderFilesInCategory = (files, categoryType, categoryName = null) => {
-    console.log(`📁 Rendering files for ${categoryType} ${categoryName || ''}:`,
-      files?.length || 0, "files");
-
     if (!files || files.length === 0) {
       return (
         <div className="empty-files">
@@ -632,6 +748,7 @@ const AdminClients = () => {
         {files.map((file, fileIndex) => {
           const fileId = `${categoryType}-${categoryName || 'main'}-${fileIndex}-${selectedMonth.year}-${selectedMonth.month}`;
           const isExpanded = expandedFiles[fileId];
+          const hasNotes = file.notes && file.notes.length > 0;
 
           return (
             <div key={fileIndex} className="file-item">
@@ -641,7 +758,14 @@ const AdminClients = () => {
                     <FiFileText size={16} />
                   </div>
                   <div>
-                    <p className="file-name">{file.fileName || 'Unnamed File'}</p>
+                    <div className="file-name-row">
+                      <p className="file-name">{file.fileName || 'Unnamed File'}</p>
+                      {hasNotes && (
+                        <span className="file-note-alert">
+                          <FiBell size={12} color="#f59e0b" title="Has employee notes" />
+                        </span>
+                      )}
+                    </div>
                     <div className="file-item-meta">
                       <span className="meta-item">
                         <FiClock size={12} />
@@ -728,6 +852,147 @@ const AdminClients = () => {
     }));
   };
 
+  /* ================= RENDER CLIENT DETAILS MODAL ================= */
+  const renderClientDetailsModal = () => {
+    if (!selectedClient) return null;
+
+    return (
+      <Modal
+        open={clientDetailsModal}
+        onClose={() => setClientDetailsModal(false)}
+        aria-labelledby="client-details-modal"
+        aria-describedby="client-details-description"
+      >
+        <Box className="client-details-modal">
+          <div className="modal-header">
+            <h2 className="modal-title">
+              <FiUser size={24} />
+              Client Details
+            </h2>
+            <button
+              className="modal-close-btn"
+              onClick={() => setClientDetailsModal(false)}
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="modal-content">
+            <div className="client-info-grid">
+              <div className="info-section">
+                <h3><FiUser size={18} /> Personal Information</h3>
+                <div className="info-row">
+                  <span className="label">Full Name:</span>
+                  <span className="value">{selectedClient.name}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">First Name:</span>
+                  <span className="value">{selectedClient.firstName || 'N/A'}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">Last Name:</span>
+                  <span className="value">{selectedClient.lastName || 'N/A'}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">Email:</span>
+                  <span className="value">{selectedClient.email}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">Phone:</span>
+                  <span className="value">{selectedClient.phone || 'N/A'}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">Address:</span>
+                  <span className="value">{selectedClient.address || 'N/A'}</span>
+                </div>
+              </div>
+
+              <div className="info-section">
+                <h3><FiBriefcase size={18} /> Business Information</h3>
+                <div className="info-row">
+                  <span className="label">Business Name:</span>
+                  <span className="value">{selectedClient.businessName || 'N/A'}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">Business Address:</span>
+                  <span className="value">{selectedClient.businessAddress || 'N/A'}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">Business Nature:</span>
+                  <span className="value">{selectedClient.businessNature || 'N/A'}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">Registered Trade:</span>
+                  <span className="value">{selectedClient.registerTrade || 'N/A'}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">VAT Period:</span>
+                  <span className="value">{selectedClient.vatPeriod || 'N/A'}</span>
+                </div>
+              </div>
+
+              <div className="info-section">
+                <h3><FiCard size={18} /> Financial Information</h3>
+                <div className="info-row">
+                  <span className="label">Bank Account:</span>
+                  <span className="value">{selectedClient.bankAccount || 'N/A'}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">BIC Code:</span>
+                  <span className="value">{selectedClient.bicCode || 'N/A'}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">Plan Selected:</span>
+                  <span className="value">{selectedClient.planSelected || 'N/A'}</span>
+                </div>
+              </div>
+
+              <div className="info-section">
+                <h3><FiShield size={18} /> Legal Information</h3>
+                <div className="info-row">
+                  <span className="label">Visa Type:</span>
+                  <span className="value">{selectedClient.visaType || 'N/A'}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">Strong ID:</span>
+                  <span className="value">{selectedClient.hasStrongId || 'N/A'}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">Status:</span>
+                  <span className="value">
+                    {selectedClient.isActive ? (
+                      <span className="active-status">Active</span>
+                    ) : (
+                      <span className="inactive-status">Inactive</span>
+                    )}
+                  </span>
+                </div>
+                <div className="info-row">
+                  <span className="label">Enrollment Date:</span>
+                  <span className="value">
+                    {selectedClient.enrollmentDate ?
+                      new Date(selectedClient.enrollmentDate).toLocaleDateString() :
+                      new Date(selectedClient.createdAt).toLocaleDateString()
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="modal-footer">
+            <button
+              className="close-modal-btn"
+              onClick={() => setClientDetailsModal(false)}
+            >
+              Close
+            </button>
+          </div>
+        </Box>
+      </Modal>
+    );
+  };
+
   /* ================= FILTERED CLIENTS ================= */
   const filteredClients = clients.filter(client => {
     const matchesSearch = searchTerm === '' ||
@@ -745,25 +1010,21 @@ const AdminClients = () => {
     loadClients();
   }, []);
 
-  // Debug effect
+  // useEffect(() => {
+  //   if (selectedClient && selectedMonth) {
+  //     getMonthData();
+  //   }
+  // }, [selectedClient, selectedMonth]);
+
+
   useEffect(() => {
-    if (selectedClient && selectedMonth) {
-      const monthData = getMonthData();
-      console.log("🔄 DEBUG - Current State:", {
-        selectedClientId: selectedClient.clientId,
-        selectedMonth,
-        monthData,
-        salesFiles: monthData?.sales?.files,
-        otherCategories: monthData?.other,
-        notesInSales: monthData?.sales?.files?.[0]?.notes,
-        notesInCustom: monthData?.other?.[0]?.document?.files?.[0]?.notes
-      });
-    }
-  }, [selectedClient, selectedMonth]);
+    updateAlerts();
+  }, [updateAlerts]);
 
   const monthData = getMonthData();
   const employeeAssignment = getEmployeeAssignment();
   const accountingStatus = getAccountingStatus();
+  const currentMonthAlert = monthAlerts[`${selectedClient?.clientId}-${selectedMonth?.year}-${selectedMonth?.month}`];
 
   return (
     <AdminLayout>
@@ -842,7 +1103,14 @@ const AdminClients = () => {
                       {client.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="client-info">
-                      <h4>{client.name}</h4>
+                      <div className="client-name-row">
+                        <h4>{client.name}</h4>
+                        {clientAlerts[client.clientId] && (
+                          <span className="client-note-alert">
+                            <FiBell size={12} color="#f59e0b" title="Has employee notes" />
+                          </span>
+                        )}
+                      </div>
                       <p className="client-email">{client.email}</p>
                       <div className="client-meta">
                         {getStatusBadge(client.isActive)}
@@ -870,7 +1138,16 @@ const AdminClients = () => {
                       {selectedClient.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="profile-info">
-                      <h2>{selectedClient.name}</h2>
+                      <div className="profile-header-row">
+                        <h2>{selectedClient.name}</h2>
+                        <button
+                          className="view-more-btn"
+                          onClick={() => setClientDetailsModal(true)}
+                        >
+                          <FiExternalLink size={14} />
+                          View Full Details
+                        </button>
+                      </div>
                       <p className="email">{selectedClient.email}</p>
                       <div className="profile-meta">
                         <span className="meta-item">
@@ -892,6 +1169,11 @@ const AdminClients = () => {
                   <div className="section-header">
                     <h3>
                       <FiCalendar size={20} /> Select Month
+                      {currentMonthAlert && (
+                        <span className="month-alert-icon" title="This month has employee notes">
+                          <FiBell size={16} color="#f59e0b" />
+                        </span>
+                      )}
                     </h3>
                   </div>
 
@@ -946,6 +1228,11 @@ const AdminClients = () => {
                       <span className="current-month-text">
                         {formatMonthYear(selectedMonthNum, selectedYear)}
                       </span>
+                      {currentMonthAlert && (
+                        <span className="month-alert-badge" title="Has employee notes">
+                          <FiBell size={12} /> Notes
+                        </span>
+                      )}
                       {monthData && monthData.isLocked && (
                         <span className="month-lock-indicator">
                           <FiLock size={12} /> Locked
@@ -1164,6 +1451,7 @@ const AdminClients = () => {
                         const categoryData = monthData?.[category];
                         const categoryId = `${category}-${selectedMonth.year}-${selectedMonth.month}`;
                         const isExpanded = expandedFiles[categoryId];
+                        const hasAlerts = categoryAlerts[category];
 
                         return (
                           <div key={category} className="files-category">
@@ -1172,7 +1460,14 @@ const AdminClients = () => {
                                 <div className="category-icon">
                                   {getFileIcon(category)}
                                 </div>
-                                <h4>{category.charAt(0).toUpperCase() + category.slice(1)} Documents</h4>
+                                <div className="category-title-content">
+                                  <h4>{category.charAt(0).toUpperCase() + category.slice(1)} Documents</h4>
+                                  {hasAlerts && (
+                                    <span className="category-alert-icon" title="Has employee notes">
+                                      <FiBell size={12} color="#f59e0b" />
+                                    </span>
+                                  )}
+                                </div>
                                 <span className="file-count-badge">
                                   {categoryData?.files?.length || 0} files
                                 </span>
@@ -1245,12 +1540,20 @@ const AdminClients = () => {
                           monthData.other.map((otherCategory, index) => {
                             const categoryId = `other-${otherCategory.categoryName}-${selectedMonth.year}-${selectedMonth.month}`;
                             const isExpanded = expandedFiles[categoryId];
+                            const hasAlerts = categoryAlerts[`other-${otherCategory.categoryName}`];
 
                             return (
                               <div key={index} className="other-category-item">
                                 <div className="other-category-header">
                                   <div className="other-category-title">
-                                    <h5>{otherCategory.categoryName}</h5>
+                                    <div className="other-category-title-content">
+                                      <h5>{otherCategory.categoryName}</h5>
+                                      {hasAlerts && (
+                                        <span className="category-alert-icon" title="Has employee notes">
+                                          <FiBell size={12} color="#f59e0b" />
+                                        </span>
+                                      )}
+                                    </div>
                                     <span className="file-count-badge">
                                       {otherCategory.document?.files?.length || 0} files
                                     </span>
@@ -1324,6 +1627,9 @@ const AdminClients = () => {
             )}
           </div>
         </div>
+
+        {/* CLIENT DETAILS MODAL */}
+        {renderClientDetailsModal()}
 
         {/* DOCUMENT PREVIEW MODAL */}
         {renderDocumentPreview()}

@@ -445,3 +445,43 @@
     font-size: 14px;
   }
 }
+
+
+/* ---------- CLIENT SIDEBAR FOOTER ---------- */
+.client-sidebar-footer {
+  padding: 12px 10px;
+  border-top: 1px solid #333333;
+  text-align: center;
+  font-size: 11px;
+  color: #888888;
+  font-family: 'Poppins', sans-serif;
+  line-height: 1.4;
+}
+
+.client-footer-link {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.client-footer-link:hover {
+  color: #9ce76a;
+  text-decoration: underline;
+}
+
+/* Hide footer text when sidebar collapsed */
+#client-sidebar.hide .client-sidebar-footer span,
+#client-sidebar.hide .client-footer-link {
+  display: none;
+}
+
+/* Dot indicator when collapsed */
+#client-sidebar.hide .client-sidebar-footer::after {
+  content: "•";
+  color: var(--green);
+  font-size: 16px;
+}

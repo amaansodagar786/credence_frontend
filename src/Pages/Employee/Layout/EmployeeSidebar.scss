@@ -425,6 +425,7 @@
 
   .employee-page-content {
     padding: 12px;
+    width: 100%;
   }
 
   .employee-profile {
@@ -442,4 +443,45 @@
     height: 32px;
     font-size: 14px;
   }
+}
+
+
+
+/* ---------- EMPLOYEE SIDEBAR FOOTER ---------- */
+.employee-sidebar-footer {
+  padding: 12px 10px;
+  border-top: 1px solid #333333;
+  text-align: center;
+  font-size: 11px;
+  color: #888888;
+  font-family: 'Poppins', sans-serif;
+  line-height: 1.4;
+}
+
+.employee-footer-link {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.employee-footer-link:hover {
+  color: #9ce76a;
+  text-decoration: underline;
+}
+
+/* Hide footer text when sidebar collapsed */
+#employee-sidebar.hide .employee-sidebar-footer span,
+#employee-sidebar.hide .employee-footer-link {
+  display: none;
+}
+
+/* Dot indicator when collapsed */
+#employee-sidebar.hide .employee-sidebar-footer::after {
+  content: "•";
+  color: var(--green);
+  font-size: 16px;
 }

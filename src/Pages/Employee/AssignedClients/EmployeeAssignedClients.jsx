@@ -29,7 +29,9 @@ import {
   FiMessageSquare,
   FiRefreshCw,
   FiEdit,
-  FiUserCheck
+  FiUserCheck,
+  FiChevronDown,
+  FiChevronUp
 } from "react-icons/fi";
 import "./EmployeeAssignedClients.scss";
 
@@ -59,6 +61,9 @@ const EmployeeAssignedClients = () => {
   const [previewDoc, setPreviewDoc] = useState(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const previewRef = useRef(null);
+
+  /* ================= EXPANDED CATEGORY NOTES STATE ================= */
+  const [expandedCategoryNotes, setExpandedCategoryNotes] = useState({});
 
   /* ================= LOAD DATA ================= */
   const loadAssignedClients = async () => {
@@ -151,8 +156,7 @@ const EmployeeAssignedClients = () => {
 
     if (searchTerm) {
       filtered = filtered.filter(item =>
-        item.client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.client.clientId.toLowerCase().includes(searchTerm.toLowerCase())
+        item.client.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -201,7 +205,6 @@ const EmployeeAssignedClients = () => {
       iframe.addEventListener('selectstart', disableTextSelect);
       iframe.addEventListener('keydown', disableShortcuts);
       iframe.setAttribute('draggable', 'false');
-      iframe.style.pointerEvents = 'none';
     }
 
     previewRef.current.addEventListener('contextmenu', disableRightClick);
@@ -263,24 +266,18 @@ const EmployeeAssignedClients = () => {
     try {
       setAddingNote(true);
 
-      // Debug log
-      console.log("Selected file data:", selectedFileForNote);
-
       const noteData = {
         clientId: selectedFileForNote.clientId,
         year: selectedFileForNote.year,
         month: selectedFileForNote.month,
-        categoryType: selectedFileForNote.categoryType, // Should be 'sales', 'purchase', 'bank', or 'other'
+        categoryType: selectedFileForNote.categoryType,
         fileName: selectedFileForNote.file.fileName,
         note: newNoteText.trim()
       };
 
-      // Only add categoryName if categoryType is 'other'
       if (selectedFileForNote.categoryType === 'other') {
         noteData.categoryName = selectedFileForNote.categoryName;
       }
-
-      console.log("Sending note data:", noteData);
 
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/employee/add-file-note`,
@@ -293,9 +290,6 @@ const EmployeeAssignedClients = () => {
         }
       );
 
-      console.log("Response:", response.data);
-
-      // Refresh the files data
       await loadAssignmentFiles(
         selectedFileForNote.clientId,
         selectedFileForNote.year,
@@ -305,11 +299,18 @@ const EmployeeAssignedClients = () => {
       closeAddNoteModal();
     } catch (error) {
       console.error("Error adding note:", error);
-      console.error("Error response:", error.response?.data);
       alert(`Failed to add note: ${error.response?.data?.message || error.message}`);
     } finally {
       setAddingNote(false);
     }
+  };
+
+  /* ================= EXPAND/Collapse Category Notes ================= */
+  const toggleCategoryNotes = (categoryKey) => {
+    setExpandedCategoryNotes(prev => ({
+      ...prev,
+      [categoryKey]: !prev[categoryKey]
+    }));
   };
 
   /* ================= HELPERS ================= */
@@ -411,10 +412,13 @@ const EmployeeAssignedClients = () => {
   };
 
   /* ================= RENDER CATEGORY NOTES ================= */
-  const renderCategoryNotes = (category) => {
+  const renderCategoryNotes = (category, categoryKey) => {
     if (!category || !category.categoryNotes || category.categoryNotes.length === 0) {
       return null;
     }
+
+    const isExpanded = expandedCategoryNotes[categoryKey];
+    const notesToShow = isExpanded ? category.categoryNotes : category.categoryNotes.slice(0, 3);
 
     return (
       <div className="category-notes-section">
@@ -424,16 +428,13 @@ const EmployeeAssignedClients = () => {
           <span className="notes-count-badge">{category.categoryNotes.length}</span>
         </div>
         <div className="category-notes-list">
-          {category.categoryNotes.slice(0, 3).map((note, index) => (
+          {notesToShow.map((note, index) => (
             <div key={index} className="category-note-item">
               <div className="category-note-text">
                 <FiEdit size={12} />
                 <span>{note.note}</span>
               </div>
               <div className="category-note-meta">
-                {/* <span className="category-note-by">
-                  {note.employeeName || note.addedBy || "Client"}
-                </span> */}
                 <span className="category-note-date">
                   {formatDate(note.addedAt)}
                 </span>
@@ -441,8 +442,21 @@ const EmployeeAssignedClients = () => {
             </div>
           ))}
           {category.categoryNotes.length > 3 && (
-            <div className="more-category-notes">
-              +{category.categoryNotes.length - 3} more notes
+            <div
+              className="more-category-notes"
+              onClick={() => toggleCategoryNotes(categoryKey)}
+            >
+              {isExpanded ? (
+                <>
+                  <FiChevronUp size={12} />
+                  Show less
+                </>
+              ) : (
+                <>
+                  <FiChevronDown size={12} />
+                  +{category.categoryNotes.length - 3} more notes
+                </>
+              )}
             </div>
           )}
         </div>
@@ -452,6 +466,7 @@ const EmployeeAssignedClients = () => {
 
   /* ================= RENDER FILES ================= */
   const renderFilesSection = (title, files, category, categoryName = null) => {
+    const categoryKey = `${title}-${categoryName || 'main'}`;
     const categoryNotes = category?.categoryNotes || [];
 
     if ((!files || files.length === 0) && categoryNotes.length === 0) {
@@ -491,7 +506,7 @@ const EmployeeAssignedClients = () => {
         </div>
 
         {/* Show category notes at the top */}
-        {renderCategoryNotes(category)}
+        {renderCategoryNotes(category, categoryKey)}
 
         {files && files.length > 0 ? (
           <div className="files-list">
@@ -510,9 +525,9 @@ const EmployeeAssignedClients = () => {
                     <span className="meta-item">
                       {formatFileSize(file.fileSize)}
                     </span>
-                    <span className="meta-item">
+                    {/* <span className="meta-item">
                       Uploaded by: {file.uploadedBy || "Unknown"}
-                    </span>
+                    </span> */}
                   </div>
 
                   {/* Employee File-level Notes Display */}
@@ -555,13 +570,10 @@ const EmployeeAssignedClients = () => {
                   <button
                     className="action-btn add-note"
                     onClick={() => {
-                      // For main categories, extract first word (e.g., "Purchase Documents" -> "purchase")
-                      // For other categories, we need 'other' as categoryType
                       let catType;
                       if (categoryName) {
                         catType = 'other';
                       } else {
-                        // Extract first word and convert to lowercase
                         catType = title.toLowerCase().split(' ')[0];
                       }
                       openAddNoteModal(file, catType, categoryName);
@@ -629,7 +641,7 @@ const EmployeeAssignedClients = () => {
                 "Sales Documents",
                 activeFilesData.categories?.sales?.files,
                 activeFilesData.categories?.sales,
-                null  // Main categories don't need categoryName
+                null
               )}
 
               {/* Purchase Files */}
@@ -637,14 +649,14 @@ const EmployeeAssignedClients = () => {
                 "Purchase Documents",
                 activeFilesData.categories?.purchase?.files,
                 activeFilesData.categories?.purchase,
-                null  // Changed from "purchase"
+                null
               )}
 
               {renderFilesSection(
                 "Bank Documents",
                 activeFilesData.categories?.bank?.files,
                 activeFilesData.categories?.bank,
-                null  // Changed from "bank"
+                null
               )}
 
               {/* Other Categories */}
@@ -716,7 +728,7 @@ const EmployeeAssignedClients = () => {
               <div className="file-icon">
                 <FiFileText size={32} />
               </div>
-              <div>
+              <div className="file-info-content">
                 <h4>{selectedFileForNote.file.fileName}</h4>
                 <p className="file-path">
                   {selectedFileForNote.categoryType === 'other'
@@ -803,9 +815,6 @@ const EmployeeAssignedClients = () => {
               <span className="protection-text">
                 PROTECTED VIEW: Right-click & Drag disabled
               </span>
-              <span className="scroll-instruction">
-                (Use scrollbar on right →)
-              </span>
             </div>
 
             <div className="pdf-viewer-container">
@@ -813,14 +822,9 @@ const EmployeeAssignedClients = () => {
                 src={previewDoc.url}
                 title="PDF Document Preview"
                 width="100%"
-                height="1000px"
+                height="100%"
                 frameBorder="0"
                 className="pdf-iframe"
-                scrolling="no"
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  return false;
-                }}
               />
               <div
                 className="click-protector"
@@ -1006,7 +1010,6 @@ const EmployeeAssignedClients = () => {
                       </div>
                       <div className="client-info">
                         <h4>{client.name}</h4>
-                        <p className="client-id">ID: {client.clientId}</p>
                         <div className="client-meta">
                           <span className="assignments-count">
                             <FiCalendar />
@@ -1044,57 +1047,46 @@ const EmployeeAssignedClients = () => {
                     </div>
                   </div>
 
-                  <div className="assignments-list">
-                    {getAssignmentsForClient(activeClient.clientId).map((assignment) => (
-                      <div
-                        key={`${assignment.year}-${assignment.month}`}
-                        className={`assignment-card ${activeAssignment?._id === assignment._id ? 'active' : ''}`}
-                        onClick={() => setActiveAssignment(assignment)}
-                      >
-                        <div className="assignment-period">
-                          <div className="month-year">
-                            <span className="month">{getMonthName(assignment.month)}</span>
-                            <span className="year">{assignment.year}</span>
-                            {assignment.isCurrentMonth && (
-                              <span className="current-badge">Current</span>
-                            )}
+                  <div className="assignments-grid">
+                    {getAssignmentsForClient(activeClient.clientId).map((assignment) => {
+                      // Create a unique key that combines client ID with assignment period
+                      const assignmentKey = `${assignment.client.clientId}-${assignment.year}-${assignment.month}`;
+                      const activeAssignmentKey = activeAssignment
+                        ? `${activeAssignment.client.clientId}-${activeAssignment.year}-${activeAssignment.month}`
+                        : null;
+
+                      return (
+                        <div
+                          key={assignmentKey}
+                          className={`assignment-card ${activeAssignmentKey === assignmentKey ? 'active' : ''}`}
+                          onClick={() => setActiveAssignment(assignment)}
+                        >
+                          <div className="assignment-period">
+                            <span className="month-year">
+                              {getMonthName(assignment.month)} {assignment.year}
+                              {assignment.isCurrentMonth && (
+                                <span className="current-badge">Current</span>
+                              )}
+                            </span>
                           </div>
                           <div className="assignment-status">
                             {assignment.accountingDone ? (
                               <span className="status-badge completed">
-                                <FiCheckCircle /> Completed
+                                <FiCheckCircle />
                               </span>
                             ) : assignment.isLocked ? (
                               <span className="status-badge locked">
-                                <FiLock /> Locked
+                                <FiLock />
                               </span>
                             ) : (
                               <span className="status-badge pending">
-                                <FiAlertCircle /> Pending
+                                <FiAlertCircle />
                               </span>
                             )}
                           </div>
                         </div>
-                        <div className="assignment-info">
-                          <div className="info-row">
-                            <span className="label">Total Files:</span>
-                            <span className="value">
-                              {assignment.totalFiles || 0} file{assignment.totalFiles !== 1 ? 's' : ''}
-                            </span>
-                          </div>
-                          <div className="info-row">
-                            <span className="label">Assigned On:</span>
-                            <span className="value">
-                              {formatDate(assignment.assignedAt)}
-                            </span>
-                          </div>
-                          <div className="info-row">
-                            <span className="label">Task:</span>
-                            <span className="value task">{assignment.task || "Bookkeeping"}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </>
               ) : (
@@ -1158,10 +1150,6 @@ const EmployeeAssignedClients = () => {
                           <span className="label">Address:</span>
                           <span className="value">{activeAssignment.client.address || "Not provided"}</span>
                         </div>
-                        <div className="info-item">
-                          <span className="label">Client ID:</span>
-                          <span className="value code">{activeAssignment.client.clientId}</span>
-                        </div>
                       </div>
                     </div>
 
@@ -1223,7 +1211,7 @@ const EmployeeAssignedClients = () => {
                       </div>
                     </div>
 
-                    {/* Accounting Action - REMOVED LOCK CHECK */}
+                    {/* Accounting Action */}
                     <div className="info-card accounting-action-card">
                       <div className="accounting-header">
                         <h4>
@@ -1231,10 +1219,10 @@ const EmployeeAssignedClients = () => {
                         </h4>
                         {activeAssignment.accountingDoneAt && (
                           <div className="completion-info">
-                            Completed on {formatDate(activeAssignment.accountingDoneAt)}
-                            {activeAssignment.accountingDoneBy && (
+                            Updated on {formatDate(activeAssignment.accountingDoneAt)}
+                            {/* {activeAssignment.accountingDoneBy && (
                               <span> by {activeAssignment.accountingDoneBy}</span>
-                            )}
+                            )} */}
                           </div>
                         )}
                       </div>

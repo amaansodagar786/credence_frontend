@@ -5,9 +5,9 @@ import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { BiLogOut, BiLogIn } from "react-icons/bi";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { RxCross1 } from "react-icons/rx";
-import { 
-  FiUser, 
-  FiHome, 
+import {
+  FiUser,
+  FiHome,
   FiUsers,
   FiCheckSquare,
   FiShield
@@ -19,7 +19,7 @@ import "./EmployeeSidebar.scss";
 const EmployeeSidebar = ({ children }) => {
   const [toggle, setToggle] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -30,7 +30,7 @@ const EmployeeSidebar = ({ children }) => {
   }, []);
 
   const handleLogin = () => navigate("/login");
-  
+
   const handleLogout = async () => {
     try {
       await fetch(`${import.meta.env.VITE_API_URL}/employee/logout`, {
@@ -40,7 +40,7 @@ const EmployeeSidebar = ({ children }) => {
     } catch (error) {
       console.error("Logout error:", error);
     }
-    
+
     localStorage.removeItem("employeeToken");
     document.cookie = "employeeToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     setIsLoggedIn(false);
@@ -115,6 +115,20 @@ const EmployeeSidebar = ({ children }) => {
             </li>
           )}
         </ul>
+
+        {/* SIDEBAR FOOTER */}
+        <div className="employee-sidebar-footer">
+          <span>Designed & Developed By</span>
+          <a
+            href="https://techorses.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="employee-footer-link"
+          >
+            Techorses
+          </a>
+        </div>
+
       </div>
 
       {/* MAIN CONTENT AREA */}

@@ -5,11 +5,11 @@ import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { BiLogOut, BiLogIn } from "react-icons/bi";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { RxCross1 } from "react-icons/rx";
-import { 
-  FiUser, 
-  FiHome, 
-  FiUsers, 
-  FiFileText, 
+import {
+  FiUser,
+  FiHome,
+  FiUsers,
+  FiFileText,
   FiCheckSquare,
   FiSettings,
   FiShield,
@@ -23,7 +23,7 @@ import "./AdminSidebar.scss";
 const AdminSidebar = ({ children }) => {
   const [toggle, setToggle] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -34,22 +34,20 @@ const AdminSidebar = ({ children }) => {
   }, []);
 
   const handleLogin = () => navigate("/admin/login");
-  
+
   const handleLogout = async () => {
     try {
       await fetch(`${import.meta.env.VITE_API_URL}/admin/logout`, {
-        method: 'POST',
-        credentials: 'include'
+        method: "POST",
+        credentials: "include" // 🔴 REQUIRED
       });
     } catch (error) {
       console.error("Logout error:", error);
     }
-    
-    localStorage.removeItem("adminToken");
-    document.cookie = "adminToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    setIsLoggedIn(false);
+
     navigate("/admin/login");
   };
+
 
   // Auto-collapse sidebar on route change (mobile only)
   useEffect(() => {
@@ -70,7 +68,7 @@ const AdminSidebar = ({ children }) => {
     { icon: <FiUsers />, title: "Employees", path: "/admin/employees" },
     // { icon: <FiCheckSquare />, title: "Employees Tasks", path: "/admin/employees-tasks" }, 
     { icon: <TbUsers />, title: "Clients Info", path: "/admin/clients" },
-    { icon: <FiUserPlus />, title: "Register Admin", path: "/admin/login" },
+    // { icon: <FiUserPlus />, title: "Register Admin", path: "/admin/login" },
     // { icon: <FiSettings />, title: "Settings", path: "/admin/settings" }, 
   ];
 
@@ -123,6 +121,19 @@ const AdminSidebar = ({ children }) => {
             </li>
           )}
         </ul>
+
+        <div className="admin-sidebar-footer">
+          <span>Designed & Developed By</span>
+          <a
+            href="https://techorses.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="admin-footer-link"
+          >
+            Techorses
+          </a>
+        </div>
+
       </div>
 
       {/* MAIN CONTENT AREA */}
