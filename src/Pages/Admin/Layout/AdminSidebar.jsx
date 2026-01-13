@@ -36,18 +36,29 @@ const AdminSidebar = ({ children }) => {
   const handleLogin = () => navigate("/admin/login");
 
   const handleLogout = async () => {
+    console.log("Before logout - Cookies:", document.cookie);
+
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/admin/logout`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/logout`, {
         method: "POST",
-        credentials: "include" // 🔴 REQUIRED
+        credentials: "include",
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
+
+      console.log("Logout status:", response.status);
+      const data = await response.json();
+      console.log("Logout data:", data);
+
     } catch (error) {
       console.error("Logout error:", error);
     }
 
-    navigate("/admin/login");
+    // Force reload to clear any cached state
+    window.location.reload();
+    window.location.href = "/admin/login";
   };
-
 
   // Auto-collapse sidebar on route change (mobile only)
   useEffect(() => {
