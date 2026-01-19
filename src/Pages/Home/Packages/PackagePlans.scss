@@ -154,7 +154,7 @@
   position: absolute;
   bottom: -14px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) !important; // !important is needed
   background: #000;
   border: 2px solid #7cd64b;
   color: #7cd64b;
@@ -164,14 +164,16 @@
   cursor: pointer;
   z-index: 3;
   font-family: "Arimo", sans-serif;
-  transition: all 0.3s ease;
+  transition: all 0.3s ease !important; // Add !important here too
   min-width: 90px;
 
   &:hover {
-    background: #7cd64b;
-    color: #000;
+    background: #7cd64b !important;
+    color: #000 !important;
+    transform: translateX(-50%) scale(1.05) !important; // Keep both transforms
   }
 }
+
 
 // ===== ADDITIONAL SERVICES SECTION =====
 .additional-services {
