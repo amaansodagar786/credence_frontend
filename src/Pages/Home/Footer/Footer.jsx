@@ -9,7 +9,7 @@ import {
   FaLinkedinIn,
   FaYoutube,
 } from "react-icons/fa";
-import { useModal } from "../Model/ModalProvider"; // Adjust path based on your folder structure
+import { useModal } from "../Model/ModalProvider";
 
 const Footer = () => {
   const { openAgreementModal } = useModal();
@@ -27,40 +27,51 @@ const Footer = () => {
           {/* LEFT */}
           <div className="fgf-col fgf-brand-col">
             <h2>CREDENCE</h2>
-            <p>
+            <p className="fgf-hover-text">
               Bridging solutions,<br />
               Building trust.
             </p>
+           
           </div>
 
           {/* MIDDLE */}
           <div className="fgf-col fgf-links-col">
-            {/* Updated to open modal */}
-            <a 
-              href="#" 
-              onClick={handleEnrollClick}
-              className="modal-trigger-link"
-            >
+            <a href="#" onClick={handleEnrollClick}>
               Enroll now
             </a>
-            <a href="#">Sign In</a>
+            <a href="/login">Sign In</a>
           </div>
 
           {/* RIGHT */}
           <div className="fgf-col fgf-contact-col">
-            <p><FaPhoneAlt /> +358 415737082</p>
-            <p><FaEnvelope /> credence@jladgroup.fi</p>
-            <p>
+            <p className="fgf-hover-item">
+              <FaPhoneAlt />
+              <a href="tel:+358415737082">+358 415737082</a>
+            </p>
+
+            <p className="fgf-hover-item">
+              <FaEnvelope />
+              <a href="mailto:credence@jladgroup.fi">
+                credence@jladgroup.fi
+              </a>
+            </p>
+
+            <p className="fgf-address fgf-hover-item">
               <FaMapMarkerAlt />
-              Uomarinne I B 20 Vantaa 01600 Uusimaa Finland.
+              <a
+                href="https://www.google.com/maps/search/?api=1&query=Uomarinne+I+B+20+Vantaa+01600+Finland"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Uomarinne I B 20 Vantaa 01600 Uusimaa Finland.
+              </a>
             </p>
           </div>
         </div>
 
-        {/* LINE */}
         <div className="fgf-divider-line"></div>
 
-        {/* SOCIAL ICONS - RIGHT ALIGNED */}
+        {/* SOCIAL */}
         <div className="fgf-social-row">
           <div className="fgf-social-icons">
             <FaInstagram />
@@ -70,16 +81,34 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* COPYRIGHT - CENTERED BELOW */}
+        {/* COPYRIGHT */}
         <div className="fgf-copyright-row">
           <div className="fgf-copyright-text">
             <p className="desktop-view">
               Copyrights © 2026 - Credence Developed & Designed by
-              <span> TECHORSES</span>
+              <span>
+                <a
+                  href="https://techorses.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  TECHORSES
+                </a>
+              </span>
             </p>
+
             <p className="mobile-view">
-              Copyrights © 2026 - Credence<br />
-              Developed & Designed by <span>TECHORSES</span>
+              Copyrights © 2026 - Credence <br />
+              Developed & Designed by{" "}
+              <span>
+                <a
+                  href="https://techorses.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  TECHORSES
+                </a>
+              </span>
             </p>
           </div>
         </div>

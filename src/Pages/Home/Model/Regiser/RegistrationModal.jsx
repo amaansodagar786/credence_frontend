@@ -1,13 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { useFormik } from 'formik';
 import { useModal } from '../ModalProvider';
-import { toast, ToastContainer } from 'react-toastify'; // Import both
+import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../ModalStyles.scss';
 
 const RegistrationModal = () => {
   const { closeRegistrationModal, selectedPlan } = useModal();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Define plan prices
+  const planPrices = {
+    'Lite': '40 Euros + VAT',
+    'Taxi': '45 Euros + VAT', 
+    'Premium': '50 Euros + VAT',
+    'Pro': '60 Euros + VAT',
+    'Restaurant': '80 Euros + VAT'
+  };
 
   const formik = useFormik({
     initialValues: {
@@ -29,12 +38,6 @@ const RegistrationModal = () => {
     },
     
     onSubmit: async (values) => {
-      // TEST: First toast to check if it works
-      // toast.info('Form submission started!', {
-      //   position: "top-right",
-      //   autoClose: 3000,
-      // });
-      
       // 1. FIRST VALIDATE ALL FIELDS ARE FILLED
       const requiredFields = [
         'firstName', 'lastName', 'address', 'visaType', 'hasStrongId',
@@ -157,7 +160,7 @@ const RegistrationModal = () => {
           {/* Show selected plan info */}
           {selectedPlan && (
             <div className="selected-plan-info">
-              <p>You are registering for: <strong>{selectedPlan} Plan</strong></p>
+              <p>You are registering for: <strong>{selectedPlan} Plan</strong> <span className="plan-price">({planPrices[selectedPlan]})</span></p>
             </div>
           )}
 
@@ -392,6 +395,28 @@ const RegistrationModal = () => {
                     <input
                       type="radio"
                       name="businessNature"
+                      value="taxi"
+                      checked={formik.values.businessNature === 'taxi'}
+                      onChange={formik.handleChange}
+                      disabled={isSubmitting}
+                    />
+                    <span>Taxi</span>
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="businessNature"
+                      value="restaurant"
+                      checked={formik.values.businessNature === 'restaurant'}
+                      onChange={formik.handleChange}
+                      disabled={isSubmitting}
+                    />
+                    <span>Restaurant</span>
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="businessNature"
                       value="other"
                       checked={formik.values.businessNature === 'other'}
                       onChange={formik.handleChange}
@@ -435,6 +460,10 @@ const RegistrationModal = () => {
 
             {/* Row 10: Plan Selection */}
             <div className="select-group">
+              <div className="select-label-wrapper">
+                <span className="select-label">SELECT PLAN</span>
+                <span className="asterisk">*</span>
+              </div>
               <select
                 name="planSelected"
                 value={formik.values.planSelected}
@@ -443,12 +472,12 @@ const RegistrationModal = () => {
                 className="form-select"
                 disabled={isSubmitting}
               >
-                <option value="">SELECT PLAN*</option>
-                <option value="Lite">Lite</option>
-                <option value="Taxi">Taxi</option>
-                <option value="Premium">Premium</option>
-                <option value="Pro">Pro</option>
-                <option value="Restaurant">Restaurant</option>
+                <option value="">Select a plan...</option>
+                <option value="Lite">Lite - {planPrices['Lite']}</option>
+                <option value="Taxi">Taxi - {planPrices['Taxi']}</option>
+                <option value="Premium">Premium - {planPrices['Premium']}</option>
+                <option value="Pro">Pro - {planPrices['Pro']}</option>
+                <option value="Restaurant">Restaurant - {planPrices['Restaurant']}</option>
               </select>
               {selectedPlan && (
                 <p className="plan-note">Plan pre-selected based on your choice</p>

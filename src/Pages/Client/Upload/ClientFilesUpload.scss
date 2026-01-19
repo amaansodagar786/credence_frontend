@@ -63,7 +63,7 @@
   // Main Content
   .main-content {
     display: grid;
-    grid-template-columns: 320px 1fr;
+    grid-template-columns: 340px 1fr;
     gap: 24px;
 
     @media (max-width: 1024px) {
@@ -177,7 +177,7 @@
 
     .month-info-panel,
     .employee-info-panel {
-      padding: 20px;
+      padding: 20px 5px 20px 5px;
       border-bottom: 1px solid #f0f0f0;
 
       &:last-child {
@@ -199,12 +199,20 @@
           }
         }
 
+        .task-selection-dropdown {
+          width: 90%;
+        }
+
         .info-details {
           .info-grid {
             display: grid;
             gap: 12px;
 
             .info-item {
+
+              padding-left: 12px; // ← ADD THIS
+              padding-right: 12px;
+
               .label {
                 display: block;
                 font-size: 11px;
@@ -1853,6 +1861,200 @@
     .preview-modal-content {
       width: 98%;
       height: 95%;
+    }
+  }
+}
+
+
+
+/* ================= EMPLOYEE ASSIGNMENT UPDATES ================= */
+.employee-info-panel {
+  .info-section {
+    .task-selection-dropdown {
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #f0f0f0;
+
+      .dropdown-label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .task-dropdown {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #333;
+        background: white;
+        font-family: 'Poppins', sans-serif;
+        transition: all 0.2s ease;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23333333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+        background-size: 16px;
+        padding-right: 40px;
+
+        &:focus {
+          outline: none;
+          border-color: #7cd64b;
+          box-shadow: 0 0 0 3px rgba(124, 214, 75, 0.1);
+        }
+
+        &:disabled {
+          background-color: #f8f9fa;
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+      }
+    }
+
+    .employee-list-section {
+      .no-employee-message {
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        text-align: center;
+        color: #666;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .employee-assignments-list {
+        max-height: 300px;
+        overflow-y: auto;
+        padding-right: 4px;
+
+        &::-webkit-scrollbar {
+          width: 4px;
+        }
+
+        &::-webkit-scrollbar-track {
+          background: #f0f0f0;
+          border-radius: 2px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background: #7cd64b;
+          border-radius: 2px;
+        }
+
+        .employee-assignment-card {
+          background: #f8f9fa;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          padding: 12px;
+          margin-bottom: 10px;
+          transition: all 0.2s ease;
+
+          &:hover {
+            border-color: #7cd64b;
+            box-shadow: 0 2px 8px rgba(124, 214, 75, 0.1);
+          }
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          .employee-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+
+            .employee-name {
+              font-size: 14px;
+              font-weight: 600;
+              color: #000;
+              display: flex;
+              align-items: center;
+              gap: 6px;
+            }
+
+            .task-badge {
+              padding: 4px 10px;
+              border-radius: 20px;
+              font-size: 11px;
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.3px;
+
+              &.task-bookkeeping {
+                background: rgba(124, 214, 75, 0.1);
+                color: #5a9e30;
+                border: 1px solid rgba(124, 214, 75, 0.2);
+              }
+
+              &.task-vat-filing-computation,
+              &.task-vat-filing {
+                background: rgba(59, 130, 246, 0.1);
+                color: #1d4ed8;
+                border: 1px solid rgba(59, 130, 246, 0.2);
+              }
+
+              &.task-financial-statement-generation {
+                background: rgba(168, 85, 247, 0.1);
+                color: #7c3aed;
+                border: 1px solid rgba(168, 85, 247, 0.2);
+              }
+            }
+          }
+
+          .employee-details {
+            .detail-row {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 6px;
+              font-size: 13px;
+
+              &:last-child {
+                margin-bottom: 0;
+              }
+
+              .detail-label {
+                color: #666;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+              }
+
+              .detail-value {
+                color: #333;
+                font-weight: 600;
+
+                &.phone-number {
+                  color: #7cd64b;
+                  font-family: 'Courier New', monospace;
+                  letter-spacing: 0.5px;
+                }
+
+                &.accounting-done {
+                  color: #10b981;
+                  font-weight: 600;
+                }
+
+                &.accounting-pending {
+                  color: #f59e0b;
+                  font-weight: 600;
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

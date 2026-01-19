@@ -1,4 +1,4 @@
-/* ===== FONTS IMPORT ===== */
+// ===== FONTS IMPORT =====
 @import url('https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400..700;1,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
 @font-face {
@@ -8,21 +8,32 @@
   font-display: swap;
 }
 
-/* ===== SHARED BACKGROUND FOR BOTH SECTIONS ===== */
-.packages,
-.additional-services {
+// ===== PACKAGES SECTION BACKGROUND =====
+.packages {
   background:
-    radial-gradient(circle at left, rgba(124, 214, 75, 0.25), transparent 55%),
+    radial-gradient(circle at left top,
+      rgba(124, 214, 75, 0.25),
+      transparent 55%),
     #000;
   color: #fff;
 }
 
-/* ===== PACKAGES SECTION ===== */
-.packages {
-  padding: 40px 20px 00px 20px;
+// ===== ADDITIONAL SERVICES BACKGROUND =====
+.additional-services {
+  background:
+    radial-gradient(circle at right center,
+      rgba(124, 214, 75, 0.22),
+      transparent 60%),
+    #000;
+  color: #fff;
 }
 
-/* HEADING */
+// ===== PACKAGES SECTION =====
+.packages {
+  padding: 40px 20px 20px 20px;
+}
+
+// HEADING
 .packages-header {
   text-align: center;
   margin-bottom: 50px;
@@ -42,14 +53,14 @@
   display: block;
 }
 
-/* SUBHEADING */
+// SUBHEADING
 .packages-header p {
   font-family: "Arimo", sans-serif;
   font-size: 15px;
   opacity: 0.9;
 }
 
-/* TABLE WRAPPER - HORIZONTAL SCROLL ON MOBILE */
+// TABLE WRAPPER - HORIZONTAL SCROLL ON MOBILE
 .table-wrapper {
   overflow-x: auto;
   width: 100%;
@@ -59,7 +70,7 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* PRICING TABLE */
+// PRICING TABLE
 .pricing-table {
   width: 100%;
   min-width: 1100px;
@@ -90,7 +101,7 @@
   font-weight: 500;
 }
 
-/* COLUMN COLORS */
+// COLUMN COLORS
 .features {
   background: #555;
 }
@@ -115,7 +126,7 @@
   background: #000;
 }
 
-/* YES/NO */
+// YES/NO
 .yes {
   color: #7cd64b;
   font-weight: 600;
@@ -126,10 +137,10 @@
   font-weight: 600;
 }
 
-/* INVOICE CELL WITH BUTTON */
+// INVOICE CELL WITH BUTTON
 .invoice-cell {
   position: relative;
-  padding-bottom: 30px!important;
+  padding-bottom: 30px !important;
 }
 
 .cell-content {
@@ -154,16 +165,17 @@
   z-index: 3;
   font-family: "Arimo", sans-serif;
   transition: all 0.3s ease;
-  
+  min-width: 90px;
+
   &:hover {
     background: #7cd64b;
     color: #000;
   }
 }
 
-/* ===== ADDITIONAL SERVICES SECTION ===== */
+// ===== ADDITIONAL SERVICES SECTION =====
 .additional-services {
-  padding: 80px 20px;
+  padding: 40px 20px 50px;
   position: relative;
 }
 
@@ -184,7 +196,7 @@
   opacity: 0.9;
 }
 
-/* SERVICES BOX */
+// SERVICES BOX
 .services-box {
   max-width: 1000px;
   margin: 0 auto 50px;
@@ -196,7 +208,7 @@
   background: rgba(0, 0, 0, 0.75);
 }
 
-/* COLUMNS */
+// COLUMNS
 .service-col {
   flex: 1;
 }
@@ -232,14 +244,14 @@
   line-height: 1;
 }
 
-/* DIVIDER */
+// DIVIDER
 .divider {
   width: 1px;
   background: #7cd64b;
   margin: 0 40px;
 }
 
-/* ===== CONNECT US BUTTON ===== */
+// ===== CONNECT US BUTTON =====
 .connect-us-container {
   text-align: center;
   margin-top: 40px;
@@ -256,15 +268,21 @@
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  
+
   &:hover {
     background: #6ac94c;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(124, 214, 75, 0.3);
   }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none !important;
+  }
 }
 
-/* ===== CONNECT US MODAL ===== */
+// ===== CONNECT US MODAL =====
 .connect-modal-overlay {
   position: fixed;
   top: 0;
@@ -291,6 +309,7 @@
   position: relative;
   color: #fff;
   margin: auto;
+  z-index: 9999;
 }
 
 .connect-modal-close-btn {
@@ -309,6 +328,7 @@
   justify-content: center;
   border-radius: 50%;
   transition: all 0.3s ease;
+  z-index: 10000;
 
   &:hover {
     background: rgba(124, 214, 75, 0.2);
@@ -331,7 +351,7 @@
   font-size: 14px;
 }
 
-/* CONNECT FORM */
+// CONNECT FORM
 .connect-form {
   display: flex;
   flex-direction: column;
@@ -352,6 +372,11 @@
   font-family: "Inter", sans-serif;
   font-size: 14px;
   transition: all 0.3s ease;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 
   &::placeholder {
     color: #888;
@@ -377,6 +402,11 @@
   font-size: 14px;
   appearance: none;
   cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 
   option {
     background: #000;
@@ -404,26 +434,64 @@
   margin-top: 10px;
   transition: all 0.3s ease;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: #6ac94c;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(124, 214, 75, 0.4);
   }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none !important;
+  }
 }
 
-/* ===== MOBILE RESPONSIVE ===== */
+// ===== TOAST STYLES (For modal compatibility) =====
+:global(.Toastify__toast-container) {
+  z-index: 10000 !important;
+}
+
+:global(.Toastify__toast) {
+  z-index: 10001 !important;
+}
+
+// ===== LOADING ANIMATION =====
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.connect-submit-btn:disabled {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+// ===== MOBILE RESPONSIVE =====
 @media (max-width: 768px) {
-  .packages,
-  .additional-services {
+  .packages {
     padding: 60px 16px;
   }
 
-  .packages-header h2,
-  .section-header h2 {
+  .additional-services {
+    padding: 0px 16px 40px;
+  }
+
+  .packages-header h2 {
     font-size: 30px;
   }
 
-  /* Table stays scrollable horizontally on mobile */
+  .section-header h2 {
+    font-size: 28.5px;
+  }
+
+  // Table stays scrollable horizontally on mobile
   .table-wrapper {
     overflow-x: auto;
   }
@@ -432,7 +500,7 @@
     min-width: 1100px;
   }
 
-  /* Additional Services - stacked on mobile */
+  // Additional Services - stacked on mobile
   .services-box {
     flex-direction: column;
     border: none;
@@ -458,13 +526,17 @@
     display: none;
   }
 
-  /* Connect Us Button */
+  // Connect Us Button
   .connect-us-btn {
     padding: 12px 28px;
     font-size: 14px;
   }
 
-  /* Connect Modal */
+  // Connect Modal
+  .connect-modal-overlay {
+    padding: 10px;
+  }
+
   .connect-modal-container {
     padding: 30px 20px;
     margin: 10px;
@@ -484,8 +556,7 @@
     font-size: 13px;
   }
 
-  .connect-form-input
-  {
+  .connect-form-input {
     width: 91%;
   }
 
@@ -499,8 +570,57 @@
   .connect-modal-container {
     padding: 25px 16px;
   }
-  
+
   .connect-modal-heading {
     font-size: 22px;
   }
+}
+
+// ===== ANIMATION FOR FORM INPUTS =====
+.connect-form-input:focus,
+.connect-form-select:focus {
+  animation: inputFocus 0.3s ease;
+}
+
+@keyframes inputFocus {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.01);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+// ===== ERROR STATE ANIMATION =====
+@keyframes shakeError {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-5px);
+  }
+
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+.connect-form-input:invalid:not(:focus):not(:placeholder-shown) {
+  animation: shakeError 0.5s ease-in-out;
+  background-color: rgba(255, 0, 0, 0.1);
 }

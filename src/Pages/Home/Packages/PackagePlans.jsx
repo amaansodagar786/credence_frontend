@@ -1,4 +1,7 @@
 import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import "./PackagePlans.scss";
 import { useModal } from "../Model/ModalProvider";
 
@@ -11,6 +14,7 @@ const PackagePlans = () => {
     companyName: "",
     selectedService: ""
   });
+  const [loading, setLoading] = useState(false);
 
   // Get modal functions
   const { openAgreementModal } = useModal();
@@ -46,22 +50,109 @@ const PackagePlans = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
-    alert("Thank you! We will connect with you shortly.");
-    setFormData({
-      name: "",
-      email: "",
-      mobile: "",
-      companyName: "",
-      selectedService: ""
-    });
-    handleCloseModal();
+    
+    // Validate form
+    if (!formData.name.trim() || !formData.email.trim() || !formData.mobile.trim() || !formData.selectedService) {
+      toast.error("Please fill all required fields!", {
+        position: "top-center",
+        autoClose: 3000,
+        style: { zIndex: 10001 }
+      });
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error("Please enter a valid email address!", {
+        position: "top-center",
+        autoClose: 3000,
+        style: { zIndex: 10001 }
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/schedule-call/connect-us/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          mobile: formData.mobile.trim(),
+          companyName: formData.companyName.trim(),
+          selectedService: formData.selectedService
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Success toast
+        toast.success("🎉 Request submitted successfully! We'll contact you soon.", {
+          position: "top-center",
+          autoClose: 5000,
+          closeOnClick: true,
+          pauseOnHover: true,
+          style: { zIndex: 10001 }
+        });
+
+        // Reset form
+        setFormData({
+          name: "",
+          email: "",
+          mobile: "",
+          companyName: "",
+          selectedService: ""
+        });
+        
+        // Close modal after 1 second
+        setTimeout(() => {
+          handleCloseModal();
+        }, 1000);
+      } else {
+        // Error toast
+        toast.error(data.message || "Failed to submit request. Please try again.", {
+          position: "top-center",
+          autoClose: 4000,
+          style: { zIndex: 10001 }
+        });
+      }
+    } catch (error) {
+      console.error('Submission error:', error);
+      toast.error("Network error. Please check your connection and try again.", {
+        position: "top-center",
+        autoClose: 4000,
+        style: { zIndex: 10001 }
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <>
+      {/* Toast Container with high z-index */}
+      <ToastContainer 
+        position="top-center"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss={false}
+        draggable
+        pauseOnHover
+        theme="colored"
+        style={{ zIndex: 10000 }}
+      />
+      
       <section className="packages">
         <div className="packages-header">
           <h2>Package Plans</h2>
@@ -133,41 +224,61 @@ const PackagePlans = () => {
                 <td className="lite invoice-cell">
                   <div className="cell-content">
                     <span className="yes">✔ Yes</span>
-                    <button onClick={() => handleSelectPlan('Lite')}>
+                    <motion.button 
+                      onClick={() => handleSelectPlan('Lite')}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
                       Select Plan
-                    </button>
+                    </motion.button>
                   </div>
                 </td>
                 <td className="taxi invoice-cell">
                   <div className="cell-content">
                     <span className="yes">✔ Yes</span>
-                    <button onClick={() => handleSelectPlan('Taxi')}>
+                    <motion.button 
+                      onClick={() => handleSelectPlan('Taxi')}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
                       Select Plan
-                    </button>
+                    </motion.button>
                   </div>
                 </td>
                 <td className="premium invoice-cell">
                   <div className="cell-content">
                     <span className="yes">✔ Yes</span>
-                    <button onClick={() => handleSelectPlan('Premium')}>
+                    <motion.button 
+                      onClick={() => handleSelectPlan('Premium')}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
                       Select Plan
-                    </button>
+                    </motion.button>
                   </div>
                 </td>
                 <td className="pro invoice-cell">
                   <div className="cell-content">
                     <span className="yes">✔ Yes</span>
-                    <button onClick={() => handleSelectPlan('Pro')}>
+                    <motion.button 
+                      onClick={() => handleSelectPlan('Pro')}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
                       Select Plan
-                    </button>
+                    </motion.button>
                   </div>
                 </td>
                 <td className="restaurant invoice-cell">
                   <div className="cell-content">
                     <span className="no">✖ No</span>
-                    <button onClick={() => handleSelectPlan('Restaurant')}>
+                    <motion.button 
+                      onClick={() => handleSelectPlan('Restaurant')}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
                       Select Plan
-                    </button>
+                    </motion.button>
                   </div>
                 </td>
               </tr>
@@ -213,9 +324,14 @@ const PackagePlans = () => {
 
         {/* CONNECT US BUTTON */}
         <div className="connect-us-container">
-          <button className="connect-us-btn" onClick={handleOpenModal}>
+          <motion.button 
+            className="connect-us-btn" 
+            onClick={handleOpenModal}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
             CONNECT US
-          </button>
+          </motion.button>
         </div>
       </section>
 
@@ -240,6 +356,7 @@ const PackagePlans = () => {
                   onChange={handleInputChange}
                   required
                   className="connect-form-input"
+                  disabled={loading}
                 />
               </div>
 
@@ -252,6 +369,7 @@ const PackagePlans = () => {
                   onChange={handleInputChange}
                   required
                   className="connect-form-input"
+                  disabled={loading}
                 />
               </div>
 
@@ -264,6 +382,7 @@ const PackagePlans = () => {
                   onChange={handleInputChange}
                   required
                   className="connect-form-input"
+                  disabled={loading}
                 />
               </div>
 
@@ -275,6 +394,7 @@ const PackagePlans = () => {
                   value={formData.companyName}
                   onChange={handleInputChange}
                   className="connect-form-input"
+                  disabled={loading}
                 />
               </div>
 
@@ -285,6 +405,7 @@ const PackagePlans = () => {
                   onChange={handleInputChange}
                   required
                   className="connect-form-select"
+                  disabled={loading}
                 >
                   <option value="">SELECT SERVICE*</option>
                   {serviceOptions.map((service, index) => (
@@ -295,9 +416,19 @@ const PackagePlans = () => {
                 </select>
               </div>
 
-              <button type="submit" className="connect-submit-btn">
-                SEND REQUEST
-              </button>
+              <motion.button 
+                type="submit" 
+                className="connect-submit-btn"
+                disabled={loading}
+                style={{
+                  opacity: loading ? 0.7 : 1,
+                  cursor: loading ? 'not-allowed' : 'pointer'
+                }}
+                whileHover={loading ? {} : { scale: 1.02 }}
+                whileTap={loading ? {} : { scale: 0.98 }}
+              >
+                {loading ? 'SUBMITTING...' : 'SEND REQUEST'}
+              </motion.button>
             </form>
           </div>
         </div>

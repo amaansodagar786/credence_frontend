@@ -242,7 +242,7 @@
   /* ================= MAIN CONTENT GRID ================= */
   .main-content {
     display: grid;
-    grid-template-columns: 350px 1fr;
+    grid-template-columns: 300px 1fr;
     grid-template-rows: auto 1fr;
     gap: 24px;
     height: calc(100vh - 350px);
@@ -473,29 +473,27 @@
         }
       }
 
+      /* ================= MONTH CARDS IN ROWS (3 PER ROW) ================= */
       .assignments-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-        gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+        gap: 40px;
         flex: 1;
         overflow-y: auto;
         padding-right: 10px;
         align-content: flex-start;
 
-        .assignment-card {
+        .assignment-month-card {
           background: #f8f9fa;
           border: 1px solid #e5e7eb;
           border-radius: 10px;
           padding: 15px;
           cursor: pointer;
           transition: all 0.2s ease;
+          height: fit-content;
+          min-height: 120px;
           display: flex;
           flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          min-height: 90px;
-          position: relative;
 
           &:hover {
             background: rgba(124, 214, 75, 0.05);
@@ -503,8 +501,8 @@
             transform: translateY(-2px);
           }
 
-          &.active {
-            background: rgba(124, 214, 75, 0.15);
+          &.active-month {
+            background: rgba(124, 214, 75, 0.1);
             border-color: #7cd64b;
             box-shadow: 0 4px 12px rgba(124, 214, 75, 0.1);
             position: relative;
@@ -519,68 +517,202 @@
               background: #7cd64b;
               border-radius: 4px 0 0 4px;
             }
-
-            &:hover {
-              background: rgba(124, 214, 75, 0.2);
-              border-color: #7cd64b;
-            }
           }
 
-          .assignment-period {
+          .month-header {
             display: flex;
-            flex-direction: column;
-            gap: 5px;
+            justify-content: space-between;
+            align-items: flex-start;
             margin-bottom: 10px;
-            width: 100%;
+            min-height: 50px;
 
-            .month-year {
-              font-size: 15px;
-              font-weight: 600;
-              color: #000;
-              line-height: 1.3;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              gap: 4px;
+            .month-info {
+              flex: 1;
+              min-width: 0;
 
-              .current-badge {
-                background: rgba(245, 158, 11, 0.1);
-                color: #92400e;
-                font-size: 10px;
-                padding: 2px 6px;
-                border-radius: 10px;
-                font-weight: 500;
-                margin-top: 4px;
+              h4 {
+                margin: 0 0 8px 0;
+                color: #000;
+                font-size: 16px;
+                font-weight: 600;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              }
+
+              .month-stats {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+
+                .tasks-count {
+                  font-size: 12px;
+                  color: #666;
+                  background: rgba(124, 214, 75, 0.1);
+                  padding: 3px 8px;
+                  border-radius: 12px;
+                  font-weight: 500;
+                  white-space: nowrap;
+                }
+
+                .completed-count {
+                  font-size: 12px;
+                  color: #10b981;
+                  background: rgba(16, 185, 129, 0.1);
+                  padding: 3px 8px;
+                  border-radius: 12px;
+                  font-weight: 500;
+                  white-space: nowrap;
+                }
+              }
+            }
+
+            .month-actions {
+              flex-shrink: 0;
+
+              .expand-icon {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 28px;
+                height: 28px;
+                border-radius: 6px;
+                color: #666;
+                transition: all 0.2s ease;
+                cursor: pointer;
+
+                &:hover {
+                  background: rgba(124, 214, 75, 0.1);
+                  color: #7cd64b;
+                }
+
+                &.expanded {
+                  transform: rotate(180deg);
+                  background: rgba(124, 214, 75, 0.1);
+                  color: #7cd64b;
+                }
               }
             }
           }
 
-          .assignment-status {
-            .status-badge {
+          .month-tasks-list {
+            margin-top: 10px;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 10px;
+
+            .task-item {
               display: flex;
+              justify-content: space-between;
               align-items: center;
-              justify-content: center;
-              width: 28px;
-              height: 28px;
-              border-radius: 50%;
-              font-size: 12px;
+              padding: 8px 10px;
+              border-radius: 6px;
+              margin-bottom: 6px;
+              cursor: pointer;
+              transition: all 0.2s ease;
+              border: 1px solid transparent;
 
-              &.completed {
-                background: rgba(16, 185, 129, 0.1);
-                color: #065f46;
-                border: 1px solid rgba(16, 185, 129, 0.2);
+              &:hover {
+                width: 95% !important;
+                background: rgba(124, 214, 75, 0.05);
+                border-color: rgba(124, 214, 75, 0.2);
               }
 
-              &.locked {
-                background: rgba(107, 114, 128, 0.1);
-                color: #374151;
-                border: 1px solid rgba(107, 114, 128, 0.2);
+              &.selected-task {
+                width: 95% !important;
+                background: rgba(124, 214, 75, 0.15);
+                border-color: #7cd64b;
+                box-shadow: 0 2px 4px rgba(124, 214, 75, 0.1);
               }
 
-              &.pending {
-                background: rgba(245, 158, 11, 0.1);
-                color: #92400e;
-                border: 1px solid rgba(245, 158, 11, 0.2);
+              &:last-child {
+                margin-bottom: 0;
+              }
+
+              .task-info {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex: 1;
+                min-width: 0;
+
+                .task-badge {
+                  font-size: 11px;
+                  font-weight: 600;
+                  padding: 4px 8px;
+                  border-radius: 10px;
+                  display: inline-block;
+                  white-space: nowrap;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  max-width: 150px;
+
+                  &.task-bookkeeping {
+                    background: rgba(124, 214, 75, 0.15);
+                    color: #5a9e30;
+                    border: 1px solid rgba(124, 214, 75, 0.3);
+                  }
+
+                  &.task-vat-filing-computation {
+                    background: rgba(59, 130, 246, 0.15);
+                    color: #1d4ed8;
+                    border: 1px solid rgba(59, 130, 246, 0.3);
+                  }
+
+                  &.task-vat-filing {
+                    background: rgba(168, 85, 247, 0.15);
+                    color: #7c3aed;
+                    border: 1px solid rgba(168, 85, 247, 0.3);
+                  }
+
+                  &.task-financial-statement-generation {
+                    background: rgba(245, 158, 11, 0.15);
+                    color: #92400e;
+                    border: 1px solid rgba(245, 158, 11, 0.3);
+                  }
+                }
+
+                .task-status {
+                  flex-shrink: 0;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  width: 20px;
+                  height: 20px;
+                  border-radius: 50%;
+
+                  .status-done {
+                    color: #10b981;
+                    background: rgba(16, 185, 129, 0.1);
+                    width: 20px;
+                    height: 20px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 1px solid rgba(16, 185, 129, 0.2);
+                  }
+
+                  .status-pending {
+                    color: #f59e0b;
+                    background: rgba(245, 158, 11, 0.1);
+                    width: 20px;
+                    height: 20px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 1px solid rgba(245, 158, 11, 0.2);
+                  }
+                }
+              }
+
+              .task-action {
+                flex-shrink: 0;
+
+                svg {
+                  color: #7cd64b;
+                  font-size: 14px;
+                }
               }
             }
           }
@@ -2112,5 +2244,502 @@
 
   100% {
     transform: rotate(360deg);
+  }
+}
+
+
+/* ================= FIXED STYLES FOR GROUPED ASSIGNMENTS ================= */
+
+/* Month-Year Cards - Different background for active month */
+.assignment-month-card {
+  background: #f8f9fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  /* Ensure full width */
+
+  &:hover {
+    background: rgba(124, 214, 75, 0.05);
+    border-color: rgba(124, 214, 75, 0.3);
+  }
+
+  &.active-month {
+    background: rgba(124, 214, 75, 0.1);
+    border-color: #7cd64b;
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: #7cd64b;
+      border-radius: 4px 0 0 4px;
+    }
+  }
+
+  .month-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    width: 100%;
+
+    .month-info {
+      flex: 1;
+      min-width: 0;
+      /* Prevent overflow */
+      max-width: calc(100% - 40px);
+      /* Reserve space for arrow */
+
+      h4 {
+        margin: 0 0 5px 0;
+        color: #000;
+        font-size: 16px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+      }
+
+      .month-stats {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+
+        .tasks-count {
+          font-size: 12px;
+          color: #666;
+          background: rgba(124, 214, 75, 0.1);
+          padding: 3px 8px;
+          border-radius: 12px;
+          font-weight: 500;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        .completed-count {
+          font-size: 12px;
+          color: #10b981;
+          background: rgba(16, 185, 129, 0.1);
+          padding: 3px 8px;
+          border-radius: 12px;
+          font-weight: 500;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+      }
+    }
+
+    .month-actions {
+      flex-shrink: 0;
+      margin-left: 10px;
+
+      .expand-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        color: #666;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        flex-shrink: 0;
+
+        &:hover {
+          background: rgba(124, 214, 75, 0.1);
+          color: #7cd64b;
+        }
+
+        &.expanded {
+          transform: rotate(180deg);
+          background: rgba(124, 214, 75, 0.1);
+          color: #7cd64b;
+        }
+      }
+    }
+  }
+
+  .month-tasks-list {
+    margin-top: 10px;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 10px;
+    width: 100%;
+
+    .task-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      width: 100%;
+
+      &:hover {
+        background: rgba(124, 214, 75, 0.05);
+        border-color: rgba(124, 214, 75, 0.2);
+      }
+
+      &.selected-task {
+        background: rgba(124, 214, 75, 0.15);
+        border-color: #7cd64b;
+        box-shadow: 0 2px 6px rgba(124, 214, 75, 0.1);
+      }
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .task-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+        min-width: 0;
+        width: 100%;
+
+        .task-badge-wrapper {
+          flex: 1;
+          min-width: 0;
+          max-width: calc(100% - 40px);
+          /* Reserve space for status icon */
+        }
+
+        .task-badge {
+          font-size: 12px;
+          font-weight: 600;
+          padding: 5px 12px;
+          border-radius: 12px;
+          display: inline-block;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100%;
+          width: auto;
+
+          /* Task-specific colors */
+          &.task-bookkeeping {
+            background: rgba(124, 214, 75, 0.15);
+            color: #5a9e30;
+            border: 1px solid rgba(124, 214, 75, 0.3);
+          }
+
+          &.task-vat-filing-computation {
+            background: rgba(59, 130, 246, 0.15);
+            color: #1d4ed8;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+          }
+
+          &.task-vat-filing {
+            background: rgba(168, 85, 247, 0.15);
+            color: #7c3aed;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+          }
+
+          &.task-financial-statement-generation {
+            background: rgba(245, 158, 11, 0.15);
+            color: #92400e;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+          }
+        }
+
+        .task-status {
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+
+          .status-done {
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+          }
+
+          .status-pending {
+            color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+          }
+        }
+      }
+
+      .task-action {
+        flex-shrink: 0;
+        margin-left: 8px;
+
+        svg {
+          color: #7cd64b;
+        }
+      }
+    }
+  }
+}
+
+/* Task Selection Dropdown - Increased Width */
+.task-selection-dropdown {
+  background: #f8f9fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  width: 100%;
+
+  .dropdown-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    width: 100%;
+
+    svg {
+      color: #7cd64b;
+    }
+  }
+
+  .task-options {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    // width: 100%; 
+
+    .task-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 15px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: 100%;
+      min-width: 0;
+
+      &:hover {
+        border-color: #7cd64b;
+        transform: translateY(-1px);
+      }
+
+      &.active {
+        background: rgba(124, 214, 75, 0.15);
+        border-color: #7cd64b;
+        box-shadow: 0 2px 8px rgba(124, 214, 75, 0.1);
+      }
+
+      .task-badge {
+        font-size: 13px;
+        font-weight: 600;
+        padding: 6px 14px;
+        border-radius: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+        min-width: 0;
+        max-width: calc(100% - 40px);
+        /* Reserve space for icon */
+
+        /* Task-specific colors */
+        &.task-bookkeeping {
+          background: rgba(124, 214, 75, 0.15);
+          color: #5a9e30;
+          border: 1px solid rgba(124, 214, 75, 0.3);
+        }
+
+        &.task-vat-filing-computation {
+          background: rgba(59, 130, 246, 0.15);
+          color: #1d4ed8;
+          border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        &.task-vat-filing {
+          background: rgba(168, 85, 247, 0.15);
+          color: #7c3aed;
+          border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        &.task-financial-statement-generation {
+          background: rgba(245, 158, 11, 0.15);
+          color: #92400e;
+          border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+      }
+
+      .status-indicator {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+
+        &.done {
+          color: #10b981;
+          background: rgba(16, 185, 129, 0.1);
+          border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        &.pending {
+          color: #f59e0b;
+          background: rgba(245, 158, 11, 0.1);
+          border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+      }
+    }
+  }
+}
+
+
+
+/* Responsive Design for New Elements */
+@media (max-width: 768px) {
+  .assignment-month-card {
+    padding: 12px;
+
+    .month-header {
+      .month-info {
+        h4 {
+          font-size: 15px;
+        }
+
+        .month-stats {
+          gap: 8px;
+
+          .tasks-count,
+          .completed-count {
+            font-size: 11px;
+            padding: 2px 6px;
+          }
+        }
+      }
+    }
+
+    .month-tasks-list {
+      .task-item {
+        .task-info {
+          .task-badge {
+            font-size: 11px;
+            padding: 4px 10px;
+            max-width: calc(100% - 35px);
+          }
+
+          .task-status {
+            width: 20px;
+            height: 20px;
+
+            .status-done,
+            .status-pending {
+              width: 20px;
+              height: 20px;
+
+              svg {
+                font-size: 12px;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .task-selection-dropdown {
+    padding: 12px;
+
+    .task-options {
+      .task-option {
+        padding: 8px 12px;
+
+        .task-badge {
+          font-size: 12px;
+          padding: 5px 10px;
+          max-width: calc(100% - 35px);
+        }
+
+        .status-indicator {
+          width: 20px;
+          height: 20px;
+
+          svg {
+            font-size: 12px;
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .assignment-month-card {
+    .month-info {
+      .month-stats {
+        flex-direction: row;
+        /* Keep horizontal on mobile */
+        gap: 6px;
+
+        .tasks-count,
+        .completed-count {
+          font-size: 10px;
+          padding: 2px 6px;
+        }
+      }
+    }
+
+    .month-tasks-list {
+      .task-item {
+        .task-info {
+          .task-badge {
+            max-width: calc(100% - 30px);
+            font-size: 10px;
+            padding: 3px 8px;
+          }
+
+          .task-status {
+            width: 18px;
+            height: 18px;
+
+            .status-done,
+            .status-pending {
+              width: 18px;
+              height: 18px;
+
+              svg {
+                font-size: 10px;
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

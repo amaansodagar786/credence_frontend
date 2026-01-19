@@ -41,7 +41,8 @@ import {
   FiFilePlus,
   FiBook,
   FiExternalLink,
-  FiBell
+  FiBell,
+  FiList // ADDED
 } from "react-icons/fi";
 import { Snackbar, Alert, Modal, Box, Typography } from "@mui/material";
 import "./AdminClients.scss";
@@ -82,6 +83,10 @@ const AdminClients = () => {
     message: "",
     severity: "success"
   });
+
+  // ✅ NEW STATES FOR MULTIPLE EMPLOYEE ASSIGNMENTS
+  const [employeeAssignments, setEmployeeAssignments] = useState([]); // CHANGED from object to array
+  const [selectedTask, setSelectedTask] = useState(null); // NEW for task dropdown
 
   const now = new Date();
   const currentYear = now.getFullYear();
@@ -405,7 +410,7 @@ const AdminClients = () => {
     return hasNotes;
   };
 
-  /* ================= LOAD SINGLE CLIENT ================= */
+  /* ================= LOAD SINGLE CLIENT - UPDATED ================= */
   const loadClientDetails = async (clientId) => {
     try {
       setLoading(true);
@@ -427,6 +432,16 @@ const AdminClients = () => {
       }
 
       setSelectedClient(clientData);
+
+      // ✅ UPDATED: Set employee assignments array
+      const enrichedAssignments = clientData.employeeAssignments || [];
+      setEmployeeAssignments(enrichedAssignments);
+      
+      // Set default selected task
+      // if (enrichedAssignments.length > 0 && enrichedAssignments[0].task) {
+      //   setSelectedTask(enrichedAssignments[0].task);
+      // }
+      setSelectedTask("");
 
       // Set default selected month
       const newSelectedYear = currentYear;
@@ -458,6 +473,16 @@ const AdminClients = () => {
     const monthKey = String(selectedMonth.month);
 
     return selectedClient.documents?.[yearKey]?.[monthKey] || null;
+  };
+
+  /* ================= GET ASSIGNMENTS FOR CURRENT MONTH - NEW ================= */
+  const getAssignmentsForCurrentMonth = () => {
+    if (!employeeAssignments || !selectedMonth) return [];
+    
+    return employeeAssignments.filter(assignment => 
+      assignment.year === selectedMonth.year && 
+      assignment.month === selectedMonth.month
+    );
   };
 
   /* ================= CHECK AND UPDATE ALERTS ================= */
@@ -496,20 +521,6 @@ const AdminClients = () => {
       }
     }
   }, [selectedClient, selectedMonth, categoryAlerts, monthAlerts]);
-
-  /* ================= GET EMPLOYEE ASSIGNMENT ================= */
-  const getEmployeeAssignment = () => {
-    if (!selectedClient || !selectedMonth) return null;
-
-    const assignments = selectedClient.employeeAssignments;
-    if (!assignments || !Array.isArray(assignments)) return null;
-
-    return assignments.find(
-      assignment =>
-        assignment.year === selectedMonth.year &&
-        assignment.month === selectedMonth.month
-    );
-  };
 
   /* ================= GET DOCUMENT UPLOAD STATUS ================= */
   const getDocumentUploadStatus = () => {
@@ -639,31 +650,6 @@ const AdminClients = () => {
         )}
       </span>
     );
-  };
-
-  /* ================= GET ACCOUNTING STATUS ================= */
-  const getAccountingStatus = () => {
-    if (!selectedClient || !selectedMonth) return { done: false };
-
-    const assignment = selectedClient.employeeAssignments?.find(
-      a => a.year === selectedMonth.year && a.month === selectedMonth.month
-    );
-
-    if (assignment) {
-      return {
-        done: assignment.accountingDone || false,
-        doneAt: assignment.accountingDoneAt,
-        doneBy: assignment.accountingDoneBy,
-        employeeName: assignment.employeeName,
-        employeeId: assignment.employeeId,
-        assignedBy: assignment.assignedBy,
-        adminName: assignment.adminName,
-        assignedAt: assignment.assignedAt,
-        task: assignment.task || "Not specified"
-      };
-    }
-
-    return { done: false, task: "Not assigned" };
   };
 
   /* ================= RENDER NOTES SECTION ================= */
@@ -1010,20 +996,11 @@ const AdminClients = () => {
     loadClients();
   }, []);
 
-  // useEffect(() => {
-  //   if (selectedClient && selectedMonth) {
-  //     getMonthData();
-  //   }
-  // }, [selectedClient, selectedMonth]);
-
-
   useEffect(() => {
     updateAlerts();
   }, [updateAlerts]);
 
   const monthData = getMonthData();
-  const employeeAssignment = getEmployeeAssignment();
-  const accountingStatus = getAccountingStatus();
   const currentMonthAlert = monthAlerts[`${selectedClient?.clientId}-${selectedMonth?.year}-${selectedMonth?.month}`];
 
   return (
@@ -1244,152 +1221,136 @@ const AdminClients = () => {
 
                 {selectedMonth && (
                   <>
-                    {/* Month Information Panel */}
+                    {/* Month Information Panel - UPDATED */}
                     <div className="month-info-panel">
                       <div className="info-section">
                         <div className="info-header">
                           <h4>
                             <FiInfo size={18} /> Month Information
                           </h4>
-                          <button
-                            className="expand-info-btn"
-                            onClick={() => toggleInfoExpansion('monthInfo')}
-                          >
-                            {expandedInfo['monthInfo'] ? (
-                              <FiChevronUp size={16} />
-                            ) : (
-                              <FiChevronDown size={16} />
-                            )}
-                          </button>
+                          {/* REMOVED COLLAPSE BUTTON */}
                         </div>
 
-                        {expandedInfo['monthInfo'] && (
-                          <div className="info-details">
-                            <div className="info-grid">
-                              {/* Document Upload Status */}
-                              <div className="info-item">
-                                <span className="label">Document Status:</span>
-                                {getDocumentUploadBadge()}
-                              </div>
+                        {/* ✅ ALWAYS EXPANDED */}
+                        <div className="info-details">
+                          <div className="info-grid">
+                            {/* Document Upload Status */}
+                            <div className="info-item">
+                              <span className="label">Document Status:</span>
+                              {getDocumentUploadBadge()}
+                            </div>
 
-                              {/* Month Lock Status */}
-                              <div className="info-item">
-                                <span className="label">Month Status:</span>
-                                {monthData?.isLocked ? (
-                                  <span className="value locked">
-                                    <FiLock size={14} /> Locked
-                                    {monthData?.lockedAt && (
-                                      <span className="subtext">
-                                        on {new Date(monthData.lockedAt).toLocaleDateString()}
-                                      </span>
-                                    )}
-                                    {monthData?.lockedBy && (
-                                      <span className="subtext">
-                                        by {monthData.lockedBy}
-                                      </span>
-                                    )}
-                                  </span>
-                                ) : (
-                                  <span className="value unlocked">
-                                    <FiUnlock size={14} /> Unlocked
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* Accounting Status */}
-                              <div className="info-item">
-                                <span className="label">Accounting Status:</span>
-                                {accountingStatus.done ? (
-                                  <span className="value accounting-done">
-                                    <FiCheckCircle size={14} /> Completed
-                                    {accountingStatus.doneAt && (
-                                      <span className="subtext">
-                                        on {new Date(accountingStatus.doneAt).toLocaleDateString()}
-                                      </span>
-                                    )}
-                                    {accountingStatus.doneBy && (
-                                      <span className="subtext">
-                                        by {accountingStatus.employeeName || accountingStatus.doneBy}
-                                      </span>
-                                    )}
-                                  </span>
-                                ) : (
-                                  <span className="value accounting-pending">
-                                    <FiAlertCircle size={14} /> Pending
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* Task Information */}
-                              <div className="info-item">
-                                <span className="label">Assigned Task:</span>
-                                <span className="value task-info">
-                                  {accountingStatus.task}
+                            {/* Month Lock Status */}
+                            <div className="info-item">
+                              <span className="label">Month Status:</span>
+                              {monthData?.isLocked ? (
+                                <span className="value locked">
+                                  <FiLock size={14} /> Locked
+                                  {monthData?.lockedAt && (
+                                    <span className="subtext">
+                                      on {new Date(monthData.lockedAt).toLocaleDateString()}
+                                    </span>
+                                  )}
+                                  {monthData?.lockedBy && (
+                                    <span className="subtext">
+                                      by {monthData.lockedBy}
+                                    </span>
+                                  )}
                                 </span>
-                              </div>
-
-                              {monthData?.autoLockDate && (
-                                <div className="info-item">
-                                  <span className="label">Auto Lock Date:</span>
-                                  <span className="value">
-                                    {new Date(monthData.autoLockDate).toLocaleDateString()}
-                                  </span>
-                                </div>
+                              ) : (
+                                <span className="value unlocked">
+                                  <FiUnlock size={14} /> Unlocked
+                                </span>
                               )}
                             </div>
 
-                            {/* Employee Assignment Info */}
-                            {accountingStatus.employeeName && (
-                              <div className="assignment-info">
-                                <h5>
-                                  <FiUserCheck size={16} /> Employee Assignment Details
-                                </h5>
-                                <div className="assignment-details">
-                                  <div className="detail-item">
-                                    <span className="label">Assigned Employee:</span>
-                                    <span className="value">
-                                      {accountingStatus.employeeName || 'Unknown'}
-                                    </span>
-                                  </div>
-
-                                  <div className="detail-item">
-                                    <span className="label">Task:</span>
-                                    <span className="value">
-                                      {accountingStatus.task || 'Not specified'}
-                                    </span>
-                                  </div>
-
-                                  {accountingStatus.adminName && (
-                                    <div className="detail-item">
-                                      <span className="label">Assigned By:</span>
-                                      <span className="value">
-                                        {accountingStatus.adminName || 'Unknown'}
-                                      </span>
-                                    </div>
-                                  )}
-
-                                  {accountingStatus.assignedAt && (
-                                    <div className="detail-item">
-                                      <span className="label">Assigned On:</span>
-                                      <span className="value">
-                                        {new Date(accountingStatus.assignedAt).toLocaleDateString()}
-                                      </span>
-                                    </div>
-                                  )}
-
-                                  {accountingStatus.doneAt && (
-                                    <div className="detail-item">
-                                      <span className="label">Completed On:</span>
-                                      <span className="value">
-                                        {new Date(accountingStatus.doneAt).toLocaleDateString()}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
+                            {/* REMOVED: Task Information */}
+                            {/* REMOVED: Accounting Status */}
                           </div>
-                        )}
+
+                          {/* ✅ TASK SELECTION DROPDOWN - NEW */}
+                          <div className="task-selection-section">
+                            <div className="dropdown-wrapper">
+                              <label className="dropdown-label">
+                                <FiList size={14} /> Select Task
+                              </label>
+                              <select
+                                className="task-dropdown"
+                                value={selectedTask || ""}
+                                onChange={(e) => setSelectedTask(e.target.value)}
+                              >
+                                <option value="">All Tasks</option>
+                                {Array.from(new Set(getAssignmentsForCurrentMonth().map(a => a.task)))
+                                  .filter(task => task)
+                                  .map(task => (
+                                    <option key={task} value={task}>
+                                      {task}
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
+                          </div>
+
+                          {/* ✅ EMPLOYEE ASSIGNMENT DETAILS TABLE - UPDATED */}
+                          <div className="assignment-info">
+                            <h5>
+                              <FiUserCheck size={16} /> Employee Assignment Details
+                            </h5>
+                            
+                            {(() => {
+                              const assignments = getAssignmentsForCurrentMonth();
+                              const filteredAssignments = selectedTask
+                                ? assignments.filter(a => a.task === selectedTask)
+                                : assignments;
+                              
+                              if (filteredAssignments.length === 0) {
+                                return <div className="no-assignments">No employee assignments for selected task</div>;
+                              }
+                              
+                              return (
+                                <div className="assignments-table-container">
+                                  <table className="assignments-table">
+                                    <thead>
+                                      <tr>
+                                        <th>Task</th>
+                                        <th>Employee</th>
+                                        <th>Status</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {filteredAssignments.map((assignment, index) => (
+                                        <tr key={index}>
+                                          <td>
+                                            <span className="task-cell">{assignment.task || "Not specified"}</span>
+                                          </td>
+                                          <td>
+                                            <div className="employee-cell">
+                                              <FiUser size={12} />
+                                              <span>{assignment.employeeName || "Unknown"}</span>
+                                            </div>
+                                          </td>
+                                          <td>
+                                            <span className={`status-cell ${assignment.accountingDone ? 'completed' : 'pending'}`}>
+                                              {assignment.accountingDone ? (
+                                                <>
+                                                  <FiCheckCircle size={12} /> Completed
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <FiAlertCircle size={12} /> Pending
+                                                </>
+                                              )}
+                                            </span>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </div>
                       </div>
                     </div>
 

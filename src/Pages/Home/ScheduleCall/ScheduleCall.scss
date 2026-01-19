@@ -146,6 +146,11 @@
   position: relative;
   overflow: hidden;
   
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
   // Animated border on focus
   &::after {
     content: '';
@@ -207,6 +212,21 @@
   position: relative;
   overflow: hidden;
   
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none !important;
+    
+    &::before {
+      display: none;
+    }
+    
+    &:hover {
+      background-color: #7cd64b;
+      box-shadow: none;
+    }
+  }
+  
   // Ripple effect
   &::before {
     content: '';
@@ -221,7 +241,7 @@
     transition: width 0.6s, height 0.6s;
   }
   
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: #6acb48;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(124, 214, 75, 0.3);
@@ -232,7 +252,7 @@
     }
   }
   
-  &:active {
+  &:active:not(:disabled) {
     transform: translateY(0);
   }
 
@@ -344,7 +364,7 @@
   }
 }
 
-// ===== ANIMATION KEYFRAMES (Optional) =====
+// ===== ANIMATION KEYFRAMES =====
 @keyframes pulseShadow {
   0%, 100% {
     box-shadow: 0 0 0 0 rgba(124, 214, 75, 0);
@@ -354,12 +374,11 @@
   }
 }
 
-// Optional: Add pulsing animation to button
-.sc-form button:hover {
+// Pulsing animation to button
+.sc-form button:not(:disabled):hover {
   animation: pulseShadow 1.5s ease-in-out infinite;
 }
 
-// ===== FORM ERROR STATE ANIMATION =====
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -369,4 +388,24 @@
 .sc-form input:invalid:not(:focus):not(:placeholder-shown) {
   animation: shake 0.5s ease-in-out;
   background-color: rgba(255, 0, 0, 0.1);
+}
+
+// ===== LOADING ANIMATION =====
+@keyframes loadingPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.sc-form button:disabled {
+  animation: loadingPulse 1.5s ease-in-out infinite;
+}
+
+// ===== FORM SUCCESS/ERROR STATES =====
+.sc-form input.success {
+  border: 2px solid #7cd64b;
+}
+
+.sc-form input.error {
+  border: 2px solid #ff6b6b;
+  animation: shake 0.5s ease-in-out;
 }

@@ -31,17 +31,20 @@ import {
   FiEdit,
   FiUserCheck,
   FiChevronDown,
-  FiChevronUp
+  FiChevronUp,
+  FiList,
+  FiChevronLeft
 } from "react-icons/fi";
 import "./EmployeeAssignedClients.scss";
 
 const EmployeeAssignedClients = () => {
   /* ================= STATE ================= */
   const [assignments, setAssignments] = useState([]);
-  const [filteredAssignments, setFilteredAssignments] = useState([]);
+  const [groupedAssignments, setGroupedAssignments] = useState({});
   const [clientList, setClientList] = useState([]);
   const [activeClient, setActiveClient] = useState(null);
   const [activeAssignment, setActiveAssignment] = useState(null);
+  const [activeMonthYear, setActiveMonthYear] = useState(null); // New: track active month-year
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -65,6 +68,9 @@ const EmployeeAssignedClients = () => {
   /* ================= EXPANDED CATEGORY NOTES STATE ================= */
   const [expandedCategoryNotes, setExpandedCategoryNotes] = useState({});
 
+  /* ================= EXPANDED MONTH GROUPS STATE ================= */
+  const [expandedMonthGroups, setExpandedMonthGroups] = useState({});
+
   /* ================= LOAD DATA ================= */
   const loadAssignedClients = async () => {
     try {
@@ -76,7 +82,10 @@ const EmployeeAssignedClients = () => {
 
       const data = res.data;
       setAssignments(data);
-      setFilteredAssignments(data);
+
+      // Group assignments by month-year
+      const grouped = groupAssignmentsByMonthYear(data);
+      setGroupedAssignments(grouped);
 
       // Build unique client list
       const clientMap = {};
@@ -85,29 +94,38 @@ const EmployeeAssignedClients = () => {
           clientMap[row.client.clientId] = {
             ...row.client,
             assignmentCount: 0,
-            currentMonthAssignment: null
+            tasksByMonth: {} // Track tasks by month
           };
         }
         clientMap[row.client.clientId].assignmentCount++;
 
-        // Track if client has current month assignment
-        if (row.isCurrentMonth && !clientMap[row.client.clientId].currentMonthAssignment) {
-          clientMap[row.client.clientId].currentMonthAssignment = row;
+        // Track tasks for each month
+        const monthKey = `${row.year}-${row.month}`;
+        if (!clientMap[row.client.clientId].tasksByMonth[monthKey]) {
+          clientMap[row.client.clientId].tasksByMonth[monthKey] = [];
         }
+        clientMap[row.client.clientId].tasksByMonth[monthKey].push(row.task || 'Bookkeeping');
       });
 
       const clientsArray = Object.values(clientMap);
       setClientList(clientsArray);
 
-      // Set default active client (prefer one with current month assignment)
+      // Set default active client
       if (clientsArray.length > 0) {
-        const clientWithCurrentMonth = clientsArray.find(client => client.currentMonthAssignment);
-        const defaultClient = clientWithCurrentMonth || clientsArray[0];
-
+        const defaultClient = clientsArray[0];
         setActiveClient(defaultClient);
+
+        // Get first month-year for this client
         const clientAssignments = getAssignmentsForClient(defaultClient.clientId);
         if (clientAssignments.length > 0) {
-          setActiveAssignment(clientAssignments[0]);
+          const firstMonthYear = Object.keys(groupedAssignments[defaultClient.clientId] || {})[0];
+          if (firstMonthYear) {
+            setActiveMonthYear(firstMonthYear);
+            const monthAssignments = groupedAssignments[defaultClient.clientId][firstMonthYear];
+            if (monthAssignments && monthAssignments.length > 0) {
+              setActiveAssignment(monthAssignments[0]);
+            }
+          }
         }
       }
 
@@ -117,6 +135,43 @@ const EmployeeAssignedClients = () => {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  /* ================= GROUP ASSIGNMENTS BY MONTH-YEAR ================= */
+  const groupAssignmentsByMonthYear = (assignmentsList) => {
+    const grouped = {};
+
+    assignmentsList.forEach(assignment => {
+      const clientId = assignment.client.clientId;
+      const monthKey = `${assignment.year}-${assignment.month}`;
+
+      if (!grouped[clientId]) {
+        grouped[clientId] = {};
+      }
+
+      if (!grouped[clientId][monthKey]) {
+        grouped[clientId][monthKey] = [];
+      }
+
+      grouped[clientId][monthKey].push(assignment);
+    });
+
+    // Sort each group by task
+    Object.keys(grouped).forEach(clientId => {
+      Object.keys(grouped[clientId]).forEach(monthKey => {
+        grouped[clientId][monthKey].sort((a, b) => {
+          const taskOrder = {
+            'Bookkeeping': 1,
+            'VAT Filing Computation': 2,
+            'VAT Filing': 3,
+            'Financial Statement Generation': 4
+          };
+          return (taskOrder[a.task] || 99) - (taskOrder[b.task] || 99);
+        });
+      });
+    });
+
+    return grouped;
   };
 
   /* ================= LOAD FILES DATA ================= */
@@ -168,7 +223,10 @@ const EmployeeAssignedClients = () => {
       filtered = filtered.filter(item => item.month.toString() === monthFilter);
     }
 
-    setFilteredAssignments(filtered);
+    // Regroup filtered assignments
+    const grouped = groupAssignmentsByMonthYear(filtered);
+    setGroupedAssignments(grouped);
+
   }, [assignments, searchTerm, yearFilter, monthFilter]);
 
   /* ================= DOCUMENT PREVIEW PROTECTION ================= */
@@ -313,6 +371,14 @@ const EmployeeAssignedClients = () => {
     }));
   };
 
+  /* ================= EXPAND/Collapse Month Groups ================= */
+  const toggleMonthGroup = (monthKey) => {
+    setExpandedMonthGroups(prev => ({
+      ...prev,
+      [monthKey]: !prev[monthKey]
+    }));
+  };
+
   /* ================= HELPERS ================= */
   const getAssignmentsForClient = (clientId) => {
     return assignments
@@ -360,11 +426,13 @@ const EmployeeAssignedClients = () => {
           clientId: activeAssignment.client.clientId,
           year: activeAssignment.year,
           month: activeAssignment.month,
+          task: activeAssignment.task || 'Bookkeeping',
           accountingDone: newStatus
         },
         { withCredentials: true }
       );
 
+      // Update local state
       setActiveAssignment(prev => ({
         ...prev,
         accountingDone: newStatus,
@@ -372,10 +440,12 @@ const EmployeeAssignedClients = () => {
         accountingDoneBy: "current-user"
       }));
 
+      // Update assignments array
       setAssignments(prev => prev.map(item =>
         item.client.clientId === activeAssignment.client.clientId &&
           item.year === activeAssignment.year &&
-          item.month === activeAssignment.month
+          item.month === activeAssignment.month &&
+          item.task === activeAssignment.task
           ? {
             ...item,
             accountingDone: newStatus,
@@ -384,6 +454,21 @@ const EmployeeAssignedClients = () => {
           }
           : item
       ));
+
+      // Update grouped assignments
+      const updatedGrouped = { ...groupedAssignments };
+      if (updatedGrouped[activeAssignment.client.clientId] &&
+        updatedGrouped[activeAssignment.client.clientId][`${activeAssignment.year}-${activeAssignment.month}`]) {
+
+        const monthAssignments = updatedGrouped[activeAssignment.client.clientId][`${activeAssignment.year}-${activeAssignment.month}`];
+        const assignmentIndex = monthAssignments.findIndex(a => a.task === activeAssignment.task);
+
+        if (assignmentIndex !== -1) {
+          updatedGrouped[activeAssignment.client.clientId][`${activeAssignment.year}-${activeAssignment.month}`][assignmentIndex].accountingDone = newStatus;
+          updatedGrouped[activeAssignment.client.clientId][`${activeAssignment.year}-${activeAssignment.month}`][assignmentIndex].accountingDoneAt = new Date();
+          setGroupedAssignments(updatedGrouped);
+        }
+      }
 
     } catch (error) {
       console.error("Error toggling accounting status:", error);
@@ -409,6 +494,84 @@ const EmployeeAssignedClients = () => {
     if (bytes < 1024) return bytes + " B";
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  };
+
+  /* ================= HANDLE CLIENT SELECTION ================= */
+  const handleClientSelect = (client) => {
+    setActiveClient(client);
+    setActiveAssignment(null);
+    setActiveMonthYear(null);
+
+    // Get first month-year for this client
+    const clientGrouped = groupedAssignments[client.clientId] || {};
+    const firstMonthYear = Object.keys(clientGrouped)[0];
+
+    if (firstMonthYear) {
+      setActiveMonthYear(firstMonthYear);
+      const monthAssignments = clientGrouped[firstMonthYear];
+      if (monthAssignments && monthAssignments.length > 0) {
+        setActiveAssignment(monthAssignments[0]);
+      }
+    }
+  };
+
+  /* ================= SEPARATE TOGGLE FOR EXPAND/COLLAPSE ================= */
+  /* ================= SEPARATE TOGGLE FOR EXPAND/COLLAPSE ================= */
+  const toggleMonthExpand = (monthKey, e) => {
+    e.stopPropagation(); // Prevent month selection when clicking arrow
+    e.preventDefault(); // Add this line
+
+    setExpandedMonthGroups(prev => ({
+      ...prev,
+      [monthKey]: !prev[monthKey]
+    }));
+  };
+
+  /* ================= UPDATE handleMonthYearSelect ================= */
+  const handleMonthYearSelect = (monthKey) => {
+    setActiveMonthYear(monthKey);
+
+    // Auto-expand when selecting month
+    if (!expandedMonthGroups[monthKey]) {
+      setExpandedMonthGroups(prev => ({
+        ...prev,
+        [monthKey]: true
+      }));
+    }
+
+    const [year, month] = monthKey.split('-').map(Number);
+
+    if (groupedAssignments[activeClient.clientId] &&
+      groupedAssignments[activeClient.clientId][monthKey]) {
+
+      const monthAssignments = groupedAssignments[activeClient.clientId][monthKey];
+
+      // Auto-select first task if not already selected
+      if (monthAssignments.length === 1) {
+        setActiveAssignment(monthAssignments[0]);
+      } else if (monthAssignments.length > 0 && !activeAssignment) {
+        // If no task selected yet, select first one
+        setActiveAssignment(monthAssignments[0]);
+      }
+    }
+  };
+
+  /* ================= UPDATE handleTaskSelect ================= */
+  const handleTaskSelect = (assignment, e) => {
+    if (e) e.stopPropagation();
+    setActiveAssignment(assignment);
+  };
+
+  /* ================= RENDER TASK BADGE ================= */
+  const renderTaskBadge = (task) => {
+    // Create CSS class from task name
+    const taskClass = task.toLowerCase().replace(/\s+/g, '-');
+
+    return (
+      <span className={`task-badge task-${taskClass}`}>
+        {task}
+      </span>
+    );
   };
 
   /* ================= RENDER CATEGORY NOTES ================= */
@@ -525,9 +688,6 @@ const EmployeeAssignedClients = () => {
                     <span className="meta-item">
                       {formatFileSize(file.fileSize)}
                     </span>
-                    {/* <span className="meta-item">
-                      Uploaded by: {file.uploadedBy || "Unknown"}
-                    </span> */}
                   </div>
 
                   {/* Employee File-level Notes Display */}
@@ -859,6 +1019,42 @@ const EmployeeAssignedClients = () => {
     );
   };
 
+  /* ================= RENDER TASK SELECTION DROPDOWN ================= */
+  const renderTaskSelection = () => {
+    if (!activeClient || !activeMonthYear) return null;
+
+    const monthAssignments = groupedAssignments[activeClient.clientId]?.[activeMonthYear] || [];
+
+    if (monthAssignments.length <= 1) return null;
+
+    return (
+      <div className="task-selection-dropdown">
+        <div className="dropdown-label">
+          <FiList size={16} />
+          <span>Select Task:</span>
+        </div>
+        <div className="task-options">
+          {monthAssignments.map((assignment, index) => (
+            <button
+              key={`${assignment.task}-${index}`}
+              className={`task-option ${activeAssignment?.task === assignment.task ? 'active' : ''}`}
+              onClick={() => handleTaskSelect(assignment)}
+            >
+              {renderTaskBadge(assignment.task)}
+              <span className={`status-indicator ${assignment.accountingDone ? 'done' : 'pending'}`}>
+                {assignment.accountingDone ? (
+                  <FiCheckCircle size={14} />
+                ) : (
+                  <FiAlertCircle size={14} />
+                )}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   /* ================= MAIN RENDER ================= */
   return (
     <EmployeeLayout>
@@ -871,7 +1067,7 @@ const EmployeeAssignedClients = () => {
                 <FiBriefcase /> My Assigned Clients
               </h2>
               <p className="subtitle">
-                View your assigned clients and manage accounting status
+                View your assigned clients and manage accounting status per task
               </p>
             </div>
             <div className="header-right">
@@ -902,7 +1098,7 @@ const EmployeeAssignedClients = () => {
               </div>
               <div className="stat-info">
                 <span className="stat-number">{assignments.length}</span>
-                <span className="stat-label">Total Assignments</span>
+                <span className="stat-label">Total Tasks</span>
               </div>
             </div>
             <div className="stat-card">
@@ -997,13 +1193,7 @@ const EmployeeAssignedClients = () => {
                     <div
                       key={client.clientId}
                       className={`client-card ${activeClient?.clientId === client.clientId ? 'active' : ''}`}
-                      onClick={() => {
-                        setActiveClient(client);
-                        const clientAssignments = getAssignmentsForClient(client.clientId);
-                        if (clientAssignments.length > 0) {
-                          setActiveAssignment(clientAssignments[0]);
-                        }
-                      }}
+                      onClick={() => handleClientSelect(client)}
                     >
                       <div className="client-avatar">
                         {client.name.charAt(0).toUpperCase()}
@@ -1013,14 +1203,8 @@ const EmployeeAssignedClients = () => {
                         <div className="client-meta">
                           <span className="assignments-count">
                             <FiCalendar />
-                            {client.assignmentCount} assignment{client.assignmentCount !== 1 ? 's' : ''}
+                            {client.assignmentCount} task{client.assignmentCount !== 1 ? 's' : ''}
                           </span>
-                          {client.currentMonthAssignment && (
-                            <span className="current-month-badge">
-                              <FiCalendar />
-                              Current Month
-                            </span>
-                          )}
                         </div>
                       </div>
                       {activeClient?.clientId === client.clientId && (
@@ -1032,7 +1216,7 @@ const EmployeeAssignedClients = () => {
               )}
             </div>
 
-            {/* Assignments History */}
+            {/* Assignments History - Grouped by Month-Year */}
             <div className="assignments-section">
               {activeClient ? (
                 <>
@@ -1042,48 +1226,131 @@ const EmployeeAssignedClients = () => {
                         <FiCalendar /> Assignments for {activeClient.name}
                       </h3>
                       <p className="section-subtitle">
-                        Current month shown first, click to view details
+                        Grouped by month, click to view tasks
                       </p>
                     </div>
                   </div>
 
                   <div className="assignments-grid">
-                    {getAssignmentsForClient(activeClient.clientId).map((assignment) => {
-                      // Create a unique key that combines client ID with assignment period
-                      const assignmentKey = `${assignment.client.clientId}-${assignment.year}-${assignment.month}`;
-                      const activeAssignmentKey = activeAssignment
-                        ? `${activeAssignment.client.clientId}-${activeAssignment.year}-${activeAssignment.month}`
-                        : null;
+                    {Object.keys(groupedAssignments[activeClient.clientId] || {}).map((monthKey) => {
+                      const [year, month] = monthKey.split('-').map(Number);
+                      const monthAssignments = groupedAssignments[activeClient.clientId][monthKey];
+                      const isActiveMonth = activeMonthYear === monthKey;
+                      const isExpanded = expandedMonthGroups[monthKey] || isActiveMonth;
+                      const completedTasks = monthAssignments.filter(a => a.accountingDone).length;
+                      const totalTasks = monthAssignments.length;
 
                       return (
                         <div
-                          key={assignmentKey}
-                          className={`assignment-card ${activeAssignmentKey === assignmentKey ? 'active' : ''}`}
-                          onClick={() => setActiveAssignment(assignment)}
+                          key={monthKey}
+                          className={`assignment-month-card ${isActiveMonth ? 'active-month' : ''}`}
+                          onClick={() => {
+                            // Set this month as active
+                            setActiveMonthYear(monthKey);
+
+                            // Close all other months, open only this one
+                            const newExpandedState = {};
+                            newExpandedState[monthKey] = !isExpanded;
+                            setExpandedMonthGroups(newExpandedState);
+
+                            // Select first task
+                            if (monthAssignments.length > 0) {
+                              setActiveAssignment(monthAssignments[0]);
+                            }
+                          }}
                         >
-                          <div className="assignment-period">
-                            <span className="month-year">
-                              {getMonthName(assignment.month)} {assignment.year}
-                              {assignment.isCurrentMonth && (
-                                <span className="current-badge">Current</span>
-                              )}
-                            </span>
+                          <div className="month-header">
+                            <div className="month-info">
+                              <h4>{getMonthName(month)} {year}</h4>
+                              <div className="month-stats">
+                                <span className="tasks-count">
+                                  {totalTasks} task{totalTasks !== 1 ? 's' : ''}
+                                </span>
+                                {completedTasks > 0 && (
+                                  <span className="completed-count">
+                                    {completedTasks} completed
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="month-actions">
+                              <button
+                                className={`expand-icon ${isExpanded ? 'expanded' : ''}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+
+                                  // 1. Set this month as active
+                                  setActiveMonthYear(monthKey);
+
+                                  // 2. Close all other months, keep only this one expanded
+                                  const newExpandedState = {};
+                                  newExpandedState[monthKey] = !isExpanded;
+                                  setExpandedMonthGroups(newExpandedState);
+
+                                  // 3. Select first task of this month (if not already selected)
+                                  if (monthAssignments.length > 0) {
+                                    const currentAssignmentKey = activeAssignment ?
+                                      `${activeAssignment.client.clientId}-${activeAssignment.year}-${activeAssignment.month}-${activeAssignment.task}` : '';
+
+                                    const firstAssignmentKey = `${monthAssignments[0].client.clientId}-${monthAssignments[0].year}-${monthAssignments[0].month}-${monthAssignments[0].task}`;
+
+                                    if (currentAssignmentKey !== firstAssignmentKey) {
+                                      setActiveAssignment(monthAssignments[0]);
+                                    }
+                                  }
+                                }}
+                                onMouseDown={(e) => e.stopPropagation()}
+                                title={isExpanded ? "Collapse tasks" : "Expand tasks"}
+                              >
+                                <FiChevronDown size={18} />
+                              </button>
+                            </div>
                           </div>
-                          <div className="assignment-status">
-                            {assignment.accountingDone ? (
-                              <span className="status-badge completed">
-                                <FiCheckCircle />
-                              </span>
-                            ) : assignment.isLocked ? (
-                              <span className="status-badge locked">
-                                <FiLock />
-                              </span>
-                            ) : (
-                              <span className="status-badge pending">
-                                <FiAlertCircle />
-                              </span>
-                            )}
-                          </div>
+
+                          {/* Task List (shown when expanded) */}
+                          {isExpanded && (
+                            <div className="month-tasks-list">
+                              {monthAssignments.map((assignment, index) => {
+                                const assignmentKey = `${assignment.client.clientId}-${assignment.year}-${assignment.month}-${assignment.task}`;
+                                const isActiveTask = activeAssignment?.task === assignment.task &&
+                                  activeAssignment?.year === assignment.year &&
+                                  activeAssignment?.month === assignment.month;
+
+                                return (
+                                  <div
+                                    key={assignmentKey}
+                                    className={`task-item ${isActiveTask ? 'selected-task' : ''}`}
+                                    onClick={(e) => handleTaskSelect(assignment, e)}
+                                  >
+                                    <div className="task-info">
+                                      <div className="task-badge-wrapper">
+                                        <span className="task-badge">
+                                          {assignment.task}
+                                        </span>
+                                      </div>
+                                      <span className="task-status">
+                                        {assignment.accountingDone ? (
+                                          <span className="status-done" title="Done">
+                                            <FiCheckCircle size={14} />
+                                          </span>
+                                        ) : (
+                                          <span className="status-pending" title="Pending">
+                                            <FiAlertCircle size={14} />
+                                          </span>
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className="task-action">
+                                      {isActiveTask && (
+                                        <FiChevronRight size={16} />
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -1108,8 +1375,7 @@ const EmployeeAssignedClients = () => {
                         <FiBriefcase /> Assignment Details
                       </h3>
                       <p className="section-subtitle">
-                        {getMonthName(activeAssignment.month)} {activeAssignment.year}
-                        {activeAssignment.isCurrentMonth && " (Current Month)"}
+                        {getMonthName(activeAssignment.month)} {activeAssignment.year} • {activeAssignment.task}
                       </p>
                     </div>
 
@@ -1126,6 +1392,9 @@ const EmployeeAssignedClients = () => {
                       </button>
                     </div>
                   </div>
+
+                  {/* Task Selection Dropdown (if multiple tasks for this month) */}
+                  {renderTaskSelection()}
 
                   <div className="details-content">
                     {/* Client Information */}
@@ -1167,7 +1436,9 @@ const EmployeeAssignedClients = () => {
                         </div>
                         <div className="info-item">
                           <span className="label">Task:</span>
-                          <span className="value task-badge">{activeAssignment.task || "Bookkeeping"}</span>
+                          <div className="value">
+                            {renderTaskBadge(activeAssignment.task)}
+                          </div>
                         </div>
                         <div className="info-item">
                           <span className="label">Assigned On:</span>
@@ -1220,9 +1491,6 @@ const EmployeeAssignedClients = () => {
                         {activeAssignment.accountingDoneAt && (
                           <div className="completion-info">
                             Updated on {formatDate(activeAssignment.accountingDoneAt)}
-                            {/* {activeAssignment.accountingDoneBy && (
-                              <span> by {activeAssignment.accountingDoneBy}</span>
-                            )} */}
                           </div>
                         )}
                       </div>
@@ -1262,6 +1530,12 @@ const EmployeeAssignedClients = () => {
                     </div>
                   </div>
                 </>
+              ) : activeMonthYear ? (
+                <div className="empty-state">
+                  <FiList />
+                  <h4>Select a Task</h4>
+                  <p>Choose a task from the month assignment to view details</p>
+                </div>
               ) : (
                 <div className="empty-state">
                   <FiAlertCircle />
