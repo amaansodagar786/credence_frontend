@@ -53,12 +53,17 @@ const PackagePlans = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Clear any existing toasts
+    toast.dismiss();
 
     // Validate form
     if (!formData.name.trim() || !formData.email.trim() || !formData.mobile.trim() || !formData.selectedService) {
       toast.error("Please fill all required fields!", {
         position: "top-center",
         autoClose: 3000,
+        closeButton: true,
+        draggable: false,
+        pauseOnHover: false,
         style: { zIndex: 10001 }
       });
       return;
@@ -70,6 +75,9 @@ const PackagePlans = () => {
       toast.error("Please enter a valid email address!", {
         position: "top-center",
         autoClose: 3000,
+        closeButton: true,
+        draggable: false,
+        pauseOnHover: false,
         style: { zIndex: 10001 }
       });
       return;
@@ -99,9 +107,14 @@ const PackagePlans = () => {
         toast.success("🎉 Request submitted successfully! We'll contact you soon.", {
           position: "top-center",
           autoClose: 5000,
-          closeOnClick: true,
-          pauseOnHover: true,
-          style: { zIndex: 10001 }
+          closeButton: true,
+          draggable: false,
+          pauseOnHover: false,
+          style: {
+            zIndex: 10001,
+            background: '#7cd64b',
+            color: '#000'
+          }
         });
 
         // Reset form
@@ -113,15 +126,16 @@ const PackagePlans = () => {
           selectedService: ""
         });
 
-        // Close modal after 1 second
-        setTimeout(() => {
-          handleCloseModal();
-        }, 1000);
+        // Close modal immediately
+        handleCloseModal();
       } else {
         // Error toast
         toast.error(data.message || "Failed to submit request. Please try again.", {
           position: "top-center",
           autoClose: 4000,
+          closeButton: true,
+          draggable: false,
+          pauseOnHover: false,
           style: { zIndex: 10001 }
         });
       }
@@ -130,6 +144,9 @@ const PackagePlans = () => {
       toast.error("Network error. Please check your connection and try again.", {
         position: "top-center",
         autoClose: 4000,
+        closeButton: true,
+        draggable: false,
+        pauseOnHover: false,
         style: { zIndex: 10001 }
       });
     } finally {
@@ -140,7 +157,7 @@ const PackagePlans = () => {
   return (
     <>
       {/* Toast Container with high z-index */}
-      <ToastContainer
+      {/* <ToastContainer
         position="top-center"
         autoClose={4000}
         hideProgressBar={false}
@@ -152,7 +169,7 @@ const PackagePlans = () => {
         pauseOnHover
         theme="colored"
         style={{ zIndex: 10000 }}
-      />
+      /> */}
 
       <section className="packages">
         <div className="packages-header">

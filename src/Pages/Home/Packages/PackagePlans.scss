@@ -449,10 +449,9 @@
   }
 }
 
-// ===== TOAST STYLES (For modal compatibility) =====
-:global(.Toastify__toast-container) {
-  z-index: 10000 !important;
-}
+// :global(.Toastify__toast-container) {
+//   z-index: 10000 !important;
+// }
 
 :global(.Toastify__toast) {
   z-index: 10001 !important;
