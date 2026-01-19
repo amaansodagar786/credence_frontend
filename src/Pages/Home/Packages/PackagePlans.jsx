@@ -54,16 +54,6 @@ const PackagePlans = () => {
     e.preventDefault();
 
 
-    toast.info("TEST: Form submission started", {
-      position: "top-center",
-      autoClose: 3000,
-      style: {
-        zIndex: 99999,
-        background: 'red',
-        color: 'white'
-      }
-    });
-
     // Validate form
     if (!formData.name.trim() || !formData.email.trim() || !formData.mobile.trim() || !formData.selectedService) {
       toast.error("Please fill all required fields!", {
