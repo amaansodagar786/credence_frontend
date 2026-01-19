@@ -52,7 +52,18 @@ const PackagePlans = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+
+    toast.info("TEST: Form submission started", {
+      position: "top-center",
+      autoClose: 3000,
+      style: {
+        zIndex: 99999,
+        background: 'red',
+        color: 'white'
+      }
+    });
+
     // Validate form
     if (!formData.name.trim() || !formData.email.trim() || !formData.mobile.trim() || !formData.selectedService) {
       toast.error("Please fill all required fields!", {
@@ -111,7 +122,7 @@ const PackagePlans = () => {
           companyName: "",
           selectedService: ""
         });
-        
+
         // Close modal after 1 second
         setTimeout(() => {
           handleCloseModal();
@@ -139,7 +150,7 @@ const PackagePlans = () => {
   return (
     <>
       {/* Toast Container with high z-index */}
-      <ToastContainer 
+      <ToastContainer
         position="top-center"
         autoClose={4000}
         hideProgressBar={false}
@@ -152,7 +163,7 @@ const PackagePlans = () => {
         theme="colored"
         style={{ zIndex: 10000 }}
       />
-      
+
       <section className="packages">
         <div className="packages-header">
           <h2>Package Plans</h2>
@@ -224,7 +235,7 @@ const PackagePlans = () => {
                 <td className="lite invoice-cell">
                   <div className="cell-content">
                     <span className="yes">✔ Yes</span>
-                    <motion.button 
+                    <motion.button
                       onClick={() => handleSelectPlan('Lite')}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -236,7 +247,7 @@ const PackagePlans = () => {
                 <td className="taxi invoice-cell">
                   <div className="cell-content">
                     <span className="yes">✔ Yes</span>
-                    <motion.button 
+                    <motion.button
                       onClick={() => handleSelectPlan('Taxi')}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -248,7 +259,7 @@ const PackagePlans = () => {
                 <td className="premium invoice-cell">
                   <div className="cell-content">
                     <span className="yes">✔ Yes</span>
-                    <motion.button 
+                    <motion.button
                       onClick={() => handleSelectPlan('Premium')}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -260,7 +271,7 @@ const PackagePlans = () => {
                 <td className="pro invoice-cell">
                   <div className="cell-content">
                     <span className="yes">✔ Yes</span>
-                    <motion.button 
+                    <motion.button
                       onClick={() => handleSelectPlan('Pro')}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -272,7 +283,7 @@ const PackagePlans = () => {
                 <td className="restaurant invoice-cell">
                   <div className="cell-content">
                     <span className="no">✖ No</span>
-                    <motion.button 
+                    <motion.button
                       onClick={() => handleSelectPlan('Restaurant')}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -324,8 +335,8 @@ const PackagePlans = () => {
 
         {/* CONNECT US BUTTON */}
         <div className="connect-us-container">
-          <motion.button 
-            className="connect-us-btn" 
+          <motion.button
+            className="connect-us-btn"
             onClick={handleOpenModal}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -416,8 +427,8 @@ const PackagePlans = () => {
                 </select>
               </div>
 
-              <motion.button 
-                type="submit" 
+              <motion.button
+                type="submit"
                 className="connect-submit-btn"
                 disabled={loading}
                 style={{
