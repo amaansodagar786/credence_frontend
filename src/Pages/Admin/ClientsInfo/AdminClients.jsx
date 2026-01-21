@@ -42,7 +42,10 @@ import {
   FiBook,
   FiExternalLink,
   FiBell,
-  FiList // ADDED
+  FiList,
+  FiImage,
+  FiGrid,
+  FiX
 } from "react-icons/fi";
 import { Snackbar, Alert, Modal, Box, Typography } from "@mui/material";
 import "./AdminClients.scss";
@@ -85,8 +88,8 @@ const AdminClients = () => {
   });
 
   // ✅ NEW STATES FOR MULTIPLE EMPLOYEE ASSIGNMENTS
-  const [employeeAssignments, setEmployeeAssignments] = useState([]); // CHANGED from object to array
-  const [selectedTask, setSelectedTask] = useState(null); // NEW for task dropdown
+  const [employeeAssignments, setEmployeeAssignments] = useState([]);
+  const [selectedTask, setSelectedTask] = useState(null);
 
   const now = new Date();
   const currentYear = now.getFullYear();
@@ -111,6 +114,16 @@ const AdminClients = () => {
     { value: 12, label: "December" }
   ];
 
+  /* ================= ADD FILE TYPE DETECTION FUNCTION ================= */
+  const getFileType = (fileName) => {
+    if (!fileName) return 'other';
+    const ext = fileName.split('.').pop().toLowerCase();
+    if (ext === 'pdf') return 'pdf';
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return 'image';
+    if (['xls', 'xlsx', 'csv', 'xlsm'].includes(ext)) return 'excel';
+    return 'other';
+  };
+
   // Show snackbar
   const showSnackbar = (message, severity = "success") => {
     setSnackbar({
@@ -131,37 +144,340 @@ const AdminClients = () => {
 
     const disableRightClick = (e) => {
       e.preventDefault();
+      e.stopPropagation();
       return false;
     };
 
     const disableDragStart = (e) => {
       e.preventDefault();
+      e.stopPropagation();
       return false;
     };
 
-    const iframe = previewRef.current.querySelector('iframe, img');
+    // Apply to iframe
+    const iframe = previewRef.current.querySelector('iframe');
     if (iframe) {
       iframe.addEventListener('contextmenu', disableRightClick);
       iframe.addEventListener('dragstart', disableDragStart);
       iframe.setAttribute('draggable', 'false');
     }
 
+    // Apply to images
+    const images = previewRef.current.querySelectorAll('img');
+    images.forEach(img => {
+      img.addEventListener('contextmenu', disableRightClick);
+      img.addEventListener('dragstart', disableDragStart);
+      img.setAttribute('draggable', 'false');
+      img.style.pointerEvents = 'none';
+      img.style.userSelect = 'none';
+      img.style.webkitUserSelect = 'none';
+    });
+
+    // Apply to the container
     previewRef.current.addEventListener('contextmenu', disableRightClick);
     previewRef.current.addEventListener('dragstart', disableDragStart);
   };
 
+  const cleanupProtection = () => {
+    if (!previewRef.current) return;
+
+    const iframe = previewRef.current.querySelector('iframe');
+    if (iframe) {
+      iframe.removeEventListener('contextmenu', () => { });
+      iframe.removeEventListener('dragstart', () => { });
+    }
+
+    const images = previewRef.current.querySelectorAll('img');
+    images.forEach(img => {
+      img.removeEventListener('contextmenu', () => { });
+      img.removeEventListener('dragstart', () => { });
+    });
+
+    previewRef.current.removeEventListener('contextmenu', () => { });
+    previewRef.current.removeEventListener('dragstart', () => { });
+  };
+
+  /* ================= OPEN DOCUMENT PREVIEW (CORRECTED) ================= */
   const openDocumentPreview = (document) => {
     if (!document || !document.url) {
       showSnackbar("No document available to preview", "warning");
       return;
     }
 
-    setPreviewDoc(document);
+    // Determine file type
+    const fileType = getFileType(document.fileName);
+    setPreviewDoc({ ...document, fileType });
     setIsPreviewOpen(true);
 
     setTimeout(() => {
       applyProtection();
     }, 100);
+  };
+
+  /* ================= CLOSE DOCUMENT PREVIEW ================= */
+  const closeDocumentPreview = () => {
+    cleanupProtection();
+    setIsPreviewOpen(false);
+    setPreviewDoc(null);
+  };
+
+  /* ================= RENDER DOCUMENT PREVIEW (FIXED VERSION) ================= */
+  const renderDocumentPreview = () => {
+    if (!previewDoc || !isPreviewOpen) return null;
+
+    const fileType = previewDoc.fileType || getFileType(previewDoc.fileName);
+    
+    // Handle overlay click
+    const handleOverlayClick = (e) => {
+      if (e.target === e.currentTarget) {
+        closeDocumentPreview();
+      }
+    };
+    
+    return (
+      <div 
+        className={`document-preview-modal ${isPreviewOpen ? 'open' : ''}`}
+        onClick={handleOverlayClick}
+      >
+        <div className="preview-modal-overlay"></div>
+        <div 
+          className="preview-modal-content"
+          ref={previewRef}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+          }}
+        >
+          <div className="preview-modal-header">
+            <h3 className="preview-title">
+              <span className="file-icon">
+                {fileType === 'pdf' && <FiFileText size={18} />}
+                {fileType === 'image' && <FiImage size={18} />}
+                {fileType === 'excel' && <FiGrid size={18} />}
+                {fileType === 'other' && <FiFile size={18} />}
+              </span>
+              {previewDoc.fileName}
+              <span className="file-type-badge">
+                {fileType.toUpperCase()}
+              </span>
+            </h3>
+            <button
+              className="close-preview-btn"
+              onClick={closeDocumentPreview}
+              title="Close Preview"
+            >
+              <FiX size={20} />
+            </button>
+          </div>
+          
+          <div 
+            className="preview-modal-body"
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              return false;
+            }}
+          >
+            <div className="protection-note">
+              <FiLock size={16} />
+              <span className="protection-text">
+                SECURE VIEW: Downloading and right-click disabled
+              </span>
+              <span className="scroll-hint">
+                (Scroll to view full content)
+              </span>
+            </div>
+            
+            {/* PDF Viewer */}
+            {fileType === 'pdf' && (
+              <div className="protected-view-container pdf-viewer-container">
+                <iframe
+                  src={`${previewDoc.url}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`}
+                  title="Protected PDF Viewer"
+                  width="100%"
+                  height="100%"
+                  frameBorder="0"
+                  className="pdf-iframe"
+                  scrolling="yes"
+                  style={{
+                    display: 'block',
+                    border: 'none'
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                  }}
+                />
+              </div>
+            )}
+            
+            {/* Image Viewer */}
+            {fileType === 'image' && (
+              <div 
+                className="protected-view-container image-viewer-container"
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  return false;
+                }}
+                style={{
+                  overflow: 'auto',
+                  maxHeight: '70vh',
+                  textAlign: 'center',
+                  backgroundColor: '#f5f5f5',
+                  position: 'relative'
+                }}
+              >
+                <img 
+                  src={previewDoc.url} 
+                  alt={previewDoc.fileName}
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    pointerEvents: 'none',
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    MozUserSelect: 'none',
+                    msUserSelect: 'none'
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    return false;
+                  }}
+                  onDragStart={(e) => e.preventDefault()}
+                />
+                {/* Protection overlay */}
+                <div 
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    pointerEvents: 'none',
+                    zIndex: 10
+                  }}
+                />
+              </div>
+            )}
+            
+            {/* Excel Viewer */}
+            {fileType === 'excel' && (
+              <div 
+                className="protected-view-container excel-viewer-container"
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  return false;
+                }}
+                style={{
+                  height: '70vh',
+                  position: 'relative'
+                }}
+              >
+                {/* <div className="protection-note" style={{
+                  backgroundColor: '#2196F3',
+                  color: 'white',
+                  padding: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px'
+                }}>
+                  <FiLock size={16} />
+                  <span>Microsoft Excel Online Viewer - Read Only</span>
+                </div> */}
+                
+                <iframe
+                  src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewDoc.url)}&wdStartOn=1`}
+                  width="100%"
+                  height="100%"
+                  frameBorder="0"
+                  scrolling="yes"
+                  style={{
+                    border: 'none',
+                    display: 'block'
+                  }}
+                  title={`Excel Viewer - ${previewDoc.fileName}`}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                  }}
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+                />
+                
+                <div className="viewer-info" style={{
+                  padding: '10px',
+                  backgroundColor: '#f5f5f5',
+                  fontSize: '12px',
+                  borderTop: '1px solid #ddd'
+                }}>
+                  <FiInfo size={12} /> 
+                  <span style={{marginLeft: '5px'}}>
+                    Using Microsoft Office Online Viewer. File cannot be downloaded from this view.
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            {/* Other Files */}
+            {fileType === 'other' && (
+              <div 
+                className="protected-view-container other-file-container"
+                onContextMenu={(e) => e.preventDefault()}
+                style={{
+                  padding: '40px 20px',
+                  textAlign: 'center',
+                  backgroundColor: '#f5f5f5',
+                  borderRadius: '8px'
+                }}
+              >
+                <FiFile size={64} style={{marginBottom: '20px', color: '#666'}} />
+                <h4 style={{marginBottom: '10px'}}>File Preview Not Available</h4>
+                <p style={{marginBottom: '20px', color: '#666'}}>
+                  This file type cannot be previewed in the browser.
+                </p>
+                <div className="file-info-box" style={{
+                  backgroundColor: '#fff',
+                  padding: '15px',
+                  borderRadius: '8px',
+                  border: '1px solid #ddd'
+                }}>
+                  <p><strong>File Name:</strong> {previewDoc.fileName}</p>
+                  <p><strong>File Size:</strong> {(previewDoc.fileSize / 1024).toFixed(1)} KB</p>
+                  <p><strong>Security:</strong> File download is disabled</p>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="preview-modal-footer">
+            <div className="file-info">
+              <span className="file-size">
+                <FiFile size={14} /> Size: {(previewDoc.fileSize / 1024).toFixed(1)} KB
+              </span>
+              <span className="upload-date">
+                <FiClock size={14} /> Uploaded: {previewDoc.uploadedAt ?
+                  new Date(previewDoc.uploadedAt).toLocaleDateString() :
+                  'N/A'}
+              </span>
+              <span className="file-type-indicator">
+                Type: {fileType.toUpperCase()}
+              </span>
+            </div>
+            
+            <button
+              className="btn-close-preview"
+              onClick={closeDocumentPreview}
+            >
+              Close Preview
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   /* ================= HANDLE YEAR SELECTION ================= */
@@ -183,105 +499,6 @@ const AdminClients = () => {
       month: month
     });
   };
-
-  const renderDocumentPreview = () => {
-    if (!previewDoc || !isPreviewOpen) return null;
-
-    const fileUrl = `${previewDoc.url}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`;
-
-    return (
-      <div
-        className={`document-preview-modal ${isPreviewOpen ? 'open' : ''}`}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          return false;
-        }}
-      >
-        <div className="preview-modal-overlay" onClick={closeDocumentPreview}></div>
-        <div
-          className="preview-modal-content"
-          ref={previewRef}
-          onContextMenu={(e) => e.preventDefault()}
-        >
-          <div className="preview-modal-header">
-            <h3 className="preview-title">
-              <span className="file-icon">📕</span>
-              {previewDoc.fileName}
-              <span className="file-type-badge">PDF</span>
-            </h3>
-            <button
-              className="close-preview-btn"
-              onClick={closeDocumentPreview}
-              title="Close Preview"
-              onContextMenu={(e) => e.preventDefault()}
-            >
-              ✕
-            </button>
-          </div>
-
-          <div
-            className="preview-modal-body"
-            onContextMenu={(e) => e.preventDefault()}
-          >
-            <div className="protection-note">
-              <FiLock size={16} />
-              <span className="protection-text">
-                SECURE VIEW: Right-click disabled
-              </span>
-            </div>
-
-            <div className="pdf-viewer-container">
-              <iframe
-                src={fileUrl}
-                title="Protected PDF Viewer"
-                width="100%"
-                height="100%"
-                frameBorder="0"
-                className="pdf-iframe"
-                scrolling="yes"
-                style={{
-                  display: 'block',
-                  border: 'none'
-                }}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  return false;
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="preview-modal-footer">
-            <div className="file-info">
-              <span className="file-size">
-                <FiFile size={14} /> Size: {(previewDoc.fileSize / 1024).toFixed(1)} KB
-              </span>
-              <span className="upload-date">
-                <FiClock size={14} /> Uploaded: {previewDoc.uploadedAt ?
-                  new Date(previewDoc.uploadedAt).toLocaleDateString() :
-                  'N/A'}
-              </span>
-            </div>
-
-            <button
-              className="btn-close-preview"
-              onClick={closeDocumentPreview}
-            >
-              Close Preview
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Reset PDF state when closing
-  const closeDocumentPreview = () => {
-    setIsPreviewOpen(false);
-    setPreviewDoc(null);
-  }
 
   /* ================= LOAD ALL CLIENTS ================= */
   const loadClients = async () => {
@@ -438,9 +655,6 @@ const AdminClients = () => {
       setEmployeeAssignments(enrichedAssignments);
       
       // Set default selected task
-      // if (enrichedAssignments.length > 0 && enrichedAssignments[0].task) {
-      //   setSelectedTask(enrichedAssignments[0].task);
-      // }
       setSelectedTask("");
 
       // Set default selected month
@@ -1228,10 +1442,8 @@ const AdminClients = () => {
                           <h4>
                             <FiInfo size={18} /> Month Information
                           </h4>
-                          {/* REMOVED COLLAPSE BUTTON */}
                         </div>
 
-                        {/* ✅ ALWAYS EXPANDED */}
                         <div className="info-details">
                           <div className="info-grid">
                             {/* Document Upload Status */}
@@ -1263,9 +1475,6 @@ const AdminClients = () => {
                                 </span>
                               )}
                             </div>
-
-                            {/* REMOVED: Task Information */}
-                            {/* REMOVED: Accounting Status */}
                           </div>
 
                           {/* ✅ TASK SELECTION DROPDOWN - NEW */}
@@ -1613,7 +1822,7 @@ const AdminClients = () => {
           >
             {snackbar.message}
           </Alert>
-        </Snackbar>
+        </Snackbar> 
       </div>
     </AdminLayout>
   );
