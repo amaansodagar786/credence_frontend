@@ -1644,3 +1644,135 @@
     font-style: italic;
   }
 }
+
+
+/* Add these styles to the end of your AdminEmployees.scss */
+
+/* Confirmation Modal Button Fixes */
+.confirmation-modal .modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e7eb;
+  width: 100%;
+  
+  button {
+    padding: 12px 32px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: none;
+    min-width: 160px;
+    font-family: 'Poppins', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+    
+    &.secondary-btn {
+      background: #e5e7eb;
+      color: #333333;
+      
+      &:hover:not(:disabled) {
+        background: #d1d5db;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+    }
+    
+    &.danger-btn {
+      background: linear-gradient(135deg, #ff4b4b 0%, #d93636 100%);
+      color: #ffffff;
+      
+      &:hover:not(:disabled) {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ff4b4b 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(255, 75, 75, 0.4);
+      }
+    }
+    
+    &.success-btn {
+      background: linear-gradient(135deg, #7cd64b 0%, #5a9e30 100%);
+      color: #000000;
+      
+      &:hover:not(:disabled) {
+        background: linear-gradient(135deg, #9ce76a 0%, #7cd64b 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(124, 214, 75, 0.4);
+      }
+    }
+  }
+}
+
+/* Make sure confirmation modals have the correct class */
+.modal.confirm-modal .modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e7eb;
+  width: 100%;
+  
+  button {
+    padding: 12px 32px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: none;
+    min-width: 160px;
+    font-family: 'Poppins', sans-serif;
+    
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+    
+    &.secondary-btn {
+      background: #e5e7eb;
+      color: #333333;
+      border: 1px solid #d1d5db;
+      
+      &:hover:not(:disabled) {
+        background: #d1d5db;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+    }
+    
+    &.danger-btn {
+      background: linear-gradient(135deg, #ff4b4b 0%, #d93636 100%);
+      color: #ffffff;
+      border: none;
+      
+      &:hover:not(:disabled) {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ff4b4b 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(255, 75, 75, 0.4);
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .modal.confirm-modal .modal-actions {
+    flex-direction: column;
+    
+    button {
+      width: 100%;
+    }
+  }
+}
