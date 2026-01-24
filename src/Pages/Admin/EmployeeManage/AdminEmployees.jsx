@@ -295,23 +295,55 @@ const AdminEmployees = () => {
     }
   };
 
-  // NEW: Load client task status
   const loadClientTaskStatus = async (clientId, year, month) => {
     try {
       setLoadingTaskStatus(true);
+
+      // Clear any previous data
+      setClientTaskStatus(null);
+
+      console.log("📡 Loading task status for:", { clientId, year, month });
+
       const res = await axios.get(
         `${import.meta.env.VITE_API_URL}/admin-employee/client-tasks-status/${clientId}?year=${year}&month=${month}`,
         { withCredentials: true }
       );
-      setClientTaskStatus(res.data);
+
+      console.log("✅ Task status received:", res.data);
+
+      // FIX: Convert to numbers for comparison
+      const expectedYear = Number(year);
+      const expectedMonth = Number(month);
+      const receivedYear = Number(res.data.year);
+      const receivedMonth = Number(res.data.month);
+
+      // VERIFY: Make sure response matches current selection (with number conversion)
+      if (res.data.clientId === clientId &&
+        receivedYear === expectedYear &&
+        receivedMonth === expectedMonth) {
+        setClientTaskStatus(res.data);
+        console.log("✅ Task status SET in state");
+      } else {
+        console.warn("⚠️ Response doesn't match current selection", {
+          expected: { clientId, year: expectedYear, month: expectedMonth },
+          received: {
+            clientId: res.data.clientId,
+            year: receivedYear,
+            month: receivedMonth
+          }
+        });
+        // Still set state even if mismatch? Let's set it anyway
+        setClientTaskStatus(res.data);
+        console.log("⚠️ Mismatch but setting state anyway");
+      }
+
     } catch (error) {
-      console.error("Error loading client task status:", error);
+      console.error("❌ Error loading client task status:", error);
       setClientTaskStatus(null);
     } finally {
       setLoadingTaskStatus(false);
     }
   };
-
 
   // NEW: Check if client has documents for month
   const checkClientDocuments = async (clientId, year, month) => {
@@ -331,6 +363,27 @@ const AdminEmployees = () => {
     loadEmployees();
     loadClients();
   }, []);
+
+  // FIX 1: useEffect to handle client/date changes
+  useEffect(() => {
+    if (!showAssignModal) return;
+
+    // Clear old data immediately when client or date changes
+    setClientTaskStatus(null);
+
+    const { clientId, year, month } = assignFormik.values;
+
+    if (!clientId || !year || !month) {
+      return;
+    }
+
+    // Add a small delay to prevent rapid API calls
+    const timer = setTimeout(() => {
+      loadClientTaskStatus(clientId, year, month);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [showAssignModal, assignFormik.values.clientId, assignFormik.values.year, assignFormik.values.month]);
 
   // Open Edit Modal
   const openEditModal = (employee) => {
@@ -567,29 +620,7 @@ const AdminEmployees = () => {
       });
   };
 
-  // Handle client selection change in assign modal
-  const handleClientChange = async (clientId) => {
-    if (!clientId || !assignFormik.values.year || !assignFormik.values.month) {
-      setClientTaskStatus(null);
-      return;
-    }
-
-    try {
-      await loadClientTaskStatus(clientId, assignFormik.values.year, assignFormik.values.month);
-    } catch (error) {
-      console.error("Error loading task status:", error);
-    }
-  };
-
-  // Handle year/month change in assign modal
-  const handleDateChange = async () => {
-    const { clientId, year, month } = assignFormik.values;
-    if (clientId && year && month) {
-      await loadClientTaskStatus(clientId, year, month);
-    } else {
-      setClientTaskStatus(null);
-    }
-  };
+  // REMOVED: handleClientChange and handleDateChange functions
 
   // Get available tasks (filter out already assigned tasks)
   const getAvailableTasks = () => {
@@ -1034,10 +1065,7 @@ const AdminEmployees = () => {
                       id="clientId"
                       name="clientId"
                       value={assignFormik.values.clientId}
-                      onChange={(e) => {
-                        assignFormik.handleChange(e);
-                        handleClientChange(e.target.value);
-                      }}
+                      onChange={assignFormik.handleChange}
                       onBlur={assignFormik.handleBlur}
                       className={
                         assignFormik.touched.clientId && assignFormik.errors.clientId
@@ -1070,10 +1098,7 @@ const AdminEmployees = () => {
                         type="number"
                         placeholder="e.g., 2024"
                         value={assignFormik.values.year}
-                        onChange={(e) => {
-                          assignFormik.handleChange(e);
-                          handleDateChange();
-                        }}
+                        onChange={assignFormik.handleChange}
                         onBlur={assignFormik.handleBlur}
                         className={
                           assignFormik.touched.year && assignFormik.errors.year
@@ -1097,10 +1122,7 @@ const AdminEmployees = () => {
                         id="month"
                         name="month"
                         value={assignFormik.values.month}
-                        onChange={(e) => {
-                          assignFormik.handleChange(e);
-                          handleDateChange();
-                        }}
+                        onChange={assignFormik.handleChange}
                         onBlur={assignFormik.handleBlur}
                         className={
                           assignFormik.touched.month && assignFormik.errors.month

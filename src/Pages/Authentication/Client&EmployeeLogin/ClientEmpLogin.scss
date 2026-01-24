@@ -302,6 +302,8 @@
             font-weight: 500;
             text-decoration: none;
             transition: all 0.2s ease;
+            background: transparent;
+            border: navajowhite;
 
             &:hover {
               color: #9ce76a;

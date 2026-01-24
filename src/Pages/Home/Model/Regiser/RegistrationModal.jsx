@@ -8,11 +8,12 @@ import '../ModalStyles.scss';
 const RegistrationModal = () => {
   const { closeRegistrationModal, selectedPlan } = useModal();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState(selectedPlan || '');
 
   // Define plan prices
   const planPrices = {
     'Lite': '40 Euros + VAT',
-    'Taxi': '45 Euros + VAT', 
+    'Taxi': '45 Euros + VAT',
     'Premium': '50 Euros + VAT',
     'Pro': '60 Euros + VAT',
     'Restaurant': '80 Euros + VAT'
@@ -36,7 +37,7 @@ const RegistrationModal = () => {
       registerTrade: '',
       planSelected: selectedPlan || ''
     },
-    
+
     onSubmit: async (values) => {
       // 1. FIRST VALIDATE ALL FIELDS ARE FILLED
       const requiredFields = [
@@ -44,14 +45,14 @@ const RegistrationModal = () => {
         'mobile', 'email', 'businessAddress', 'bankAccount', 'bicCode',
         'businessName', 'vatPeriod', 'businessNature', 'registerTrade', 'planSelected'
       ];
-      
+
       const emptyFields = [];
       requiredFields.forEach(field => {
         if (!values[field] || values[field].trim() === '') {
           emptyFields.push(field);
         }
       });
-      
+
       if (emptyFields.length > 0) {
         console.log('❌ Empty fields detected:', emptyFields);
         toast.error(`Please fill all required fields: ${emptyFields.join(', ')}`, {
@@ -64,9 +65,9 @@ const RegistrationModal = () => {
         });
         return;
       }
-      
+
       setIsSubmitting(true);
-      
+
       try {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/client-enrollment/enroll`, {
           method: 'POST',
@@ -123,12 +124,20 @@ const RegistrationModal = () => {
     },
   });
 
-  // Update formik values when selectedPlan changes
+  // Update currentPlan when selectedPlan changes (initial load)
   useEffect(() => {
     if (selectedPlan) {
+      setCurrentPlan(selectedPlan);
       formik.setFieldValue('planSelected', selectedPlan);
     }
   }, [selectedPlan]);
+
+  // Handle plan selection change
+  const handlePlanChange = (e) => {
+    const newPlan = e.target.value;
+    setCurrentPlan(newPlan);
+    formik.setFieldValue('planSelected', newPlan);
+  };
 
   const handleClose = (e) => {
     e.stopPropagation();
@@ -138,7 +147,7 @@ const RegistrationModal = () => {
   return (
     <>
       {/* Add ToastContainer INSIDE the modal */}
-      <ToastContainer 
+      <ToastContainer
         position="top-center"
         autoClose={5000}
         hideProgressBar={false}
@@ -150,17 +159,17 @@ const RegistrationModal = () => {
         pauseOnHover
         theme="dark"
       />
-      
+
       <div className="modal-overlay" onClick={handleClose}>
         <div className="modal-container form-modal" onClick={(e) => e.stopPropagation()}>
           <button className="modal-close-btn" onClick={handleClose}>×</button>
 
           <h2 className="modal-heading">Registration Form</h2>
-          
-          {/* Show selected plan info */}
-          {selectedPlan && (
+
+          {/* Show current plan info */}
+          {currentPlan && (
             <div className="selected-plan-info">
-              <p>You are registering for: <strong>{selectedPlan} Plan</strong> <span className="plan-price">({planPrices[selectedPlan]})</span></p>
+              <p>You are registering for: <strong>{currentPlan} Plan</strong> <span className="plan-price">({planPrices[currentPlan]})</span></p>
             </div>
           )}
 
@@ -467,7 +476,7 @@ const RegistrationModal = () => {
               <select
                 name="planSelected"
                 value={formik.values.planSelected}
-                onChange={formik.handleChange}
+                onChange={handlePlanChange}
                 required
                 className="form-select"
                 disabled={isSubmitting}
@@ -479,13 +488,13 @@ const RegistrationModal = () => {
                 <option value="Pro">Pro - {planPrices['Pro']}</option>
                 <option value="Restaurant">Restaurant - {planPrices['Restaurant']}</option>
               </select>
-              {selectedPlan && (
+              {selectedPlan && !formik.values.planSelected && (
                 <p className="plan-note">Plan pre-selected based on your choice</p>
               )}
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="submit-btn"
               disabled={isSubmitting}
             >

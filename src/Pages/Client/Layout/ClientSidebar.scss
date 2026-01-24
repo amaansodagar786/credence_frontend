@@ -1,9 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
 // Theme Variables - Using our color scheme
 :root {
   --sidebar-bg: #000000;
   --sidebar-active-bg: #7cd64b;
   --sidebar-active-text: #000000;
-  --sidebar-inactive-text: #888888;
+  --sidebar-inactive-text: #ffffff; // Changed to white for better visibility
   --sidebar-hover-text: #ffffff;
   --page-bg: #ffffff;
   --nav-bg: #111111;
@@ -11,9 +13,6 @@
   --red: #ff4b4b;
   --green: #7cd64b;
 }
-
-/* Import Poppins font */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 /* ---------- CLIENT LAYOUT CONTAINER ---------- */
 .client-layout-container {
@@ -124,23 +123,24 @@
   gap: 12px;
   padding: 10px 12px;
   text-decoration: none;
-  color: var(--sidebar-inactive-text);
+  color: #ffffff; // Changed from var(--sidebar-inactive-text) to white
   font-size: 14px;
   font-weight: 500;
   font-family: 'Poppins', sans-serif;
   border-radius: 8px;
   transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.03); // Added light background for non-active links
 }
 
 #client-sidebar .client-side-menu li a:hover {
   color: var(--sidebar-hover-text);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.08); // Slightly darker on hover
 }
 
 #client-sidebar .client-side-menu li a svg {
   font-size: 18px;
   flex-shrink: 0;
-  color: var(--sidebar-inactive-text);
+  color: #ffffff; // Changed from var(--sidebar-inactive-text) to white
   transition: all 0.2s ease;
 }
 
@@ -148,13 +148,50 @@
   color: var(--green);
 }
 
+/* ---------- TERMS BUTTON ---------- */
+.client-terms-button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  text-decoration: none;
+  color: #ffffff; // White text like other non-active links
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'Poppins', sans-serif;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.03); // Same background as other links
+  border: none;
+  cursor: pointer;
+  
+  .client-menu-icon svg {
+    font-size: 18px;
+    flex-shrink: 0;
+    color: #ffffff; // White icon color like other non-active links
+    transition: all 0.2s ease;
+  }
+  
+  &:hover {
+    color: var(--sidebar-hover-text);
+    background: rgba(255, 255, 255, 0.08); // Same hover as other links
+  }
+  
+  &:hover .client-menu-icon svg {
+    color: var(--green);
+  }
+}
+
 /* Center icons when sidebar is collapsed */
-#client-sidebar.hide .client-side-menu li a {
+#client-sidebar.hide .client-side-menu li a,
+#client-sidebar.hide .client-terms-button {
   justify-content: center;
   padding: 10px;
 }
 
-#client-sidebar.hide .client-side-menu li a .client-menu-title {
+#client-sidebar.hide .client-side-menu li a .client-menu-title,
+#client-sidebar.hide .client-terms-button .client-menu-title {
   display: none;
 }
 
@@ -162,22 +199,37 @@
 /* Expanded sidebar active style */
 #client-sidebar:not(.hide) .client-side-menu li.active a,
 #client-sidebar:not(.hide) .client-side-menu li a.active {
-  background: rgba(124, 214, 75, 0.15);
-  color: var(--green);
+  background: var(--green); // Changed from rgba(124, 214, 75, 0.15) to solid green
+  color: #000000; // Black text for contrast
   font-weight: 600;
 }
 
 #client-sidebar:not(.hide) .client-side-menu li.active a svg,
 #client-sidebar:not(.hide) .client-side-menu li a.active svg {
-  background: var(--green);
-  color: #000000;
+  background: #000000; // Black background for contrast
+  color: var(--green); // Green icon
   border-radius: 6px;
   padding: 4px;
 }
 
+/* Active state for terms button (if you want it to show as active when clicked) */
+#client-sidebar:not(.hide) .client-terms-button.active {
+  background: var(--green);
+  color: #000000;
+  font-weight: 600;
+  
+  .client-menu-icon svg {
+    background: #000000;
+    color: var(--green);
+    border-radius: 6px;
+    padding: 4px;
+  }
+}
+
 /* Collapsed sidebar active style */
 #client-sidebar.hide .client-side-menu li.active a svg,
-#client-sidebar.hide .client-side-menu li a.active svg {
+#client-sidebar.hide .client-side-menu li a.active svg,
+#client-sidebar.hide .client-terms-button.active .client-menu-icon svg {
   background: var(--green);
   color: #000000;
   border-radius: 6px;
@@ -375,6 +427,45 @@
   }
 }
 
+/* ---------- CLIENT SIDEBAR FOOTER ---------- */
+.client-sidebar-footer {
+  padding: 12px 10px;
+  border-top: 1px solid #333333;
+  text-align: center;
+  font-size: 11px;
+  color: #888888;
+  font-family: 'Poppins', sans-serif;
+  line-height: 1.4;
+}
+
+.client-footer-link {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.client-footer-link:hover {
+  color: #9ce76a;
+  text-decoration: underline;
+}
+
+/* Hide footer text when sidebar collapsed */
+#client-sidebar.hide .client-sidebar-footer span,
+#client-sidebar.hide .client-footer-link {
+  display: none;
+}
+
+/* Dot indicator when collapsed */
+#client-sidebar.hide .client-sidebar-footer::after {
+  content: "•";
+  color: var(--green);
+  font-size: 16px;
+}
+
 /* ---------- RESPONSIVE ---------- */
 @media (max-width: 768px) {
   #client-sidebar {
@@ -444,44 +535,4 @@
     height: 32px;
     font-size: 14px;
   }
-}
-
-
-/* ---------- CLIENT SIDEBAR FOOTER ---------- */
-.client-sidebar-footer {
-  padding: 12px 10px;
-  border-top: 1px solid #333333;
-  text-align: center;
-  font-size: 11px;
-  color: #888888;
-  font-family: 'Poppins', sans-serif;
-  line-height: 1.4;
-}
-
-.client-footer-link {
-  display: block;
-  margin-top: 2px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--green);
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.client-footer-link:hover {
-  color: #9ce76a;
-  text-decoration: underline;
-}
-
-/* Hide footer text when sidebar collapsed */
-#client-sidebar.hide .client-sidebar-footer span,
-#client-sidebar.hide .client-footer-link {
-  display: none;
-}
-
-/* Dot indicator when collapsed */
-#client-sidebar.hide .client-sidebar-footer::after {
-  content: "•";
-  color: var(--green);
-  font-size: 16px;
 }

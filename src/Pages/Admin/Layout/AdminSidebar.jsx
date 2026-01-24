@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 
-// Icons
+// Icons - Add FiSend for payment reminder
 import { BiLogOut, BiLogIn } from "react-icons/bi";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { RxCross1 } from "react-icons/rx";
@@ -13,7 +13,8 @@ import {
   FiCheckSquare,
   FiSettings,
   FiShield,
-  FiUserPlus
+  FiUserPlus,
+  FiSend // Add this for payment reminder
 } from "react-icons/fi";
 import { MdOutlineDashboard } from "react-icons/md";
 import { TbUsers, TbReportAnalytics } from "react-icons/tb";
@@ -23,6 +24,8 @@ import "./AdminSidebar.scss";
 const AdminSidebar = ({ children }) => {
   const [toggle, setToggle] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isSendingReminders, setIsSendingReminders] = useState(false);
+  const [reminderResult, setReminderResult] = useState(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -48,13 +51,76 @@ const AdminSidebar = ({ children }) => {
       );
 
       console.log("🔥 LOGOUT API RESPONSE:", res.status);
+
+      if (res.ok) {
+        // Clear local storage
+        localStorage.removeItem("adminToken");
+        localStorage.removeItem("adminData");
+
+        // Clear cookies if any
+        document.cookie = "adminToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+        // Update login state
+        setIsLoggedIn(false);
+
+        // Redirect to login page
+        navigate("/admin/login");
+
+        // Optional: Show success message
+        console.log("✅ Logout successful, redirecting to login...");
+      } else {
+        console.error("❌ Logout failed with status:", res.status);
+        // Optional: Show error message to user
+        alert("Logout failed. Please try again.");
+      }
+
     } catch (err) {
       console.error("❌ LOGOUT FETCH ERROR:", err);
+      // Even if API fails, still try to redirect
+      localStorage.removeItem("adminToken");
+      localStorage.removeItem("adminData");
+      setIsLoggedIn(false);
+      navigate("/admin/login");
     }
   };
 
 
+  const handleSendPaymentReminders = async () => {
+    if (isSendingReminders) return;
 
+    if (!window.confirm("Send payment reminders to all active clients?")) {
+      return;
+    }
+
+    setIsSendingReminders(true);
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/payment-reminders/send-test-reminder`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("adminToken")}`
+          },
+          credentials: "include" // Add this if using cookies
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(`✅ Success! Sent ${data.details.sent} payment reminders. Failed: ${data.details.failed}`);
+      } else {
+        alert(`❌ Failed: ${data.message}`);
+      }
+
+    } catch (error) {
+      alert(`❌ Network error: ${error.message}`);
+    } finally {
+      setIsSendingReminders(false);
+    }
+  };
 
   // Auto-collapse sidebar on route change (mobile only)
   useEffect(() => {
@@ -70,13 +136,26 @@ const AdminSidebar = ({ children }) => {
 
   // Menu Data for Admin
   const menuData = [
-    { icon: <MdOutlineDashboard />, title: "Dashboard", path: "/admin/dashboard" },
-    { icon: <FiFileText />, title: "Client Enrollments", path: "/admin/enrollments" },
-    { icon: <FiUsers />, title: "Employees", path: "/admin/employees" },
-    // { icon: <FiCheckSquare />, title: "Employees Tasks", path: "/admin/employees-tasks" }, 
-    { icon: <TbUsers />, title: "Clients Info", path: "/admin/clients" },
-    // { icon: <FiUserPlus />, title: "Register Admin", path: "/admin/login" },
-    // { icon: <FiSettings />, title: "Settings", path: "/admin/settings" }, 
+    {
+      icon: <MdOutlineDashboard />,
+      title: "Dashboard",
+      path: "/admin/dashboard"
+    },
+    {
+      icon: <FiFileText />,
+      title: "Client Enrollments",
+      path: "/admin/enrollments"
+    },
+    {
+      icon: <FiUsers />,
+      title: "Employees",
+      path: "/admin/employees"
+    },
+    {
+      icon: <TbUsers />,
+      title: "Clients Info",
+      path: "/admin/clients"
+    },
   ];
 
   return (
@@ -119,14 +198,34 @@ const AdminSidebar = ({ children }) => {
             </li>
           ))}
 
-          {isLoggedIn && (
+          {/* Payment Reminder Button */}
+          <li>
+            <button
+              className="admin-payment-reminder-btn"
+              onClick={handleSendPaymentReminders}
+              disabled={isSendingReminders}
+            >
+              <span className="admin-menu-icon">
+                {isSendingReminders ? (
+                  <span className="reminder-spinner"></span>
+                ) : (
+                  <FiSend />
+                )}
+              </span>
+              <span className="admin-menu-title">
+                {isSendingReminders ? "Sending..." : "Payment Reminders"}
+              </span>
+            </button>
+          </li>
+
+          {/* {isLoggedIn && (
             <li className="admin-logout-menu-item">
               <button className="admin-sidebar-logout-btn" onClick={handleLogout}>
                 <BiLogOut />
-                <span>Logouttt</span>
+                <span>Logout</span>
               </button>
             </li>
-          )}
+          )} */}
         </ul>
 
         <div className="admin-sidebar-footer">
@@ -140,7 +239,6 @@ const AdminSidebar = ({ children }) => {
             Techorses
           </a>
         </div>
-
       </div>
 
       {/* MAIN CONTENT AREA */}

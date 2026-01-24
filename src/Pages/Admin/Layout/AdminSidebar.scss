@@ -1,14 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
-
-
-
 // Theme Variables - Using our color scheme
 :root {
   --sidebar-bg: #000000;
   --sidebar-active-bg: #7cd64b;
   --sidebar-active-text: #000000;
-  --sidebar-inactive-text: #888888;
+  --sidebar-inactive-text: #ffffff;
   --sidebar-hover-text: #ffffff;
   --page-bg: #111111;
   --nav-bg: #111111;
@@ -126,22 +123,24 @@
   gap: 12px;
   padding: 10px 12px;
   text-decoration: none;
-  color: var(--sidebar-inactive-text);
+  color: #ffffff;
   font-size: 14px;
   font-weight: 500;
   border-radius: 8px;
   transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.03);
 }
 
 #admin-sidebar .admin-side-menu li a:hover {
   color: var(--sidebar-hover-text);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 #admin-sidebar .admin-side-menu li a svg {
   font-size: 18px;
   flex-shrink: 0;
-  color: var(--sidebar-inactive-text);
+  color: #ffffff; 
+  // margin-top: 1px;
   transition: all 0.2s ease;
 }
 
@@ -149,29 +148,88 @@
   color: var(--green);
 }
 
+/* ---------- PAYMENT REMINDER BUTTON ---------- */
+.admin-payment-reminder-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 95%;
+  padding: 10px 5px;
+  text-decoration: none;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'Poppins', sans-serif;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background: rgba(124, 214, 75, 0.1);
+  border: 1px solid rgba(124, 214, 75, 0.3);
+  cursor: pointer;
+  margin: 4px 0px;
+  
+  &:hover:not(:disabled) {
+    background: rgba(124, 214, 75, 0.2);
+    border-color: rgba(124, 214, 75, 0.5);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  .admin-menu-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+    color: #7cd64b;
+    transition: all 0.2s ease;
+  }
+  
+  &:hover:not(:disabled) .admin-menu-icon {
+    color: #9ce76a;
+  }
+}
+
+/* Spinner for sending state */
+.reminder-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(124, 214, 75, 0.3);
+  border-radius: 50%;
+  border-top-color: #7cd64b;
+  animation: spin 1s ease-in-out infinite;
+}
+
 /* Center icons when sidebar is collapsed */
-#admin-sidebar.hide .admin-side-menu li a {
+#admin-sidebar.hide .admin-side-menu li a,
+#admin-sidebar.hide .admin-payment-reminder-btn {
   justify-content: center;
   padding: 10px;
 }
 
-#admin-sidebar.hide .admin-side-menu li a .admin-menu-title {
+#admin-sidebar.hide .admin-side-menu li a .admin-menu-title,
+#admin-sidebar.hide .admin-payment-reminder-btn .admin-menu-title {
   display: none;
+}
+
+/* Active state when button is clicked */
+.admin-payment-reminder-btn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 /* ---------- ACTIVE STYLE ---------- */
 /* Expanded sidebar active style */
 #admin-sidebar:not(.hide) .admin-side-menu li.active a,
 #admin-sidebar:not(.hide) .admin-side-menu li a.active {
-  background: rgba(124, 214, 75, 0.15);
-  color: var(--green);
+  background: var(--green);
+  color: #000000;
   font-weight: 600;
 }
 
 #admin-sidebar:not(.hide) .admin-side-menu li.active a svg,
 #admin-sidebar:not(.hide) .admin-side-menu li a.active svg {
-  background: var(--green);
-  color: #000000;
+  background: #000000;
+  color: var(--green);
   border-radius: 6px;
   padding: 4px;
 }
@@ -213,7 +271,6 @@
   margin: 0 auto;
   border-bottom-left-radius: 15px;
   border-bottom-right-radius: 15px;
-  // border-bottom-right-radius: 15px;
 }
 
 .admin-nav-left {
@@ -292,12 +349,10 @@
   transform: scale(1.05);
 }
 
-
 .admin-menu-title {
   font-family: 'Poppins', sans-serif;
   font-weight: 500;
 }
-
 
 .admin-page-title {
   font-family: 'Poppins', sans-serif;
@@ -380,6 +435,65 @@
   }
 }
 
+/* ---------- SIDEBAR FOOTER ---------- */
+.admin-sidebar-footer {
+  padding: 12px 10px;
+  border-top: 1px solid #333333;
+  text-align: center;
+  font-size: 11px;
+  color: #888888;
+  font-family: 'Poppins', sans-serif;
+  line-height: 1.4;
+}
+
+.admin-footer-link {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.admin-footer-link:hover {
+  color: #9ce76a;
+  text-decoration: underline;
+}
+
+/* Hide text when sidebar is collapsed */
+#admin-sidebar.hide .admin-sidebar-footer span,
+#admin-sidebar.hide .admin-sidebar-footer strong {
+  display: none;
+}
+
+/* Small dot when collapsed */
+#admin-sidebar.hide .admin-sidebar-footer::after {
+  content: "•";
+  color: var(--green);
+  font-size: 16px;
+}
+
+/* ---------- SUCCESS/ERROR MESSAGE STYLES ---------- */
+.reminder-result-message {
+  padding: 10px;
+  margin: 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  
+  &.success {
+    background: rgba(124, 214, 75, 0.1);
+    color: #7cd64b;
+    border: 1px solid rgba(124, 214, 75, 0.3);
+  }
+  
+  &.error {
+    background: rgba(255, 75, 75, 0.1);
+    color: #ff4b4b;
+    border: 1px solid rgba(255, 75, 75, 0.3);
+  }
+}
+
 /* ---------- RESPONSIVE ---------- */
 @media (max-width: 768px) {
   #admin-sidebar {
@@ -446,46 +560,4 @@
     height: 32px;
     font-size: 14px;
   }
-}
-
-
-
-/* ---------- SIDEBAR FOOTER ---------- */
-.admin-sidebar-footer {
-  padding: 12px 10px;
-  border-top: 1px solid #333333;
-  text-align: center;
-  font-size: 11px;
-  color: #888888;
-  font-family: 'Poppins', sans-serif;
-  line-height: 1.4;
-}
-
-.admin-footer-link {
-  display: block;
-  margin-top: 2px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--green);
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.admin-footer-link:hover {
-  color: #9ce76a;
-  text-decoration: underline;
-}
-
-
-/* Hide text when sidebar is collapsed */
-#admin-sidebar.hide .admin-sidebar-footer span,
-#admin-sidebar.hide .admin-sidebar-footer strong {
-  display: none;
-}
-
-/* Small dot when collapsed */
-#admin-sidebar.hide .admin-sidebar-footer::after {
-  content: "•";
-  color: var(--green);
-  font-size: 16px;
 }

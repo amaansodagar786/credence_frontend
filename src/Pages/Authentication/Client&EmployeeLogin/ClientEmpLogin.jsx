@@ -2,14 +2,14 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { 
-  FiMail, 
-  FiLock, 
-  FiLogIn, 
-  FiEye, 
-  FiEyeOff, 
-  FiUser, 
-  FiBriefcase, 
+import {
+  FiMail,
+  FiLock,
+  FiLogIn,
+  FiEye,
+  FiEyeOff,
+  FiUser,
+  FiBriefcase,
   FiAlertCircle,
   FiCheckCircle,
   FiClock,
@@ -43,7 +43,7 @@ const ClientEmpLogin = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState("");
-  
+
   // Forgot Password States
   const [forgotPasswordModal, setForgotPasswordModal] = useState(false);
   const [forgotPasswordStep, setForgotPasswordStep] = useState(1); // 1: Email, 2: OTP, 3: New Password
@@ -72,7 +72,7 @@ const ClientEmpLogin = () => {
         window.location.href = "/employee/dashboard";
       } catch (error) {
         setServerError(
-          error.response?.data?.message || 
+          error.response?.data?.message ||
           "Invalid email or password. Please try again."
         );
         resetForm();
@@ -144,7 +144,7 @@ const ClientEmpLogin = () => {
           `${import.meta.env.VITE_API_URL}/client/forgot-password`,
           { email: forgotEmail }
         );
-        
+
         if (response.data.success) {
           setForgotPasswordStep(2);
           setForgotPasswordSuccess("OTP sent to your email. Check your inbox.");
@@ -170,7 +170,7 @@ const ClientEmpLogin = () => {
           `${import.meta.env.VITE_API_URL}/client/verify-otp`,
           { email: forgotEmail, otp: forgotOtp }
         );
-        
+
         if (response.data.success) {
           setVerifyToken(response.data.verifyToken);
           setForgotPasswordStep(3);
@@ -207,7 +207,7 @@ const ClientEmpLogin = () => {
           `${import.meta.env.VITE_API_URL}/client/reset-password`,
           { verifyToken, newPassword }
         );
-        
+
         if (response.data.success) {
           setForgotPasswordSuccess("Password updated successfully! You can now login.");
           setTimeout(() => {
@@ -251,8 +251,8 @@ const ClientEmpLogin = () => {
               <h1>Secure Portal</h1>
             </div>
             <p className="welcome-text">
-              {loginType === "employee" 
-                ? "Employee access to company resources" 
+              {loginType === "employee"
+                ? "Employee access to company resources"
                 : "Client access to your account dashboard"
               }
             </p>
@@ -303,8 +303,8 @@ const ClientEmpLogin = () => {
                   id="email"
                   name="email"
                   type="email"
-                  placeholder={loginType === "employee" 
-                    ? "Enter your company email" 
+                  placeholder={loginType === "employee"
+                    ? "Enter your company email"
                     : "Enter your registered email"
                   }
                   className={`form-input ${activeFormik.touched.email && activeFormik.errors.email ? 'error' : ''}`}
@@ -356,7 +356,7 @@ const ClientEmpLogin = () => {
 
             {/* Forgot Password Link */}
             <div className="forgot-password">
-              <button 
+              <button
                 type="button"
                 className="forgot-link"
                 onClick={() => setForgotPasswordModal(true)}
@@ -397,54 +397,54 @@ const ClientEmpLogin = () => {
           </form>
 
           {/* Footer */}
-          <div className="login-footer">
+          {/* <div className="login-footer">
             <p className="help-text">
               Need assistance? Contact support
             </p>
             <div className="version-info">
               <span>v2.0.0 | Secure Portal</span>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Info Side - Right Side (Hidden on Mobile) */}
         <div className="login-info-side">
           <div className="info-content">
             <h2>
-              {loginType === "employee" 
-                ? "Employee Portal Features" 
+              {loginType === "employee"
+                ? "Employee Portal Features"
                 : "Client Portal Benefits"
               }
             </h2>
-            
+
             {loginType === "employee" ? (
               <>
-                <p>Access your professional workspace with enhanced security.</p>
+                <p>Manage accounting tasks assigned by admin with secure access.</p>
                 <ul className="features-list">
-                  <li><FiCheckCircle /> View and manage work schedules</li>
-                  <li><FiFileText /> Access company documents securely</li>
-                  <li><FiClock /> Track work hours and attendance</li>
-                  <li><FiCalendar /> Request and manage time off</li>
-                  <li><FiShield /> Enterprise-grade security protection</li>
+                  <li><FiCheckCircle /> View assigned client accounting tasks</li>
+                  <li><FiFileText /> Access client documents for accounting</li>
+                  <li><FiClock /> Track task completion status</li>
+                  <li><FiCalendar /> Manage monthly accounting assignments</li>
+                  <li><FiShield /> Secure document access & processing</li>
                 </ul>
               </>
             ) : (
               <>
-                <p>Manage your account and track services in one secure place.</p>
+                <p>Manage your accounting services and documents in one secure place.</p>
                 <ul className="features-list">
-                  <li><FiCheckCircle /> Track service requests and status</li>
-                  <li><FiFileText /> Access invoices and documents</li>
-                  <li><FiClock /> View appointment history</li>
-                  <li><FiCalendar /> Schedule new appointments</li>
-                  <li><FiShield /> Your data is always protected</li>
+                  <li><FiCheckCircle /> Upload business documents securely</li>
+                  <li><FiFileText /> Track assigned employee & task status</li>
+                  <li><FiClock /> Monitor accounting progress monthly</li>
+                  <li><FiCalendar /> View which tasks are completed</li>
+                  <li><FiShield /> Your financial data is always protected</li>
                 </ul>
               </>
             )}
-            
+
             <div className="security-note">
               <FiShield size={20} />
               <p>
-                <strong>Security First:</strong> All activities are encrypted for protection.
+                <strong>Security First:</strong> All financial data is encrypted for protection.
               </p>
             </div>
           </div>
@@ -457,7 +457,7 @@ const ClientEmpLogin = () => {
           <div className="forgot-password-modal">
             <div className="modal-header">
               <h3>Reset Your Password</h3>
-              <button 
+              <button
                 className="close-btn"
                 onClick={() => {
                   setForgotPasswordModal(false);
@@ -595,7 +595,7 @@ const ClientEmpLogin = () => {
                     Back
                   </button>
                 )}
-                
+
                 <button
                   className="modal-btn primary"
                   onClick={() => handleForgotPassword(forgotPasswordStep)}
@@ -620,7 +620,7 @@ const ClientEmpLogin = () => {
               {forgotPasswordStep === 2 && (
                 <p className="resend-link">
                   Didn't receive OTP?{" "}
-                  <button 
+                  <button
                     type="button"
                     onClick={() => handleForgotPassword(1)}
                     disabled={forgotLoading}

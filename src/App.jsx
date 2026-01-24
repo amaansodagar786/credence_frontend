@@ -19,6 +19,7 @@ import ClientFilesUpload from './Pages/Client/Upload/ClientFilesUpload';
 import ClientEmpLogin from './Pages/Authentication/Client&EmployeeLogin/ClientEmpLogin';
 import AdminAuth from './Pages/Admin/Authentication/AdminAuth';
 import Home from './Pages/Home/Home';
+import ClientProfile from './Pages/Client/Profile/ClientProfile';
 
 
 
@@ -44,6 +45,7 @@ function App() {
         <Route path="/client/enroll" element={<ClientEnroll />} />
         <Route path="/client/dashboard" element={<ClientDashboard />} />
         <Route path="/client/upload" element={<ClientFilesUpload />} />
+        <Route path="/client/profile" element={<ClientProfile />} />
 
         {/* EMPLOYEE ROUTES  */}
         <Route path="/employee/login" element={<EmployeeLogin />} />
