@@ -1,4 +1,7 @@
-.admin-enrollments {
+/* ===============================
+   MAIN CONTAINER STYLES
+================================ */
+.admin-client-management {
   background: #ffffff;
   border-radius: 12px;
   padding: 24px;
@@ -7,30 +10,484 @@
   font-family: 'Poppins', sans-serif;
   position: relative;
 
-  &.loading {
+  /* ========== SECTION TABS ========== */
+  .section-tabs {
     display: flex;
-    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #f0f0f0;
+
+    .section-tab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: #f8f9fa;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      color: #666;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+
+      svg {
+        font-size: 16px;
+      }
+
+      &:hover:not(.active) {
+        background: #e5e7eb;
+        color: #333;
+      }
+
+      &.active {
+        background: #7cd64b;
+        color: #000;
+        border-color: #7cd64b;
+        font-weight: 600;
+
+        svg {
+          color: #000;
+        }
+      }
+
+      .tab-badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: #ef4444;
+        color: white;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 10px;
+        min-width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+  }
+
+  /* ========== FILTERS CONTAINER ========== */
+  .filters-container {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
-    min-height: 400px;
+    margin-bottom: 25px;
+    gap: 20px;
+
+    .search-box {
+      flex: 1;
+      max-width: 400px;
+      position: relative;
+
+      .search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #666;
+        font-size: 18px;
+      }
+
+      .search-input {
+        width: 100%;
+        padding: 12px 16px 12px 44px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #333;
+        background: #f8f9fa; 
+        transition: all 0.2s ease;
+
+        @media (max-width: 768px) {
+          width: 85%;
+        }
+
+        &:focus {
+          outline: none;
+          border-color: #7cd64b;
+          background: white;
+          box-shadow: 0 0 0 3px rgba(124, 214, 75, 0.1);
+        }
+
+        &::placeholder {
+          color: #999;
+        }
+      }
+    }
+
+    .filter-buttons {
+      display: flex;
+      gap: 10px;
+
+      .filter-btn {
+        padding: 10px 20px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: #f8f9fa;
+        color: #666;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: #e5e7eb;
+        }
+
+        &.active {
+          background: #7cd64b;
+          color: #000;
+          border-color: #7cd64b;
+          font-weight: 600;
+        }
+      }
+    }
+  }
+
+  /* ========== SECTION CONTENT ========== */
+  .section-content {
+    &.loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 400px;
+
+      .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 3px solid rgba(124, 214, 75, 0.2);
+        border-radius: 50%;
+        border-top-color: #7cd64b;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+      }
+
+      p {
+        color: #666;
+        font-size: 16px;
+        font-weight: 500;
+      }
+    }
+  }
+
+  /* ========== LOADING CELL ========== */
+  .loading-cell {
+    padding: 40px 20px !important;
+    text-align: center;
 
     .loading-spinner {
-      width: 50px;
-      height: 50px;
+      width: 30px;
+      height: 30px;
       border: 3px solid rgba(124, 214, 75, 0.2);
       border-radius: 50%;
       border-top-color: #7cd64b;
       animation: spin 1s linear infinite;
-      margin-bottom: 20px;
-    }
-
-    p {
-      color: #666;
-      font-size: 16px;
-      font-weight: 500;
+      margin: 0 auto 15px;
     }
   }
 
+  /* ========== CLIENT MODAL STYLES ========== */
+  .client-modal {
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+
+      .edit-btn, .save-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        svg {
+          font-size: 14px;
+        }
+      }
+
+      .edit-btn {
+        background: rgba(59, 130, 246, 0.1);
+        color: #1d4ed8;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+
+        &:hover {
+          background: #3b82f6;
+          color: white;
+        }
+      }
+
+      .save-btn {
+        background: rgba(16, 185, 129, 0.1);
+        color: #065f46;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+
+        &:hover:not(:disabled) {
+          background: #10b981;
+          color: white;
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .spinner-small {
+          width: 16px;
+          height: 16px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-radius: 50%;
+          border-top-color: white;
+          animation: spin 1s linear infinite;
+        }
+      }
+    }
+
+    .editable-section {
+      .edit-form {
+        .form-group {
+          margin-bottom: 20px;
+          padding-bottom: 20px;
+          border-bottom: 1px solid #f0f0f0;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          .form-label {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 14px;
+            font-weight: 600;
+          }
+
+          .radio-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+
+            .radio-label {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              cursor: pointer;
+
+              input[type="radio"] {
+                width: 18px;
+                height: 18px;
+                accent-color: #7cd64b;
+              }
+
+              span {
+                color: #333;
+                font-size: 14px;
+              }
+
+              &:hover span {
+                color: #7cd64b;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .view-modal-footer {
+      .action-buttons {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+
+        .modal-btn {
+          padding: 10px 24px;
+          border: none;
+          border-radius: 6px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &.cancel-btn {
+            background: #f8f9fa;
+            color: #333;
+            border: 1px solid #e5e7eb;
+
+            &:hover {
+              background: #e5e7eb;
+            }
+          }
+
+          &.close-btn {
+            background: #7cd64b;
+            color: #000;
+            font-weight: 600;
+
+            &:hover {
+              background: #6bc73a;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /* ========== ACTIVE CONTROL & CLIENTS DATA TABLE STYLES ========== */
+  .client-row {
+    td {
+      &.business-cell {
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      &.plan-cell {
+        .plan-badge {
+          display: inline-block;
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 600;
+          text-transform: uppercase;
+
+          &.lite { background: rgba(59, 130, 246, 0.1); color: #1d4ed8; }
+          &.taxi { background: rgba(245, 158, 11, 0.1); color: #92400e; }
+          &.premium { background: rgba(16, 185, 129, 0.1); color: #065f46; }
+          &.pro { background: rgba(139, 92, 246, 0.1); color: #5b21b6; }
+          &.restaurant { background: rgba(239, 68, 68, 0.1); color: #991b1b; }
+        }
+      }
+
+      &.actions-cell {
+        .action-buttons {
+          .activate-btn, .deactivate-btn, .view-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+
+            svg {
+              font-size: 14px;
+            }
+          }
+
+          .activate-btn {
+            background: rgba(16, 185, 129, 0.1);
+            color: #065f46;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+
+            &:hover {
+              background: #10b981;
+              color: white;
+            }
+          }
+
+          .deactivate-btn {
+            background: rgba(239, 68, 68, 0.1);
+            color: #991b1b;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+
+            &:hover {
+              background: #ef4444;
+              color: white;
+            }
+          }
+
+          .view-btn {
+            background: rgba(59, 130, 246, 0.1);
+            color: #1d4ed8;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+
+            &:hover {
+              background: #3b82f6;
+              color: white;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /* ========== STATUS BADGES ========== */
+  .status-badge {
+    &.active {
+      background: rgba(16, 185, 129, 0.1) !important;
+      color: #065f46 !important;
+      border: 1px solid rgba(16, 185, 129, 0.2) !important;
+    }
+
+    &.inactive {
+      background: rgba(239, 68, 68, 0.1) !important;
+      color: #991b1b !important;
+      border: 1px solid rgba(239, 68, 68, 0.2) !important;
+    }
+  }
+
+  .status-icon {
+    &.active {
+      color: #10b981 !important;
+    }
+
+    &.inactive {
+      color: #ef4444 !important;
+    }
+  }
+
+  /* ========== RESPONSIVE DESIGN ========== */
+  @media (max-width: 768px) {
+    .section-tabs {
+      flex-direction: column;
+      gap: 8px;
+
+      .section-tab {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    .filters-container {
+      flex-direction: column;
+      align-items: stretch;
+
+      .search-box {
+        max-width: 100%;
+      }
+
+      .filter-buttons {
+        justify-content: center;
+      }
+    }
+
+    .enrollments-header {
+      flex-direction: column;
+      gap: 15px;
+    }
+  }
+}
+
+/* ===============================
+   ENROLLMENTS SECTION STYLES (KEEP EXACTLY AS IS - CLIENT APPROVED)
+================================ */
+.admin-client-management {
   /* ========== VIEW MODAL STYLES ========== */
   .view-modal-overlay {
     position: fixed;
@@ -893,7 +1350,7 @@
 
 /* ========== MOBILE RESPONSIVE ========== */
 @media (max-width: 768px) {
-  .admin-enrollments {
+  .admin-client-management {
     padding: 16px;
     margin: 10px;
 
@@ -975,7 +1432,7 @@
 }
 
 @media (max-width: 480px) {
-  .admin-enrollments {
+  .admin-client-management {
     .enrollment-details-grid .details-section .details-grid {
       grid-template-columns: 1fr !important;
     }
