@@ -20,6 +20,7 @@ import ClientEmpLogin from './Pages/Authentication/Client&EmployeeLogin/ClientEm
 import AdminAuth from './Pages/Admin/Authentication/AdminAuth';
 import Home from './Pages/Home/Home';
 import ClientProfile from './Pages/Client/Profile/ClientProfile';
+import ActivityLogs from './Pages/Admin/ActivityLogs/ActivityLogs';
 
 
 
@@ -39,6 +40,7 @@ function App() {
         <Route path="/admin/employees-tasks" element={<AdminEmployeeTasks />} />
         <Route path="/admin/enrollments" element={<AdminClientEnrollments />} />
         <Route path="/admin/clients" element={<AdminClients />} />
+        <Route path="/admin/logs" element={<ActivityLogs />} />
 
         {/* CLIENT ROUTES  */}
         <Route path="/client/login" element={<ClientLogin />} />

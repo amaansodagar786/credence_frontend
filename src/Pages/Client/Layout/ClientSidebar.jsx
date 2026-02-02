@@ -20,7 +20,7 @@ import { MdOutlineDashboard } from "react-icons/md";
 import { TbFileInvoice } from "react-icons/tb";
 
 import "./ClientSidebar.scss";
-import pdf from "../../../assets/pdf/terms.pdf";
+import pdf from "../../../assets/pdf/newterms.pdf";
 
 const ClientSidebar = ({ children }) => {
   const [toggle, setToggle] = useState(false);
