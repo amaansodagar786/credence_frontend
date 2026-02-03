@@ -131,19 +131,37 @@ const ClientFilesUpload = () => {
         return 'other';
     };
 
-    /* ================= CALCULATE IF MONTH IS TOO OLD (2+ MONTHS) ================= */
+    /* ================= CALCULATE IF MONTH IS TOO OLD (AFTER 25TH OF NEXT MONTH) ================= */
     const calculateIsMonthTooOld = (selectedYear, selectedMonth) => {
         const currentDate = new Date();
-        const selectedDate = new Date(selectedYear, selectedMonth - 1, 1); // 1st of selected month
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth() + 1;
+        const currentDay = currentDate.getDate();
 
-        // Calculate difference in months
-        const monthsDiff = (currentDate.getFullYear() - selectedDate.getFullYear()) * 12 +
-            (currentDate.getMonth() - selectedDate.getMonth());
+        // Create date for 1st of selected month
+        const selectedDate = new Date(selectedYear, selectedMonth - 1, 1);
+        const selectedYearNum = selectedDate.getFullYear();
+        const selectedMonthNum = selectedDate.getMonth() + 1;
 
-        // If 2 or more months difference → month is too old
+        // Calculate next month (for comparison)
+        let nextMonthYear = selectedYearNum;
+        let nextMonth = selectedMonthNum + 1;
+
+        if (nextMonth > 12) {
+            nextMonth = 1;
+            nextMonthYear += 1;
+        }
+
+        // If we're in the next month after selected month
+        if (currentYear === nextMonthYear && currentMonth === nextMonth) {
+            // Check if today is 26th or later
+            return currentDay >= 26;
+        }
+
+        // If we're 2+ months ahead, definitely too old
+        const monthsDiff = (currentYear - selectedYearNum) * 12 + (currentMonth - selectedMonthNum);
         return monthsDiff >= 2;
     };
-
     /* ================= DELETE MODAL FUNCTIONS ================= */
     const openDeleteModal = (type, fileName, categoryName = null) => {
         // ✅ NEW: Check if month is too old before opening delete modal
@@ -1795,7 +1813,7 @@ const ClientFilesUpload = () => {
                                 </div>
 
                                 {/* Month Note Section */}
-                                {monthData?.wasLockedOnce &&
+                                {/* {monthData?.wasLockedOnce &&
                                     (Object.values(newFiles).some(f => f.length > 0) ||
                                         otherCategories.some(c => c.newFiles.length > 0)) && (
                                         <div className="month-note-section">
@@ -1827,7 +1845,7 @@ const ClientFilesUpload = () => {
                                                 </small>
                                             </div>
                                         </div>
-                                    )}
+                                    )} */}
 
                                 {/* Save & Lock Button */}
                                 <div className="month-actions-section">

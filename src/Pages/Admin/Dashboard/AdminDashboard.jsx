@@ -1,25 +1,28 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import {
+  FiTrendingUp,
   FiUsers,
-  FiUser,
-  FiFileText,
-  FiAlertCircle,
   FiUserCheck,
+  FiUserX,
+  FiClock,
   FiMessageSquare,
+  FiFileText,
   FiFilter,
   FiRefreshCw,
   FiEye,
-  FiTrendingUp,
-  FiBell,
-  FiInfo,
-  FiUpload,
-  FiX,
-  FiChevronRight,
   FiCalendar,
-  FiClock,
-  FiChevronDown,
-  FiCheckCircle
+  FiCheck,
+  FiCheckCircle,
+  FiX,
+  FiAlertCircle,
+  FiChevronRight,
+  FiChevronLeft,
+  FiLock,
+  FiDollarSign,
+  FiBell,
+  FiBook,
+  FiBriefcase
 } from "react-icons/fi";
 
 import { ToastContainer, toast } from "react-toastify";
@@ -37,22 +40,14 @@ const AdminDashboard = () => {
   const [customEndDate, setCustomEndDate] = useState("");
 
   // Modal states
-  const [activeClientsModal, setActiveClientsModal] = useState(false);
-  const [activeEmployeesModal, setActiveEmployeesModal] = useState(false);
-  const [unassignedClientsModal, setUnassignedClientsModal] = useState(false);
-  const [idleEmployeesModal, setIdleEmployeesModal] = useState(false);
-  const [incompleteTasksModal, setIncompleteTasksModal] = useState(false);
-  const [notesModal, setNotesModal] = useState(false);
-  const [clientNotesModal, setClientNotesModal] = useState(false);
+  const [activeModal, setActiveModal] = useState(null);
+  const [modalData, setModalData] = useState(null);
+  const [modalLoading, setModalLoading] = useState(false);
 
-  // Data states
-  const [activeClients, setActiveClients] = useState([]);
-  const [activeEmployees, setActiveEmployees] = useState([]);
-  const [unassignedClients, setUnassignedClients] = useState([]);
-  const [idleEmployees, setIdleEmployees] = useState([]);
-  const [incompleteTasksClients, setIncompleteTasksClients] = useState([]);
-  const [recentNotes, setRecentNotes] = useState([]);
+  // Unviewed Notes specific states
+  const [unviewedNotesSummary, setUnviewedNotesSummary] = useState(null);
   const [selectedClientNotes, setSelectedClientNotes] = useState(null);
+  const [notesLoading, setNotesLoading] = useState(false);
 
   // Time filter options
   const timeFilterOptions = [
@@ -94,40 +89,10 @@ const AdminDashboard = () => {
     }
   };
 
-  const fetchActiveClients = async () => {
+  const fetchUnviewedNotesSummary = async () => {
     try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/admin/dashboard/active-clients`,
-        { withCredentials: true }
-      );
-      if (response.data.success) {
-        setActiveClients(response.data.clients);
-        setActiveClientsModal(true);
-      }
-    } catch (error) {
-      console.error("Error fetching active clients:", error);
-      showToast("Error loading active clients", "error");
-    }
-  };
+      setNotesLoading(true);
 
-  const fetchActiveEmployees = async () => {
-    try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/admin/dashboard/active-employees`,
-        { withCredentials: true }
-      );
-      if (response.data.success) {
-        setActiveEmployees(response.data.employees);
-        setActiveEmployeesModal(true);
-      }
-    } catch (error) {
-      console.error("Error fetching active employees:", error);
-      showToast("Error loading active employees", "error");
-    }
-  };
-
-  const fetchUnassignedClients = async () => {
-    try {
       const params = { timeFilter };
       if (timeFilter === "custom" && customStartDate && customEndDate) {
         params.customStart = customStartDate;
@@ -135,24 +100,30 @@ const AdminDashboard = () => {
       }
 
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/admin/dashboard/unassigned-clients`,
+        `${import.meta.env.VITE_API_URL}/admin/dashboard/unviewed-notes-summary`,
         {
           params,
           withCredentials: true
         }
       );
+
       if (response.data.success) {
-        setUnassignedClients(response.data.clients);
-        setUnassignedClientsModal(true);
+        setUnviewedNotesSummary(response.data);
+        setModalData(response.data);
+        setActiveModal('unviewedNotes');
       }
     } catch (error) {
-      console.error("Error fetching unassigned clients:", error);
-      showToast("Error loading unassigned clients", "error");
+      console.error("Error fetching unviewed notes summary:", error);
+      showToast("Error loading unviewed notes", "error");
+    } finally {
+      setNotesLoading(false);
     }
   };
 
-  const fetchIdleEmployees = async () => {
+  const fetchClientUnviewedNotes = async (clientId) => {
     try {
+      setNotesLoading(true);
+
       const params = { timeFilter };
       if (timeFilter === "custom" && customStartDate && customEndDate) {
         params.customStart = customStartDate;
@@ -160,94 +131,246 @@ const AdminDashboard = () => {
       }
 
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/admin/dashboard/idle-employees`,
+        `${import.meta.env.VITE_API_URL}/admin/dashboard/client-unviewed-notes/${clientId}`,
         {
           params,
           withCredentials: true
         }
       );
-      if (response.data.success) {
-        setIdleEmployees(response.data.employees);
-        setIdleEmployeesModal(true);
-      }
-    } catch (error) {
-      console.error("Error fetching idle employees:", error);
-      showToast("Error loading idle employees", "error");
-    }
-  };
 
-  const fetchIncompleteTasks = async () => {
-    try {
-      const params = { timeFilter };
-      if (timeFilter === "custom" && customStartDate && customEndDate) {
-        params.customStart = customStartDate;
-        params.customEnd = customEndDate;
-      }
-
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/admin/dashboard/incomplete-tasks`,
-        {
-          params,
-          withCredentials: true
-        }
-      );
-      if (response.data.success) {
-        setIncompleteTasksClients(response.data.clients);
-        setIncompleteTasksModal(true);
-      }
-    } catch (error) {
-      console.error("Error fetching incomplete tasks:", error);
-      showToast("Error loading incomplete tasks", "error");
-    }
-  };
-
-  const fetchRecentNotes = async () => {
-    try {
-      const params = { timeFilter, limit: 10 };
-      if (timeFilter === "custom" && customStartDate && customEndDate) {
-        params.customStart = customStartDate;
-        params.customEnd = customEndDate;
-      }
-
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/admin/dashboard/recent-notes`,
-        {
-          params,
-          withCredentials: true
-        }
-      );
-      if (response.data.success) {
-        setRecentNotes(response.data.notesByClient);
-        setNotesModal(true);
-      }
-    } catch (error) {
-      console.error("Error fetching recent notes:", error);
-      showToast("Error loading recent notes", "error");
-    }
-  };
-
-  const fetchClientNotes = async (clientId) => {
-    try {
-      const params = { timeFilter };
-      if (timeFilter === "custom" && customStartDate && customEndDate) {
-        params.customStart = customStartDate;
-        params.customEnd = customEndDate;
-      }
-
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/admin/dashboard/client-notes/${clientId}`,
-        {
-          params,
-          withCredentials: true
-        }
-      );
       if (response.data.success) {
         setSelectedClientNotes(response.data);
-        setClientNotesModal(true);
       }
     } catch (error) {
-      console.error("Error fetching client notes:", error);
+      console.error("Error fetching client unviewed notes:", error);
       showToast("Error loading client notes", "error");
+    } finally {
+      setNotesLoading(false);
+    }
+  };
+
+  const markNoteAsRead = async (notePath, clientId) => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/admin/dashboard/notes/mark-note-read`,
+        {
+          clientId,
+          notePath
+        },
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
+        // Update local state - remove the marked note
+        if (selectedClientNotes) {
+          const updatedNotesByMonth = selectedClientNotes.notesByMonth.map(monthData => ({
+            ...monthData,
+            notes: monthData.notes.filter(note => note.noteId !== notePath)
+          })).filter(monthData => monthData.notes.length > 0);
+
+          const newTotal = updatedNotesByMonth.reduce((sum, month) => sum + month.notes.length, 0);
+
+          setSelectedClientNotes(prev => ({
+            ...prev,
+            totalUnviewedNotes: newTotal,
+            notesByMonth: updatedNotesByMonth
+          }));
+
+          // Update summary if we're in client view
+          if (unviewedNotesSummary) {
+            const updatedClients = unviewedNotesSummary.clients.map(client => {
+              if (client.clientId === clientId) {
+                const newTotal = client.totalUnviewedNotes - 1;
+                return {
+                  ...client,
+                  totalUnviewedNotes: newTotal > 0 ? newTotal : 0
+                };
+              }
+              return client;
+            }).filter(client => client.totalUnviewedNotes > 0);
+
+            const newTotalNotes = updatedClients.reduce((sum, client) => sum + client.totalUnviewedNotes, 0);
+
+            setUnviewedNotesSummary(prev => ({
+              ...prev,
+              summary: {
+                ...prev.summary,
+                totalUnviewedNotes: newTotalNotes,
+                totalClientsWithNotes: updatedClients.length
+              },
+              clients: updatedClients
+            }));
+
+            // Update dashboard metrics
+            if (dashboardData) {
+              setDashboardData(prev => ({
+                ...prev,
+                metrics: {
+                  ...prev.metrics,
+                  recentNotes: newTotalNotes
+                }
+              }));
+            }
+          }
+
+          showToast("Note marked as read", "success");
+        }
+      }
+    } catch (error) {
+      console.error("Error marking note as read:", error);
+      showToast("Error marking note as read", "error");
+    }
+  };
+
+  const markAllClientNotesAsRead = async (clientId) => {
+    try {
+      setNotesLoading(true);
+
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/admin/dashboard/notes/mark-client-read/${clientId}`,
+        {
+          timeFilter,
+          customStart: timeFilter === "custom" ? customStartDate : undefined,
+          customEnd: timeFilter === "custom" ? customEndDate : undefined
+        },
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
+        // Update summary
+        const updatedClients = unviewedNotesSummary.clients.filter(client => client.clientId !== clientId);
+        const newTotalNotes = updatedClients.reduce((sum, client) => sum + client.totalUnviewedNotes, 0);
+
+        setUnviewedNotesSummary(prev => ({
+          ...prev,
+          summary: {
+            ...prev.summary,
+            totalUnviewedNotes: newTotalNotes,
+            totalClientsWithNotes: updatedClients.length
+          },
+          clients: updatedClients
+        }));
+
+        // Clear selected client notes
+        setSelectedClientNotes(null);
+
+        // Update dashboard metrics
+        if (dashboardData) {
+          setDashboardData(prev => ({
+            ...prev,
+            metrics: {
+              ...prev.metrics,
+              recentNotes: newTotalNotes
+            }
+          }));
+        }
+
+        showToast(response.data.message, "success");
+      }
+    } catch (error) {
+      console.error("Error marking client notes as read:", error);
+      showToast("Error marking client notes as read", "error");
+    } finally {
+      setNotesLoading(false);
+    }
+  };
+
+  const markAllNotesAsRead = async () => {
+    try {
+      setNotesLoading(true);
+
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/admin/dashboard/notes/mark-all-read`,
+        {
+          timeFilter,
+          customStart: timeFilter === "custom" ? customStartDate : undefined,
+          customEnd: timeFilter === "custom" ? customEndDate : undefined
+        },
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
+        // Clear all notes data
+        setUnviewedNotesSummary(null);
+        setSelectedClientNotes(null);
+        setActiveModal(null);
+
+        // Update dashboard metrics
+        if (dashboardData) {
+          setDashboardData(prev => ({
+            ...prev,
+            metrics: {
+              ...prev.metrics,
+              recentNotes: 0
+            }
+          }));
+        }
+
+        showToast(response.data.message, "success");
+      }
+    } catch (error) {
+      console.error("Error marking all notes as read:", error);
+      showToast("Error marking all notes as read", "error");
+    } finally {
+      setNotesLoading(false);
+    }
+  };
+
+  const fetchModalData = async (modalType) => {
+    try {
+      setModalLoading(true);
+      setActiveModal(modalType);
+
+      let endpoint = "";
+      const params = { timeFilter };
+
+      if (timeFilter === "custom" && customStartDate && customEndDate) {
+        params.customStart = customStartDate;
+        params.customEnd = customEndDate;
+      }
+
+      switch (modalType) {
+        case 'activeClients':
+          endpoint = "/admin/dashboard/active-clients";
+          break;
+        case 'activeEmployees':
+          endpoint = "/admin/dashboard/active-employees";
+          break;
+        case 'unassignedClients':
+          endpoint = "/admin/dashboard/unassigned-clients";
+          break;
+        case 'idleEmployees':
+          endpoint = "/admin/dashboard/idle-employees";
+          break;
+        case 'incompleteTasks':
+          endpoint = "/admin/dashboard/incomplete-tasks";
+          break;
+        case 'recentNotes':
+          endpoint = "/admin/dashboard/recent-notes";
+          break;
+        case 'uploadedLocked':
+          endpoint = "/admin/dashboard/uploaded-but-locked";
+          break;
+        default:
+          return;
+      }
+
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}${endpoint}`,
+        {
+          params,
+          withCredentials: true
+        }
+      );
+
+      if (response.data.success) {
+        setModalData(response.data);
+      }
+    } catch (error) {
+      console.error(`Error fetching ${modalType} data:`, error);
+      showToast(`Error loading ${modalType.replace(/([A-Z])/g, ' $1').toLowerCase()}`, "error");
+    } finally {
+      setModalLoading(false);
     }
   };
 
@@ -264,7 +387,6 @@ const AdminDashboard = () => {
     setTimeFilter(newFilter);
     setShowCustomDate(newFilter === "custom");
 
-    // Reset custom dates if not using custom filter
     if (newFilter !== "custom") {
       setCustomStartDate("");
       setCustomEndDate("");
@@ -289,6 +411,7 @@ const AdminDashboard = () => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString('en-IN', {
       day: '2-digit',
       month: 'short',
@@ -304,10 +427,34 @@ const AdminDashboard = () => {
     return filter?.label || "This Month";
   };
 
-  /* ==================== EFFECTS ==================== */
-  useEffect(() => {
-    fetchDashboardData();
-  }, [timeFilter, customStartDate, customEndDate]);
+  const getInitials = (name) => {
+    if (!name) return "?";
+    return name
+      .split(" ")
+      .map(word => word[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  const handleOpenUnviewedNotes = () => {
+    fetchUnviewedNotesSummary();
+  };
+
+  const handleViewClientNotes = (clientId) => {
+    fetchClientUnviewedNotes(clientId);
+  };
+
+  const handleBackToClientList = () => {
+    setSelectedClientNotes(null);
+  };
+
+  const closeModal = () => {
+    setActiveModal(null);
+    setModalData(null);
+    setSelectedClientNotes(null);
+    setUnviewedNotesSummary(null);
+  };
 
   // Set default custom dates to current month
   useEffect(() => {
@@ -319,97 +466,845 @@ const AdminDashboard = () => {
     setCustomEndDate(lastDay.toISOString().split('T')[0]);
   }, []);
 
+  useEffect(() => {
+    fetchDashboardData();
+  }, [timeFilter, customStartDate, customEndDate]);
+
   /* ==================== RENDER FUNCTIONS ==================== */
-  const renderMetricCard = (title, value, icon, color, onClick = null, subtitle = "") => {
+
+  const renderMetricsGrid = () => {
+    if (!dashboardData) return null;
+
+    const metrics = [
+      {
+        title: "Active Clients",
+        value: dashboardData.metrics.activeClients,
+        subtitle: "Total active clients",
+        icon: <FiUsers />,
+        color: "#7cd64b",
+        onClick: () => fetchModalData('activeClients')
+      },
+      {
+        title: "Active Employees",
+        value: dashboardData.metrics.activeEmployees,
+        subtitle: "Total active employees",
+        icon: <FiUserCheck />,
+        color: "#7cd64b",
+        onClick: () => fetchModalData('activeEmployees')
+      },
+      {
+        title: "Unassigned Clients",
+        value: dashboardData.metrics.unassignedClients,
+        subtitle: "Clients without task assignments",
+        icon: <FiUserX />,
+        color: "#ff6b6b",
+        onClick: () => fetchModalData('unassignedClients')
+      },
+      {
+        title: "Idle Employees",
+        value: dashboardData.metrics.idleEmployees,
+        subtitle: "Employees without assignments",
+        icon: <FiClock />,
+        color: "#ffa500",
+        onClick: () => fetchModalData('idleEmployees')
+      },
+      {
+        title: "Incomplete Tasks",
+        value: dashboardData.metrics.incompleteTasks,
+        subtitle: "Clients with pending tasks",
+        icon: <FiAlertCircle />,
+        color: "#ff4b4b",
+        onClick: () => fetchModalData('incompleteTasks')
+      },
+      {
+        title: "Unviewed Notes",
+        value: dashboardData.metrics.recentNotes,
+        subtitle: "New notes to review",
+        icon: <FiMessageSquare />,
+        color: "#ff6b6b",
+        onClick: handleOpenUnviewedNotes
+      }
+    ];
+
     return (
-      <div
-        className={`metric-card ${onClick ? 'clickable' : ''}`}
-        onClick={onClick}
-      >
-        <div className="metric-header">
-          <div className="metric-icon" style={{ color }}>
-            {icon}
+      <div className="metrics-grid">
+        {metrics.map((metric, index) => (
+          <div
+            key={index}
+            className={`metric-card ${metric.onClick ? 'clickable' : ''}`}
+            style={{ borderTopColor: metric.color }}
+            onClick={metric.onClick}
+          >
+            <div className="metric-header">
+              <div className="metric-icon" style={{ background: `${metric.color}15` }}>
+                {metric.icon}
+              </div>
+              <div className="metric-content">
+                <h3>{metric.value}</h3>
+                <p className="metric-title">{metric.title}</p>
+                <p className="metric-subtitle" style={{ color: metric.color }}>
+                  {metric.subtitle}
+                </p>
+              </div>
+            </div>
+            {metric.onClick && (
+              <div className="metric-action">
+                <FiChevronRight size={20} />
+              </div>
+            )}
           </div>
-          <div className="metric-content">
-            <h3>{value}</h3>
-            <p className="metric-title">{title}</p>
-            {subtitle && <p className="metric-subtitle">{subtitle}</p>}
-          </div>
-        </div>
-        {onClick && (
-          <div className="metric-action">
-            <FiChevronRight size={20} />
-          </div>
-        )}
+        ))}
       </div>
     );
   };
 
-  const renderTableModal = (title, data, columns, onRowClick = null) => {
-    const getModalState = () => {
-      if (title.includes("Active Clients")) return () => setActiveClientsModal(false);
-      if (title.includes("Active Employees")) return () => setActiveEmployeesModal(false);
-      if (title.includes("Unassigned Clients")) return () => setUnassignedClientsModal(false);
-      if (title.includes("Idle Employees")) return () => setIdleEmployeesModal(false);
-      if (title.includes("Incomplete Tasks")) return () => setIncompleteTasksModal(false);
-      if (title.includes("Recent Notes")) return () => setNotesModal(false);
-      return () => { };
-    };
+  const renderAlertSection = () => {
+    if (!dashboardData) return null;
+
+    const alerts = [
+      {
+        title: "Clients with Incomplete Tasks",
+        value: dashboardData.metrics.incompleteTasks,
+        subtitle: "Tasks pending completion",
+        icon: <FiAlertCircle />,
+        color: "#ff4b4b",
+        onClick: () => fetchModalData('incompleteTasks')
+      },
+      {
+        title: "Clients with Uploaded Docs but Month Locked",
+        value: "View Details",
+        subtitle: "Clients needing month unlock",
+        icon: <FiLock />,
+        color: "#8B5CF6",
+        onClick: () => fetchModalData('uploadedLocked')
+      },
+      {
+        title: "Unviewed Notes",
+        value: dashboardData.metrics.recentNotes,
+        subtitle: "New notes to review",
+        icon: <FiBell />,
+        color: "#ff6b6b",
+        onClick: handleOpenUnviewedNotes
+      }
+    ];
+
+    return (
+      <div className="alert-section">
+        <div className="alert-header">
+          <h3>
+            <FiAlertCircle size={24} /> Alerts & Notifications
+          </h3>
+          <p>Important items requiring your attention</p>
+        </div>
+        <div className="alert-grid">
+          {alerts.map((alert, index) => (
+            <div
+              key={index}
+              className={`alert-card ${alert.onClick ? 'clickable' : ''}`}
+              style={{ borderTopColor: alert.color }}
+              onClick={alert.onClick}
+            >
+              <div className="alert-header">
+                <div className="alert-icon" style={{ background: `${alert.color}15` }}>
+                  {alert.icon}
+                </div>
+                <div className="alert-content">
+                  <h3>{alert.value}</h3>
+                  <p className="alert-title">{alert.title}</p>
+                  <p className="alert-subtitle" style={{ color: alert.color }}>
+                    {alert.subtitle}
+                  </p>
+                </div>
+              </div>
+              {alert.onClick && (
+                <div className="alert-action">
+                  View <FiChevronRight size={16} />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderUnviewedNotesModal = () => {
+    if (activeModal !== 'unviewedNotes' || !modalData) return null;
+
+    // If we're viewing a specific client's notes
+    if (selectedClientNotes) {
+      return (
+        <div className="modal-overlay">
+          <div className="modal notes-modal">
+            <div className="modal-header">
+              <button
+                className="back-button"
+                onClick={handleBackToClientList}
+                disabled={notesLoading}
+              >
+                <FiChevronLeft size={20} /> Back to Client List
+              </button>
+              <div className="modal-title">
+                <FiMessageSquare size={24} />
+                <h3>
+                  {selectedClientNotes.client.name} - Unviewed Notes
+                  <span className="notes-count-badge">
+                    {selectedClientNotes.totalUnviewedNotes} notes
+                  </span>
+                </h3>
+              </div>
+              <button className="close-modal" onClick={closeModal}>
+                <FiX size={24} />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {notesLoading ? (
+                <div className="loading-state">
+                  <div className="spinner"></div>
+                  <p>Loading notes...</p>
+                </div>
+              ) : selectedClientNotes.totalUnviewedNotes === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">📝</div>
+                  <h4>All notes marked as read</h4>
+                  <p>No unviewed notes found for this client</p>
+                </div>
+              ) : (
+                <>
+                  <div className="client-actions">
+                    <button
+                      className="mark-all-client-btn"
+                      onClick={() => markAllClientNotesAsRead(selectedClientNotes.client.clientId)}
+                      disabled={notesLoading}
+                    >
+                      <FiCheck size={16} /> Mark All as Read for {selectedClientNotes.client.name}
+                    </button>
+                  </div>
+
+                  <div className="client-notes-list">
+                    {selectedClientNotes.notesByMonth.map((monthData, monthIndex) => (
+                      <div key={monthIndex} className="month-notes-section">
+                        <div className="month-header">
+                          <h4>
+                            <FiCalendar size={18} /> {monthData.monthName}
+                            <span className="month-notes-count">({monthData.totalNotes} notes)</span>
+                          </h4>
+                        </div>
+
+                        <div className="notes-list">
+                          {monthData.notes.map((note, noteIndex) => (
+                            <div key={noteIndex} className="note-item unviewed">
+                              <div className="note-header">
+                                <span className={`note-source ${note.source}`}>
+                                  {note.source === 'client' ? '📝 Client' : '👨‍💼 Employee'}
+                                </span>
+                                <span className="note-category">{note.category}</span>
+                                {note.fileName && (
+                                  <span className="note-file">
+                                    <FiFileText size={12} /> {note.fileName}
+                                  </span>
+                                )}
+                                <span className="note-date">
+                                  <FiClock size={12} /> {formatDate(note.addedAt)}
+                                </span>
+                              </div>
+
+                              <div className="note-content">
+                                <p>{note.note}</p>
+                              </div>
+
+                              <div className="note-footer">
+                                <span className="note-added-by">
+                                  Added by: {note.addedBy}
+                                </span>
+                                <button
+                                  className="mark-read-btn"
+                                  onClick={() => markNoteAsRead(
+                                    note.noteId,
+                                    selectedClientNotes.client.clientId
+                                  )}
+                                  disabled={notesLoading}
+                                >
+                                  <FiCheck size={14} /> Mark as Read
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Client list view
+    return (
+      <div className="modal-overlay">
+        <div className="modal unviewed-notes-modal">
+          <div className="modal-header">
+            <div className="modal-title">
+              <FiMessageSquare size={24} />
+              <h3>
+                Unviewed Notes Summary
+                <span className="notes-summary-badge">
+                  {modalData.summary.totalUnviewedNotes} notes • {modalData.summary.totalClientsWithNotes} clients
+                </span>
+              </h3>
+            </div>
+            <div className="modal-actions">
+              <button
+                className="mark-all-read-btn"
+                onClick={markAllNotesAsRead}
+                disabled={notesLoading || modalData.summary.totalUnviewedNotes === 0}
+              >
+                <FiCheck size={16} /> Mark All as Read
+              </button>
+              <button className="close-modal" onClick={closeModal}>
+                <FiX size={24} />
+              </button>
+            </div>
+          </div>
+
+          <div className="modal-body">
+            <div className="filter-info">
+              <p>
+                <strong>Time Period:</strong> {getFilterDisplayText()}
+              </p>
+            </div>
+
+            {notesLoading ? (
+              <div className="loading-state">
+                <div className="spinner"></div>
+                <p>Loading unviewed notes...</p>
+              </div>
+            ) : modalData.summary.totalClientsWithNotes === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">🎉</div>
+                <h4>No unviewed notes</h4>
+                <p>All notes have been reviewed for the selected time period</p>
+              </div>
+            ) : (
+              <div className="responsive-table">
+                <table className="dashboard-table">
+                  <thead>
+                    <tr>
+                      <th>Client</th>
+                      <th>Contact</th>
+                      <th>Unviewed Notes</th>
+                      <th>Months</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {modalData.clients.map((client, index) => (
+                      <tr key={index} className="clickable-row">
+                        <td>
+                          <div className="client-cell">
+                            <div className="client-avatar-small">
+                              {getInitials(client.name)}
+                            </div>
+                            <div>
+                              <span className="client-name">{client.name}</span>
+                              <br />
+                              <small className="client-id">ID: {client.clientId}</small>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="contact-info">
+                            <div className="contact-email">{client.email}</div>
+                            {client.phone && client.phone !== "N/A" && (
+                              <div className="contact-phone">{client.phone}</div>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="notes-count-cell">
+                            <span className="notes-count-big">{client.totalUnviewedNotes}</span>
+                            <span className="notes-label">unviewed notes</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="months-list">
+                            {Object.entries(client.unviewedByMonth).map(([month, count]) => (
+                              <span key={month} className="month-chip">
+                                {month} ({count})
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td>
+                          <button
+                            className="view-client-notes-btn"
+                            onClick={() => handleViewClientNotes(client.clientId)}
+                            disabled={notesLoading}
+                          >
+                            <FiEye size={14} /> View Notes
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderModal = () => {
+    if (!activeModal || !modalData) return null;
+
+    // Handle unviewed notes modal separately
+    if (activeModal === 'unviewedNotes') {
+      return renderUnviewedNotesModal();
+    }
+
+    let modalTitle = "";
+    let icon = null;
+
+    switch (activeModal) {
+      case 'activeClients':
+        modalTitle = "Active Clients";
+        icon = <FiUsers />;
+        break;
+      case 'activeEmployees':
+        modalTitle = "Active Employees";
+        icon = <FiUserCheck />;
+        break;
+      case 'unassignedClients':
+        modalTitle = "Unassigned Clients";
+        icon = <FiUserX />;
+        break;
+      case 'idleEmployees':
+        modalTitle = "Idle Employees";
+        icon = <FiClock />;
+        break;
+      case 'incompleteTasks':
+        modalTitle = "Clients with Incomplete Tasks";
+        icon = <FiAlertCircle />;
+        break;
+      case 'recentNotes':
+        modalTitle = "Recent Notes";
+        icon = <FiMessageSquare />;
+        break;
+      case 'uploadedLocked':
+        modalTitle = "Clients with Uploaded Docs but Month Locked";
+        icon = <FiLock />;
+        break;
+      default:
+        return null;
+    }
 
     return (
       <div className="modal-overlay">
         <div className="modal">
           <div className="modal-header">
             <h3>
-              <FiUsers size={24} /> {title}
+              {icon} {modalTitle}
+              {modalData.count !== undefined && (
+                <span className="count-badge">{modalData.count}</span>
+              )}
             </h3>
-            <button
-              className="close-modal"
-              onClick={getModalState()}
-              disabled={loading}
-            >
+            <button className="close-modal" onClick={closeModal}>
               <FiX size={24} />
             </button>
           </div>
+
           <div className="modal-body">
-            <div className="responsive-table">
-              <table className="dashboard-table">
-                <thead>
-                  <tr>
-                    {columns.map((col, index) => (
-                      <th key={index}>{col.header}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.length > 0 ? (
-                    data.map((row, rowIndex) => (
-                      <tr
-                        key={rowIndex}
-                        className={onRowClick ? 'clickable-row' : ''}
-                        onClick={() => onRowClick && onRowClick(row)}
-                      >
-                        {columns.map((col, colIndex) => (
-                          <td key={colIndex}>
-                            {col.render ? col.render(row) : row[col.field]}
-                          </td>
-                        ))}
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={columns.length} className="empty-state">
-                        <div className="empty-table">
-                          <div className="empty-icon">📊</div>
-                          <h4>No data found</h4>
-                          <p>No records available for this category</p>
+            {modalLoading ? (
+              <div className="loading-state">
+                <div className="spinner"></div>
+                <p>Loading data...</p>
+              </div>
+            ) : activeModal === 'uploadedLocked' ? (
+              // Special handling for uploaded locked modal
+              modalData.monthsData && modalData.monthsData.length > 0 ? (
+                <div className="uploaded-locked-modal-content">
+                  <div className="modal-summary">
+                    <div className="summary-stats">
+                      <div className="stat-item">
+                        <div className="stat-label">Total Clients</div>
+                        <div className="stat-value">{modalData.totalClients}</div>
+                      </div>
+                      <div className="stat-item">
+                        <div className="stat-label">Total Months</div>
+                        <div className="stat-value">{modalData.monthsData.length}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="months-list">
+                    {modalData.monthsData.map((month, index) => (
+                      <div key={index} className="month-section">
+                        <div className="month-header">
+                          <h4>
+                            <FiCalendar size={20} /> {month.monthName}
+                          </h4>
+                          <span className="month-status locked">
+                            🔒 {month.count} client{month.count !== 1 ? 's' : ''}
+                          </span>
                         </div>
-                      </td>
+
+                        <div className="month-clients">
+                          <div className="responsive-table">
+                            <table className="dashboard-table">
+                              <thead>
+                                <tr>
+                                  <th>Client</th>
+                                  <th>Contact</th>
+                                  <th>Uploaded Files</th>
+                                  <th>Locked By</th>
+                                  <th>Locked Date</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {month.clients.map((client, clientIndex) => (
+                                  <tr key={clientIndex}>
+                                    <td>
+                                      <div className="client-cell">
+                                        <div className="client-avatar-small">
+                                          {getInitials(client.name)}
+                                        </div>
+                                        <span>{client.name}</span>
+                                      </div>
+                                    </td>
+                                    <td>
+                                      <div className="contact-info">
+                                        <div>{client.email}</div>
+                                        {client.phone && client.phone !== "N/A" && (
+                                          <small>{client.phone}</small>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td>
+                                      <span className="file-count-badge">
+                                        {client.totalFiles} file{client.totalFiles !== 1 ? 's' : ''}
+                                      </span>
+                                    </td>
+                                    <td>
+                                      <span className="locked-by">{client.lockedBy}</span>
+                                    </td>
+                                    <td>
+                                      <span className="locked-date">
+                                        {client.lockedAt ? formatDate(client.lockedAt) : "Unknown"}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <div className="empty-icon">📁</div>
+                  <h4>No locked months with uploaded files</h4>
+                  <p>All good! No clients have uploaded documents in locked months.</p>
+                </div>
+              )
+            ) : modalData.count > 0 ? (
+              <div className="responsive-table">
+                <table className="dashboard-table">
+                  <thead>
+                    <tr>
+                      {activeModal === 'activeClients' && (
+                        <>
+                          <th>Client Name</th>
+                          <th>Contact</th>
+                          <th>Plan</th>
+                          <th>Joined Date</th>
+                        </>
+                      )}
+                      {activeModal === 'activeEmployees' && (
+                        <>
+                          <th>Employee Name</th>
+                          <th>Contact</th>
+                          <th>Joined Date</th>
+                        </>
+                      )}
+                      {activeModal === 'unassignedClients' && (
+                        <>
+                          <th>Client Name</th>
+                          <th>Contact</th>
+                          <th>Plan</th>
+                          <th>Missing Tasks</th>
+                          <th>Total Missing</th>
+                        </>
+                      )}
+                      {activeModal === 'idleEmployees' && (
+                        <>
+                          <th>Employee Name</th>
+                          <th>Contact</th>
+                          <th>Status</th>
+                        </>
+                      )}
+                      {activeModal === 'incompleteTasks' && (
+                        <>
+                          <th>Client Name</th>
+                          <th>Contact</th>
+                          <th>Incomplete Tasks</th>
+                          <th>Total Pending</th>
+                        </>
+                      )}
+                      {activeModal === 'recentNotes' && (
+                        <>
+                          <th>Client Name</th>
+                          <th>Contact</th>
+                          <th>Notes Summary</th>
+                          <th>Latest Note</th>
+                          <th>Actions</th>
+                        </>
+                      )}
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {(activeModal === 'activeClients' ? modalData.clients :
+                      activeModal === 'activeEmployees' ? modalData.employees :
+                        activeModal === 'unassignedClients' ? modalData.clients :
+                          activeModal === 'idleEmployees' ? modalData.employees :
+                            activeModal === 'incompleteTasks' ? modalData.clients :
+                              activeModal === 'recentNotes' ? modalData.notesByClient : []).map((item, index) => (
+                                <tr key={index}>
+                                  {activeModal === 'activeClients' && (
+                                    <>
+                                      <td>
+                                        <div className="client-cell">
+                                          <div className="client-avatar-small">
+                                            {getInitials(item.name)}
+                                          </div>
+                                          <span>{item.name}</span>
+                                        </div>
+                                      </td>
+                                      <td>
+                                        <div className="contact-info">
+                                          <div>{item.email}</div>
+                                          {item.phone && item.phone !== "N/A" && (
+                                            <small>{item.phone}</small>
+                                          )}
+                                        </div>
+                                      </td>
+                                      <td>
+                                        <span className="plan-badge">{item.plan}</span>
+                                      </td>
+                                      <td>{item.joined}</td>
+                                    </>
+                                  )}
+                                  {activeModal === 'activeEmployees' && (
+                                    <>
+                                      <td>
+                                        <div className="client-cell">
+                                          <div className="client-avatar-small">
+                                            {getInitials(item.name)}
+                                          </div>
+                                          <span>{item.name}</span>
+                                        </div>
+                                      </td>
+                                      <td>
+                                        <div className="contact-info">
+                                          <div>{item.email}</div>
+                                          {item.phone && item.phone !== "N/A" && (
+                                            <small>{item.phone}</small>
+                                          )}
+                                        </div>
+                                      </td>
+                                      <td>{item.joined}</td>
+                                    </>
+                                  )}
+                                  {activeModal === 'unassignedClients' && (
+                                    <>
+                                      <td>
+                                        <div className="client-cell">
+                                          <div className="client-avatar-small">
+                                            {getInitials(item.name)}
+                                          </div>
+                                          <span>{item.name}</span>
+                                        </div>
+                                      </td>
+                                      <td>
+                                        <div className="contact-info">
+                                          <div>{item.email}</div>
+                                          {item.phone && item.phone !== "N/A" && (
+                                            <small>{item.phone}</small>
+                                          )}
+                                        </div>
+                                      </td>
+                                      <td>
+                                        <span className="plan-badge">{item.plan}</span>
+                                      </td>
+                                      <td>
+                                        <div className="missing-tasks">
+                                          {item.missingTasks && item.missingTasks.map((task, taskIndex) => (
+                                            <span key={taskIndex} className="task-chip">
+                                              {task}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </td>
+                                      <td>
+                                        <span className="missing-count">{item.totalMissing}</span>
+                                      </td>
+                                    </>
+                                  )}
+                                  {activeModal === 'idleEmployees' && (
+                                    <>
+                                      <td>
+                                        <div className="client-cell">
+                                          <div className="client-avatar-small">
+                                            {getInitials(item.name)}
+                                          </div>
+                                          <span>{item.name}</span>
+                                        </div>
+                                      </td>
+                                      <td>
+                                        <div className="contact-info">
+                                          <div>{item.email}</div>
+                                          {item.phone && item.phone !== "N/A" && (
+                                            <small>{item.phone}</small>
+                                          )}
+                                        </div>
+                                      </td>
+                                      <td>
+                                        <span className="status-badge inactive">Idle</span>
+                                      </td>
+                                    </>
+                                  )}
+                                  {activeModal === 'incompleteTasks' && (
+                                    <>
+                                      <td>
+                                        <div className="client-cell">
+                                          <div className="client-avatar-small">
+                                            {getInitials(item.name)}
+                                          </div>
+                                          <span>{item.name}</span>
+                                        </div>
+                                      </td>
+                                      <td>
+                                        <div className="contact-info">
+                                          <div>{item.email}</div>
+                                          {item.phone && item.phone !== "N/A" && (
+                                            <small>{item.phone}</small>
+                                          )}
+                                        </div>
+                                      </td>
+                                      <td>
+                                        <div className="incomplete-tasks-list">
+                                          {item.incompleteTasks && item.incompleteTasks.map((task, taskIndex) => (
+                                            <div key={taskIndex} className="incomplete-task-item">
+                                              <span className="task-name">{task.task}</span>
+                                              <span className="task-assigned">Assigned to: {task.assignedTo}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </td>
+                                      <td>
+                                        <span className="incomplete-count">{item.totalIncomplete}</span>
+                                      </td>
+                                    </>
+                                  )}
+                                  {activeModal === 'recentNotes' && (
+                                    <>
+                                      <td>
+                                        <div className="client-cell">
+                                          <div className="client-avatar-small">
+                                            {getInitials(item.clientName)}
+                                          </div>
+                                          <span>{item.clientName}</span>
+                                        </div>
+                                      </td>
+                                      <td>
+                                        <div className="contact-info">
+                                          <div>{item.clientEmail}</div>
+                                        </div>
+                                      </td>
+                                      <td>
+                                        <div className="notes-summary">
+                                          <div className="notes-count">
+                                            Total: <strong>{item.totalNotes}</strong> notes
+                                          </div>
+                                          <div className="notes-breakdown">
+                                            {item.fileNotesCount} file notes • {item.categoryNotesCount} category notes
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td>
+                                        {item.latestNote && (
+                                          <div className="latest-note">
+                                            {item.latestNote.note.substring(0, 60)}...
+                                          </div>
+                                        )}
+                                      </td>
+                                      <td>
+                                        <button
+                                          className="view-notes-btn"
+                                          onClick={() => {
+                                            // You can implement view client notes here if needed
+                                            showToast("View notes functionality coming soon", "info");
+                                          }}
+                                        >
+                                          <FiEye size={14} /> View Notes
+                                        </button>
+                                      </td>
+                                    </>
+                                  )}
+                                </tr>
+                              ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="empty-state">
+                <div className="empty-table">
+                  <div className="empty-icon">📊</div>
+                  <h4>No data found</h4>
+                  <p>No records available for the selected time period</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderDashboardSummary = () => {
+    if (!dashboardData) return null;
+
+    return (
+      <div className="dashboard-summary">
+        <div className="summary-card">
+          <div className="summary-header">
+            <h4>
+              <FiTrendingUp size={20} /> Dashboard Summary
+            </h4>
+          </div>
+          <div className="summary-content">
+            <p>
+              <strong>Time Period:</strong> {getFilterDisplayText()}
+            </p>
+            <p>
+              <strong>Current Month:</strong> {dashboardData.currentMonth ?
+                `${dashboardData.currentMonth.month}/${dashboardData.currentMonth.year}` :
+                "Loading..."}
+            </p>
+            <p>
+              <strong>Active Clients:</strong> {dashboardData.metrics.activeClients}
+            </p>
+            <p>
+              <strong>Active Employees:</strong> {dashboardData.metrics.activeEmployees}
+            </p>
           </div>
         </div>
       </div>
@@ -428,7 +1323,7 @@ const AdminDashboard = () => {
               <FiTrendingUp size={28} /> Admin Dashboard
             </h1>
             <p className="page-subtitle">
-              Welcome to Admin Panel • Monitor your accounting operations
+              Welcome {localStorage.getItem("adminName") || "Admin"} • Monitor system metrics and alerts
             </p>
           </div>
 
@@ -438,7 +1333,7 @@ const AdminDashboard = () => {
               onClick={fetchDashboardData}
               disabled={loading}
             >
-              <FiRefreshCw size={18} /> Refresh Dashboard
+              <FiRefreshCw size={18} /> Refresh
             </button>
           </div>
         </div>
@@ -449,7 +1344,7 @@ const AdminDashboard = () => {
             <h3>
               <FiFilter size={20} /> Time Period: <span className="current-filter">{getFilterDisplayText()}</span>
             </h3>
-            <p>Select time period for dashboard data</p>
+            <p>Select time period to view your data</p>
           </div>
           <div className="filter-buttons">
             {timeFilterOptions.map(filter => (
@@ -498,7 +1393,7 @@ const AdminDashboard = () => {
                   onClick={applyCustomDateFilter}
                   disabled={loading || !customStartDate || !customEndDate}
                 >
-                  <FiCheckCircle size={16} /> Apply Date Range
+                  <FiCheck size={16} /> Apply Date Range
                 </button>
               </div>
               <p className="date-range-hint">
@@ -514,286 +1409,27 @@ const AdminDashboard = () => {
             <div className="spinner"></div>
             <p>Loading dashboard data...</p>
           </div>
-        ) : (
+        ) : dashboardData ? (
           <>
             {/* Metrics Grid */}
-            <div className="metrics-grid">
-              {renderMetricCard(
-                "Active Clients",
-                dashboardData?.metrics?.activeClients || 0,
-                <FiUsers size={28} />,
-                "#7cd64b",
-                fetchActiveClients,
-                "Click to view all"
-              )}
+            {renderMetricsGrid()}
 
-              {renderMetricCard(
-                "Active Employees",
-                dashboardData?.metrics?.activeEmployees || 0,
-                <FiUserCheck size={28} />,
-                "#7cd64b",
-                fetchActiveEmployees,
-                "Click to view all"
-              )}
-
-              {renderMetricCard(
-                "Unassigned Clients",
-                dashboardData?.metrics?.unassignedClients || 0,
-                <FiAlertCircle size={28} />,
-                "#ffa500",
-                fetchUnassignedClients,
-                `Missing tasks • ${getFilterDisplayText()}`
-              )}
-
-              {renderMetricCard(
-                "Idle Employees",
-                dashboardData?.metrics?.idleEmployees || 0,
-                <FiUser size={28} />,
-                "#ff4b4b",
-                fetchIdleEmployees,
-                `No assignments • ${getFilterDisplayText()}`
-              )}
-
-              {renderMetricCard(
-                "Incomplete Tasks",
-                dashboardData?.metrics?.incompleteTasks || 0,
-                <FiFileText size={28} />,
-                "#ff4b4b",
-                fetchIncompleteTasks,
-                `Pending work • ${getFilterDisplayText()}`
-              )}
-
-              {renderMetricCard(
-                "Recent Notes",
-                dashboardData?.metrics?.recentNotes || 0,
-                <FiMessageSquare size={28} />,
-                "#8B5CF6",
-                fetchRecentNotes,
-                `Click to view • ${getFilterDisplayText()}`
-              )}
-            </div>
+            {/* Alert Section */}
+            {renderAlertSection()}
 
             {/* Dashboard Summary */}
-            <div className="dashboard-summary">
-              <div className="summary-card">
-                <div className="summary-header">
-                  <FiInfo size={20} />
-                  <h4>Dashboard Summary</h4>
-                </div>
-                <div className="summary-content">
-                  <p>
-                    <strong>Time Period:</strong> {getFilterDisplayText()}
-                  </p>
-                  <p>
-                    <strong>Active Clients:</strong> {dashboardData?.metrics?.activeClients || 0}
-                  </p>
-                  <p>
-                    <strong>Active Employees:</strong> {dashboardData?.metrics?.activeEmployees || 0}
-                  </p>
-                  <p>
-                    <strong>Total Issues:</strong> {((dashboardData?.metrics?.unassignedClients || 0) + (dashboardData?.metrics?.idleEmployees || 0) + (dashboardData?.metrics?.incompleteTasks || 0))}
-                  </p>
-                </div>
-              </div>
-            </div>
+            {renderDashboardSummary()}
           </>
-        )}
-
-        {/* MODALS */}
-        {activeClientsModal && renderTableModal(
-          `Active Clients (${activeClients.length})`,
-          activeClients,
-          [
-            { header: "Name", field: "name" },
-            { header: "Email", field: "email" },
-            { header: "Phone", field: "phone" },
-            {
-              header: "Plan",
-              render: (row) => (
-                <span className="plan-badge">{row.plan || 'Basic'}</span>
-              )
-            },
-            { header: "Joined", field: "joined" }
-          ]
-        )}
-
-        {activeEmployeesModal && renderTableModal(
-          `Active Employees (${activeEmployees.length})`,
-          activeEmployees,
-          [
-            { header: "Name", field: "name" },
-            { header: "Email", field: "email" },
-            { header: "Phone", field: "phone" },
-            { header: "Joined", field: "joined" }
-          ]
-        )}
-
-        {unassignedClientsModal && renderTableModal(
-          `Unassigned Clients (${unassignedClients.length}) • ${getFilterDisplayText()}`,
-          unassignedClients,
-          [
-            { header: "Name", field: "name" },
-            { header: "Email", field: "email" },
-            { header: "Phone", field: "phone" },
-            {
-              header: "Plan",
-              render: (row) => (
-                <span className="plan-badge">{row.plan || 'Basic'}</span>
-              )
-            },
-            {
-              header: "Missing Tasks",
-              render: (row) => (
-                <div className="missing-tasks">
-                  {row.missingTasks?.map((task, index) => (
-                    <span key={index} className="task-chip">
-                      {task}
-                    </span>
-                  )) || 'No tasks'}
-                </div>
-              )
-            }
-          ]
-        )}
-
-        {idleEmployeesModal && renderTableModal(
-          `Idle Employees (${idleEmployees.length}) • ${getFilterDisplayText()}`,
-          idleEmployees,
-          [
-            { header: "Name", field: "name" },
-            { header: "Email", field: "email" },
-            { header: "Phone", field: "phone" }
-          ]
-        )}
-
-        {incompleteTasksModal && renderTableModal(
-          `Clients with Incomplete Tasks (${incompleteTasksClients.length}) • ${getFilterDisplayText()}`,
-          incompleteTasksClients,
-          [
-            { header: "Name", field: "name" },
-            { header: "Email", field: "email" },
-            { header: "Phone", field: "phone" },
-            {
-              header: "Incomplete Tasks",
-              render: (row) => (
-                <div className="incomplete-tasks-list">
-                  {row.incompleteTasks?.map((task, index) => (
-                    <div key={index} className="incomplete-task-item">
-                      <span className="task-name">{task.task}</span>
-                      <span className="task-assigned">({task.assignedTo})</span>
-                    </div>
-                  )) || 'No incomplete tasks'}
-                </div>
-              )
-            }
-          ]
-        )}
-
-        {notesModal && renderTableModal(
-          `Recent Notes (${recentNotes.length}) • ${getFilterDisplayText()}`,
-          recentNotes,
-          [
-            { header: "Client", field: "clientName" },
-            { header: "Email", field: "clientEmail" },
-            {
-              header: "Notes Summary",
-              render: (row) => (
-                <div className="notes-summary">
-                  <div className="notes-count">
-                    <strong>{row.totalNotes || 0}</strong> notes
-                  </div>
-                  <div className="notes-breakdown">
-                    ({row.fileNotesCount || 0} file, {row.categoryNotesCount || 0} category)
-                  </div>
-                  {row.latestNote && (
-                    <div className="latest-note">
-                      "{row.latestNote.note?.substring(0, 50)}..."
-                    </div>
-                  )}
-                </div>
-              )
-            },
-            {
-              header: "Actions",
-              render: (row) => (
-                <button
-                  className="view-notes-btn"
-                  onClick={() => fetchClientNotes(row.clientId)}
-                >
-                  <FiEye size={14} /> View Notes
-                </button>
-              )
-            }
-          ]
-        )}
-
-        {/* Client Notes Modal */}
-        {clientNotesModal && selectedClientNotes && (
-          <div className="modal-overlay">
-            <div className="modal notes-modal">
-              <div className="modal-header">
-                <h3>
-                  <FiMessageSquare size={24} />
-                  Notes for {selectedClientNotes.client?.name} • {getFilterDisplayText()}
-                </h3>
-                <button
-                  className="close-modal"
-                  onClick={() => setClientNotesModal(false)}
-                  disabled={loading}
-                >
-                  <FiX size={24} />
-                </button>
-              </div>
-              <div className="modal-body">
-                <div className="client-info-card">
-                  <div className="client-avatar">
-                    {selectedClientNotes.client?.name?.charAt(0).toUpperCase() || 'C'}
-                  </div>
-                  <div>
-                    <h4>{selectedClientNotes.client?.name}</h4>
-                    <p>{selectedClientNotes.client?.email}</p>
-                    <small className="notes-count-badge">
-                      Total: {selectedClientNotes.totalNotes || 0} notes • Period: {getFilterDisplayText()}
-                    </small>
-                  </div>
-                </div>
-
-                <div className="notes-detail-list">
-                  {selectedClientNotes.notes?.map((note, index) => (
-                    <div key={index} className="note-detail-item">
-                      <div className="note-header">
-                        <div className={`note-type ${note.type === 'CLIENT_NOTE' ? 'client-note' : 'employee-note'}`}>
-                          {note.type === 'CLIENT_NOTE' ? 'Client Note' : 'Employee Note'}
-                        </div>
-                        <div className="note-category">
-                          <FiFileText size={14} /> {note.category}
-                          {note.fileName && ` • ${note.fileName}`}
-                        </div>
-                        <div className="note-date">
-                          <FiCalendar size={14} /> {formatDate(note.addedAt)}
-                        </div>
-                      </div>
-                      <div className="note-content">
-                        <p>{note.note}</p>
-                      </div>
-                      <div className="note-footer">
-                        <span className="note-level">
-                          Level: {note.level}
-                        </span>
-                      </div>
-                    </div>
-                  )) || (
-                      <div className="empty-notes">
-                        <div className="empty-icon">📝</div>
-                        <h4>No notes found</h4>
-                        <p>This client has no notes for the selected period</p>
-                      </div>
-                    )}
-                </div>
-              </div>
-            </div>
+        ) : (
+          <div className="empty-state">
+            <div className="empty-icon">📊</div>
+            <h4>No data found</h4>
+            <p>No dashboard data available</p>
           </div>
         )}
+
+        {/* Modals */}
+        {renderModal()}
       </div>
     </AdminLayout>
   );

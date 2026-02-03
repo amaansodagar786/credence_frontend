@@ -26,7 +26,8 @@ import {
   FiBriefcase,
   FiMapPin,
   FiFile,
-  FiCreditCard
+  FiCreditCard,
+  FiBell
 } from "react-icons/fi";
 
 import { ToastContainer, toast } from "react-toastify";
@@ -45,6 +46,17 @@ const ClientDashboard = () => {
   const [expandedMonths, setExpandedMonths] = useState({});
   const [selectedMonthDetails, setSelectedMonthDetails] = useState(null);
   const [showMonthDetailsModal, setShowMonthDetailsModal] = useState(false);
+
+  // State for notes
+  const [alertNotes, setAlertNotes] = useState({
+    preview: [],
+    hasUnviewedNotes: false,
+    unviewedCount: 0,
+    totalNotes: 0
+  });
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [allNotes, setAllNotes] = useState([]);
+  const [loadingNotes, setLoadingNotes] = useState(false);
 
   // Payment Reminder State
   const [showPaymentReminder, setShowPaymentReminder] = useState(false);
@@ -90,20 +102,18 @@ const ClientDashboard = () => {
       message = "💰 Payment Reminder: Monthly payment is due. Please make your payment by the 25th.";
 
       if (userAction === null) {
-        shouldShow = true; // First time seeing 20th reminder
+        shouldShow = true;
       } else if (userAction === "will_pay") {
-        shouldShow = true; // Show again even if clicked "I Will Pay"
+        shouldShow = true;
       }
-      // Don't show if already paid
     } else if (currentDay === 25) {
       message = "⏰ Final Payment Reminder: Today is the last day for monthly payment.";
 
       if (userAction === "will_pay") {
-        shouldShow = true; // Show on 25th if clicked "I Will Pay" on 20th
+        shouldShow = true;
       } else if (userAction === null) {
-        shouldShow = true; // Show if no action taken on 20th
+        shouldShow = true;
       }
-      // Don't show if already paid
     }
 
     setReminderMessage(message);
@@ -140,6 +150,115 @@ const ClientDashboard = () => {
     setShowPaymentReminder(false);
   };
 
+  const fetchAllNotes = async () => {
+    try {
+      setLoadingNotes(true);
+
+      if (dashboardData && dashboardData.data) {
+        // Get ALL notes from ALL months in dashboard data
+        let allNotesFromData = [];
+        dashboardData.data.forEach(monthData => {
+          if (monthData.notes && monthData.notes.list) {
+            allNotesFromData = [...allNotesFromData, ...monthData.notes.list];
+          }
+        });
+
+        // Also include notes from the backend API (if available)
+        try {
+          const response = await axios.get(
+            `${import.meta.env.VITE_API_URL}/client/notes/alert-preview`,
+            {
+              params: { limit: 100 },
+              withCredentials: true
+            }
+          );
+
+          if (response.data.success && response.data.preview) {
+            // Merge API notes with dashboard notes
+            const apiNotes = response.data.preview || [];
+            // Combine and remove duplicates
+            const combinedNotes = [...allNotesFromData, ...apiNotes];
+            const uniqueNotes = Array.from(
+              new Map(
+                combinedNotes.map(note => [
+                  `${note.note}-${note.addedAt}-${note.category}`,
+                  note
+                ])
+              ).values()
+            );
+
+            setAllNotes(uniqueNotes);
+          } else {
+            setAllNotes(allNotesFromData);
+          }
+        } catch (apiError) {
+          // If API fails, use dashboard data
+          setAllNotes(allNotesFromData);
+        }
+
+        setShowNotesModal(true);
+      } else {
+        toast.error("No notes data available", {
+          position: "top-right",
+          autoClose: 3000,
+          theme: "dark"
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching all notes:", error);
+      toast.error("Error loading notes", {
+        position: "top-right",
+        autoClose: 3000,
+        theme: "dark"
+      });
+    } finally {
+      setLoadingNotes(false);
+    }
+  };
+
+  const markAllNotesAsViewed = async () => {
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_API_URL}/client/notes/mark-all-viewed`,
+        {},
+        { withCredentials: true }
+      );
+
+      // Update local state
+      setAlertNotes(prev => ({
+        ...prev,
+        hasUnviewedNotes: false,
+        unviewedCount: 0,
+        preview: prev.preview.map(note => ({
+          ...note,
+          isUnviewed: false,
+          isNew: false
+        }))
+      }));
+
+      // Refresh dashboard data
+      await fetchDashboardData();
+
+      toast.success("All notes marked as read!", {
+        position: "top-right",
+        autoClose: 3000,
+        theme: "dark"
+      });
+
+    } catch (error) {
+      console.error("Error marking notes as viewed:", error);
+      toast.error("Error marking notes as read", {
+        position: "top-right",
+        autoClose: 3000,
+        theme: "dark"
+      });
+    }
+  };
+
+  const handleViewAllNotes = async () => {
+    await fetchAllNotes();
+  };
+
   /* ==================== API CALLS ==================== */
   const fetchDashboardData = async () => {
     try {
@@ -161,6 +280,17 @@ const ClientDashboard = () => {
 
       if (response.data.success) {
         setDashboardData(response.data);
+
+        // Check for alert notes in response
+        if (response.data.alertInfo) {
+          setAlertNotes({
+            preview: response.data.alertInfo.previewNotes || [],
+            hasUnviewedNotes: response.data.alertInfo.hasUnviewedNotes,
+            unviewedCount: response.data.alertInfo.unviewedNotesCount || 0,
+            totalNotes: response.data.alertInfo.totalNotes || 0
+          });
+        }
+
         // Expand first month by default
         if (response.data.data && response.data.data.length > 0) {
           const firstMonthKey = `${response.data.data[0].year}_${response.data.data[0].month}`;
@@ -279,6 +409,190 @@ const ClientDashboard = () => {
   }, [timeFilter, customStartDate, customEndDate]);
 
   /* ==================== RENDER FUNCTIONS ==================== */
+
+  const renderStandaloneNotesSection = () => {
+    // Get ALL notes from ALL months in dashboard data
+    const getAllNotesFromDashboard = () => {
+      if (!dashboardData || !dashboardData.data) return [];
+
+      let allNotes = [];
+      dashboardData.data.forEach(monthData => {
+        if (monthData.notes && monthData.notes.list) {
+          allNotes = [...allNotes, ...monthData.notes.list];
+        }
+      });
+
+      return allNotes;
+    };
+
+    const allNotes = getAllNotesFromDashboard();
+    const totalNotes = allNotes.length;
+    const unviewedNotes = allNotes.filter(note => note.isUnviewedByClient).length;
+
+    // If NO notes at all, don't show section
+    if (totalNotes === 0) {
+      return null;
+    }
+
+    return (
+      <div className="standalone-notes-section">
+        <div className="section-header">
+          <h3><FiMessageSquare size={24} /> Notes Overview</h3>
+          <div className="notes-summary-badge">
+            <span className="total-notes">Total: {totalNotes}</span>
+            {unviewedNotes > 0 && (
+              <span className="unviewed-notes">• {unviewedNotes} unread</span>
+            )}
+            <button
+              className="mark-all-viewed-btn-small"
+              onClick={markAllNotesAsViewed}
+              disabled={unviewedNotes === 0}
+            >
+              <FiCheck size={14} /> Mark All Read
+            </button>
+          </div>
+        </div>
+
+        <div className="notes-grid">
+          {allNotes.slice(0, 4).map((note, index) => (
+            <div key={index} className={`note-card-standalone ${note.isUnviewedByClient ? 'unviewed' : ''}`}>
+              <div className="note-card-header-standalone">
+                <span className={`note-type-standalone ${note.source}`}>
+                  {note.source === 'client' ? '📝 Your Note' : '👨‍💼 Employee'}
+                </span>
+                {note.isUnviewedByClient && (
+                  <span className="new-badge-standalone">NEW</span>
+                )}
+              </div>
+
+              <div className="note-card-content-standalone">
+                <p className="note-text-standalone">
+                  {note.note.length > 80 ? note.note.substring(0, 80) + '...' : note.note}
+                </p>
+              </div>
+
+              <div className="note-card-footer-standalone">
+                <span className="note-category-standalone">{note.category}</span>
+                <span className="note-date-standalone">{formatDate(note.addedAt)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {totalNotes > 4 && (
+          <div className="notes-section-footer">
+            <button
+              className="view-all-notes-btn-standalone"
+              onClick={handleViewAllNotes}
+            >
+              <FiEye size={16} /> View All Notes ({totalNotes})
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // All Notes Modal
+  const renderAllNotesModal = () => {
+    if (!showNotesModal) return null;
+
+    return (
+      <div className="modal-overlay notes-modal-overlay">
+        <div className="modal notes-modal">
+          <div className="modal-header">
+            <div className="modal-header-left">
+              <FiMessageSquare size={24} />
+              <h3>All Notes ({allNotes.length})</h3>
+              {alertNotes.hasUnviewedNotes && (
+                <span className="modal-unviewed-badge">
+                  {alertNotes.unviewedCount} unread
+                </span>
+              )}
+            </div>
+            <div className="modal-header-right">
+              <button
+                className="mark-all-modal-btn"
+                onClick={markAllNotesAsViewed}
+                disabled={!alertNotes.hasUnviewedNotes}
+              >
+                <FiCheck size={16} /> Mark All as Read
+              </button>
+              <button
+                className="close-modal"
+                onClick={() => {
+                  setShowNotesModal(false);
+                  setAllNotes([]);
+                }}
+              >
+                <FiX size={24} />
+              </button>
+            </div>
+          </div>
+
+          <div className="modal-body notes-modal-body">
+            {loadingNotes ? (
+              <div className="loading-notes">
+                <div className="spinner"></div>
+                <p>Loading notes...</p>
+              </div>
+            ) : allNotes.length === 0 ? (
+              <div className="empty-notes">
+                <FiMessageSquare size={48} />
+                <h4>No notes found</h4>
+                <p>You don't have any notes yet.</p>
+              </div>
+            ) : (
+              <div className="all-notes-list">
+                {allNotes.map((note, index) => (
+                  <div
+                    key={index}
+                    className={`note-item-full ${note.isUnviewed ? 'unviewed' : ''} ${note.source}`}
+                  >
+                    <div className="note-full-header">
+                      <div className="note-full-type">
+                        <span className={`note-source ${note.source}`}>
+                          {note.source === 'client' ? '📝 Your Note' : '👨‍💼 Employee'}
+                        </span>
+                        <span className="note-category-full">{note.category}</span>
+                        {note.isUnviewed && (
+                          <span className="new-badge-full">NEW</span>
+                        )}
+                      </div>
+                      <span className="note-full-date">
+                        <FiClock size={12} /> {formatDate(note.addedAt)}
+                      </span>
+                    </div>
+
+                    {note.fileName && (
+                      <div className="note-file-info">
+                        <FiFileText size={14} />
+                        <span>{note.fileName}</span>
+                      </div>
+                    )}
+
+                    <div className="note-full-content">
+                      <p>{note.fullNote || note.note}</p>
+                    </div>
+
+                    <div className="note-full-footer">
+                      <span className="note-added-by">
+                        Added by: {note.addedBy || (note.source === 'client' ? 'You' : 'Employee')}
+                      </span>
+                      <span className="note-month">
+                        {note.month}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderDocumentStatus = (documents) => {
     const { requiredCategories, otherCategories, summary } = documents;
 
@@ -292,7 +606,6 @@ const ClientDashboard = () => {
         </div>
 
         <div className="documents-list">
-          {/* Required Categories */}
           {requiredCategories.map((category, index) => (
             <div key={index} className="document-category">
               <div className="category-header">
@@ -323,7 +636,6 @@ const ClientDashboard = () => {
             </div>
           ))}
 
-          {/* Other Categories (if any uploaded) */}
           {otherCategories.filter(cat => cat.uploadedFiles > 0).length > 0 && (
             <div className="other-categories">
               <h5>Other Categories:</h5>
@@ -423,19 +735,27 @@ const ClientDashboard = () => {
           <h4><FiMessageSquare size={18} /> Recent Notes</h4>
           <span className="notes-count">
             {summary.totalNotes} notes ({summary.clientNotes} yours, {summary.employeeNotes} employee)
+            {summary.unviewedNotes > 0 && (
+              <span className="notes-unviewed-count">
+                • {summary.unviewedNotes} unread
+              </span>
+            )}
           </span>
         </div>
 
         <div className="notes-list">
           {list.slice(0, 3).map((note, index) => (
-            <div key={index} className={`note-item ${note.source}`}>
+            <div key={index} className={`note-item ${note.source} ${note.isUnviewedByClient ? 'unviewed' : ''}`}>
               <div className="note-header">
                 <span className={`note-type ${note.source}`}>
                   {note.source === 'client' ?
-                    (note.type === 'month' ? '📝 Your General Note' : '🗑️ File Deletion Reason')
+                    (note.type === 'month_note' ? '📝 Your General Note' : '🗑️ File Deletion Reason')
                     : '👨‍💼 Employee Feedback'
                   }
                 </span>
+                {note.isUnviewedByClient && (
+                  <span className="note-new-badge">NEW</span>
+                )}
                 <span className="note-category">{note.category}</span>
                 <span className="note-date">
                   <FiClock size={12} /> {formatDate(note.addedAt)}
@@ -492,6 +812,11 @@ const ClientDashboard = () => {
               {monthData.documents.summary.uploadedCategories}/3 documents •
               {monthData.tasks.summary.assignedTasks}/4 tasks •
               {monthData.notes.summary.totalNotes} notes
+              {monthData.notes.summary.unviewedNotes > 0 && (
+                <span className="month-unviewed-notes">
+                  • {monthData.notes.summary.unviewedNotes} unread
+                </span>
+              )}
             </p>
           </div>
 
@@ -653,16 +978,35 @@ const ClientDashboard = () => {
             {/* Notes Section */}
             <div className="modal-section">
               <h4><FiMessageSquare size={20} /> All Notes ({selectedMonthDetails.notes.total})</h4>
+              {selectedMonthDetails.notes.unviewedCount > 0 && (
+                <div className="unviewed-notes-header">
+                  <span className="unviewed-count-badge">
+                    {selectedMonthDetails.notes.unviewedCount} unread notes
+                  </span>
+                  <button
+                    className="mark-month-viewed-btn"
+                    onClick={async () => {
+                      await markAllNotesAsViewed();
+                      setShowMonthDetailsModal(false);
+                    }}
+                  >
+                    <FiCheck size={14} /> Mark all as read
+                  </button>
+                </div>
+              )}
               <div className="notes-list-modal">
                 {selectedMonthDetails.notes.list.map((note, index) => (
-                  <div key={index} className={`note-card ${note.source}`}>
+                  <div key={index} className={`note-card ${note.source} ${note.isUnviewedByClient ? 'unviewed' : ''}`}>
                     <div className="note-card-header">
                       <span className={`note-card-type ${note.source}`}>
                         {note.source === 'client' ?
-                          (note.type === 'month' ? '📝 Your General Note' : '📝 Your General Note')
+                          (note.type === 'month_note' ? '📝 Your General Note' : '🗑️ File Deletion Reason')
                           : '👨‍💼 Employee Feedback'
                         }
                       </span>
+                      {note.isUnviewedByClient && (
+                        <span className="note-card-new-badge">NEW</span>
+                      )}
                       <span className="note-card-category">
                         {note.category} {note.fileName ? `• ${note.fileName}` : ''}
                       </span>
@@ -765,10 +1109,6 @@ const ClientDashboard = () => {
               <span className="summary-label">Enrollment Date:</span>
               <span className="summary-value">{client.enrollmentDate}</span>
             </div>
-            {/* <div className="summary-item">
-              <span className="summary-label">Client ID:</span>
-              <span className="summary-value">{client.clientId}</span>
-            </div> */}
           </div>
         </div>
       </div>
@@ -902,6 +1242,9 @@ const ClientDashboard = () => {
           )}
         </div>
 
+        {/* NEW: Standalone Notes Section (always shows if there are notes) */}
+        {renderStandaloneNotesSection()}
+
         {/* Loading State */}
         {loading ? (
           <div className="loading-state">
@@ -910,7 +1253,7 @@ const ClientDashboard = () => {
           </div>
         ) : dashboardData && dashboardData.data && dashboardData.data.length > 0 ? (
           <>
-            {/* Client Info Summary - Now showing all information */}
+            {/* Client Info Summary */}
             <div className="client-summary-container">
               <h3 className="section-title">
                 <FiInfo size={24} /> Account Summary
@@ -933,6 +1276,9 @@ const ClientDashboard = () => {
             <p>No accounting data available for the selected time period</p>
           </div>
         )}
+
+        {/* All Notes Modal */}
+        {renderAllNotesModal()}
 
         {/* Month Details Modal */}
         {showMonthDetailsModal && renderMonthDetailsModal()}
