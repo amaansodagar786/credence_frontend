@@ -21,6 +21,7 @@ import AdminAuth from './Pages/Admin/Authentication/AdminAuth';
 import Home from './Pages/Home/Home';
 import ClientProfile from './Pages/Client/Profile/ClientProfile';
 import ActivityLogs from './Pages/Admin/ActivityLogs/ActivityLogs';
+import CustomDesign from './Pages/Employee/Testing/CustomDesign';
 
 
 
@@ -58,6 +59,7 @@ function App() {
 
 
         <Route path="/login" element={<ClientEmpLogin />} />
+        <Route path="/custom" element={<CustomDesign />} />
 
 
 
