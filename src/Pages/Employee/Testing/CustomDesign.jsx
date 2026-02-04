@@ -1,7 +1,7 @@
 import React from "react";
 import "./CustomDesign.scss";
 import ringSketch from "../../../assets/Images/home/custom1.png";
-import mensJewelry from "../../../assets/images/Home/custom2.png";
+import mensJewelry from "../../../assets/Images/Home/custom2.png";
 
 const CustomDesign = () => {
     return (
