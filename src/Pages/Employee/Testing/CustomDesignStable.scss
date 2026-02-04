@@ -1,0 +1,176 @@
+@import url("https://fonts.googleapis.com/css2?family=Prata&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap");
+
+/* ---- Safari text scaling fix ---- */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+.custom-design-stable {
+  font-family: "Lato", sans-serif;
+  color: #111;
+
+  .cds-section {
+    padding: 4rem 0;
+  }
+
+  .cds-custom {
+    background: #f9f9f9;
+    border-bottom: 1px solid #e6e6e6;
+  }
+
+  .cds-mens {
+    background: #fff;
+  }
+
+  /* ---------- Layout (UNCHANGED STABLE) ---------- */
+
+  .cds-inner {
+    max-width: 1200px;
+    margin: auto;
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    gap: 3rem;
+  }
+
+  .cds-content {
+    flex: 1;
+    max-width: 560px;
+  }
+
+  .cds-image {
+    flex: 1;
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  .cds-image img {
+    width: 100%;
+    max-width: 460px;
+    height: auto;
+    border-radius: 10px;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* ---------- Typography (RESTORED ORIGINAL SIZES) ---------- */
+
+  .cds-subtitle {
+    color: #c8a74f;
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    font-weight: 700;
+    margin-bottom:-20px;
+  }
+
+  .cds-title {
+    font-family: "Prata", serif;
+    font-size: 3rem;
+    font-weight: 400;
+    line-height: 1.3;
+    margin-bottom: 1.2rem;
+  }
+
+  .cds-desc {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: #555;
+    margin-bottom: 1.8rem;
+  }
+
+  .cds-list {
+    display: flex;
+    gap: 1.4rem;
+    flex-wrap: wrap;
+    margin: 1rem 0 1.8rem;
+    padding: 0;
+    list-style: disc inside;
+
+    li {
+      font-size: 0.95rem;
+    }
+  }
+
+  /* ---------- Button ---------- */
+
+  .cds-btn {
+    background: #0a1d63;
+    color: #fff;
+    border: none;
+    padding: 0.8rem 1.8rem;
+    font-size: 0.875rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.3s;
+    text-transform: uppercase;
+  }
+
+  .cds-btn:hover {
+    background: #c8a74f;
+  }
+
+  /* ---------- Tablet (UNCHANGED) ---------- */
+
+  @media (max-width: 992px) {
+    .cds-inner {
+      gap: 2rem;
+    }
+
+    .cds-title {
+      font-size: 2rem;
+    }
+  }
+
+  /* ---------- Mobile (STABLE + ORIGINAL FONT SIZES) ---------- */
+
+  @media (max-width: 768px) {
+
+    .cds-section {
+      padding: 2.2rem 0;
+    }
+
+    .cds-inner {
+      flex-direction: column;
+      text-align: center;
+      gap: 1.5rem;
+    }
+
+    .cds-content {
+      max-width: 100%;
+      order: 2;
+    }
+
+    /* first section image first on mobile */
+    .cds-custom .cds-image {
+      order: 1;
+    }
+
+    /* ORIGINAL mobile font sizes restored */
+
+    .cds-title {
+      font-size: 1.5rem;
+    }
+
+    .cds-desc {
+      font-size: 0.75rem;
+    }
+
+    .cds-subtitle {
+      font-size: 0.75rem;
+      margin-bottom: -10px;
+    }
+
+    .cds-list {
+      justify-content: center;
+
+      li {
+        font-size: 0.75rem;
+      }
+    }
+
+    .cds-image img {
+      max-width: 380px;
+    }
+  }
+}

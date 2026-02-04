@@ -427,7 +427,7 @@ const ClientDashboard = () => {
 
     const allNotes = getAllNotesFromDashboard();
     const totalNotes = allNotes.length;
-    const unviewedNotes = allNotes.filter(note => note.isUnviewedByClient).length;
+    const unviewedNotes = allNotes.filter(note => note.isUnviewed || note.isUnviewedByClient).length;
 
     // If NO notes at all, don't show section
     if (totalNotes === 0) {
@@ -435,57 +435,75 @@ const ClientDashboard = () => {
     }
 
     return (
-      <div className="standalone-notes-section">
-        <div className="section-header">
+      <div className="notes-overview-section">
+        <div className="notes-overview-header">
           <h3><FiMessageSquare size={24} /> Notes Overview</h3>
-          <div className="notes-summary-badge">
-            <span className="total-notes">Total: {totalNotes}</span>
-            {unviewedNotes > 0 && (
-              <span className="unviewed-notes">• {unviewedNotes} unread</span>
-            )}
-            <button
-              className="mark-all-viewed-btn-small"
-              onClick={markAllNotesAsViewed}
-              disabled={unviewedNotes === 0}
-            >
-              <FiCheck size={14} /> Mark All Read
-            </button>
+          <div className="notes-overview-stats">
+            <div className="stats-item">
+              <span className="stats-number total-notes">{totalNotes}</span>
+              <span className="stats-label">Total Notes</span>
+            </div>
+            <div className="stats-item">
+              <span className="stats-number unread-notes">{unviewedNotes}</span>
+              <span className="stats-label">Unread Notes</span>
+            </div>
           </div>
         </div>
 
-        <div className="notes-grid">
+        <div className="notes-overview-actions">
+          <button
+            className="notes-action-btn view-all-btn"
+            onClick={handleViewAllNotes}
+          >
+            <FiEye size={16} /> View All Notes
+          </button>
+          <button
+            className="notes-action-btn mark-read-btn"
+            onClick={markAllNotesAsViewed}
+            disabled={unviewedNotes === 0}
+          >
+            <FiCheck size={16} /> Mark All as Read
+          </button>
+        </div>
+
+        <div className="notes-overview-grid">
           {allNotes.slice(0, 4).map((note, index) => (
-            <div key={index} className={`note-card-standalone ${note.isUnviewedByClient ? 'unviewed' : ''}`}>
-              <div className="note-card-header-standalone">
-                <span className={`note-type-standalone ${note.source}`}>
+            <div
+              key={index}
+              className={`note-overview-card ${note.isUnviewed || note.isUnviewedByClient ? 'unviewed' : ''}`}
+            >
+              <div className="note-card-header">
+                <span className={`note-source-badge ${note.source}`}>
                   {note.source === 'client' ? '📝 Your Note' : '👨‍💼 Employee'}
                 </span>
-                {note.isUnviewedByClient && (
-                  <span className="new-badge-standalone">NEW</span>
+                {(note.isUnviewed || note.isUnviewedByClient) && (
+                  <span className="new-badge-overview">NEW</span>
                 )}
               </div>
 
-              <div className="note-card-content-standalone">
-                <p className="note-text-standalone">
-                  {note.note.length > 80 ? note.note.substring(0, 80) + '...' : note.note}
+              <div className="note-card-content">
+                <p className="note-text">
+                  {note.note.length > 100 ? note.note.substring(0, 100) + '...' : note.note}
                 </p>
               </div>
 
-              <div className="note-card-footer-standalone">
-                <span className="note-category-standalone">{note.category}</span>
-                <span className="note-date-standalone">{formatDate(note.addedAt)}</span>
+              <div className="note-card-footer">
+                <span className="note-category">{note.category}</span>
+                <span className="note-date">
+                  <FiCalendar size={12} /> {formatDate(note.addedAt)}
+                </span>
               </div>
             </div>
           ))}
         </div>
 
         {totalNotes > 4 && (
-          <div className="notes-section-footer">
+          <div className="notes-overview-footer">
             <button
-              className="view-all-notes-btn-standalone"
+              className="view-more-notes-btn"
               onClick={handleViewAllNotes}
             >
-              <FiEye size={16} /> View All Notes ({totalNotes})
+              <FiChevronDown size={16} /> Load More Notes ({totalNotes - 4} more)
             </button>
           </div>
         )}
@@ -547,7 +565,7 @@ const ClientDashboard = () => {
                 {allNotes.map((note, index) => (
                   <div
                     key={index}
-                    className={`note-item-full ${note.isUnviewed ? 'unviewed' : ''} ${note.source}`}
+                    className={`note-item-full ${note.isUnviewed || note.isUnviewedByClient ? 'unviewed' : ''} ${note.source}`}
                   >
                     <div className="note-full-header">
                       <div className="note-full-type">
@@ -555,7 +573,8 @@ const ClientDashboard = () => {
                           {note.source === 'client' ? '📝 Your Note' : '👨‍💼 Employee'}
                         </span>
                         <span className="note-category-full">{note.category}</span>
-                        {note.isUnviewed && (
+                        {/* ADD THIS LINE FOR NEW BADGE */}
+                        {(note.isUnviewed || note.isUnviewedByClient) && (
                           <span className="new-badge-full">NEW</span>
                         )}
                       </div>

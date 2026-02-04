@@ -2241,5 +2241,183 @@
 
 /* Remove expand button styles */
 .expand-info-btn {
-  display: none !important; /* HIDE THE COLLAPSE BUTTON */
+  display: none !important;
+  /* HIDE THE COLLAPSE BUTTON */
+}
+
+
+
+
+/* ================= LOADING SPINNERS ================= */
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.spinner-tiny {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+/* ================= LOADING STATES FOR BUTTONS ================= */
+.action-btn {
+  position: relative;
+
+  &.loading {
+    opacity: 0.8;
+    cursor: not-allowed;
+
+    &:hover {
+      transform: none !important;
+      box-shadow: none !important;
+    }
+  }
+}
+
+.control-btn {
+  position: relative;
+
+  &.loading {
+    opacity: 0.7;
+    cursor: not-allowed;
+
+    &:hover {
+      background: inherit !important;
+      color: inherit !important;
+    }
+
+    .spinner-tiny {
+      border-top-color: inherit;
+    }
+  }
+}
+
+/* Disabled state enhancements */
+button:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
+
+  &:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Loading overlay for category controls */
+.category-controls {
+  position: relative;
+
+  &.loading::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
+    z-index: 1;
+    border-radius: 6px;
+  }
+}
+
+/* Pulse animation for loading states */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+.action-btn.loading {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* ================= SPECIFIC LOADING STYLES ================= */
+.month-actions-section {
+  .action-buttons {
+    position: relative;
+
+    .action-btn {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &.loading {
+        pointer-events: none;
+      }
+    }
+  }
+}
+
+.files-section {
+  .category-controls {
+    .control-btn {
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &.loading {
+        pointer-events: none;
+
+        .spinner-tiny {
+          margin-right: 8px;
+        }
+      }
+    }
+  }
+}
+
+/* Ensure text doesn't shift during loading */
+.action-btn,
+.control-btn {
+
+  span,
+  .spinner-small,
+  .spinner-tiny {
+    vertical-align: middle;
+  }
+}
+
+/* Loading state for lock buttons */
+.lock-btn.loading {
+  background: linear-gradient(90deg, #f59e0b, #d97706, #f59e0b) !important;
+  background-size: 200% 100% !important;
+  animation: shimmer 2s infinite linear !important;
+}
+
+.unlock-btn.loading {
+  background: linear-gradient(90deg, #10b981, #059669, #10b981) !important;
+  background-size: 200% 100% !important;
+  animation: shimmer 2s infinite linear !important;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }

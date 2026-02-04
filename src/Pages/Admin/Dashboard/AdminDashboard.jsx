@@ -29,6 +29,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AdminLayout from "../Layout/AdminLayout";
 import "./AdminDashboard.scss";
+import AdminNotesPanel from "./Notes/AdminNotesPanel";
 
 const AdminDashboard = () => {
   // State for dashboard data
@@ -563,28 +564,12 @@ const AdminDashboard = () => {
 
     const alerts = [
       {
-        title: "Clients with Incomplete Tasks",
-        value: dashboardData.metrics.incompleteTasks,
-        subtitle: "Tasks pending completion",
-        icon: <FiAlertCircle />,
-        color: "#ff4b4b",
-        onClick: () => fetchModalData('incompleteTasks')
-      },
-      {
-        title: "Clients with Uploaded Docs but Month Locked",
-        value: "View Details",
-        subtitle: "Clients needing month unlock",
-        icon: <FiLock />,
+        title: "Clients with Uploaded Documents FOr This Month",
+        value: "Docs Details",
+        // subtitle: "Clients needing month unlock",
+        icon: <FiLock />, 
         color: "#8B5CF6",
         onClick: () => fetchModalData('uploadedLocked')
-      },
-      {
-        title: "Unviewed Notes",
-        value: dashboardData.metrics.recentNotes,
-        subtitle: "New notes to review",
-        icon: <FiBell />,
-        color: "#ff6b6b",
-        onClick: handleOpenUnviewedNotes
       }
     ];
 
@@ -611,9 +596,9 @@ const AdminDashboard = () => {
                 <div className="alert-content">
                   <h3>{alert.value}</h3>
                   <p className="alert-title">{alert.title}</p>
-                  <p className="alert-subtitle" style={{ color: alert.color }}>
+                  {/* <p className="alert-subtitle" style={{ color: alert.color }}>
                     {alert.subtitle}
-                  </p>
+                  </p> */}
                 </div>
               </div>
               {alert.onClick && (
@@ -897,7 +882,7 @@ const AdminDashboard = () => {
         icon = <FiMessageSquare />;
         break;
       case 'uploadedLocked':
-        modalTitle = "Clients with Uploaded Docs but Month Locked";
+        modalTitle = "Clients with Uploaded Documents For This Month";
         icon = <FiLock />;
         break;
       default:
@@ -971,9 +956,9 @@ const AdminDashboard = () => {
                                   <tr key={clientIndex}>
                                     <td>
                                       <div className="client-cell">
-                                        <div className="client-avatar-small">
-                                          {getInitials(client.name)}
-                                        </div>
+                                        {/* <div className="client-avatar-small">
+                                          {getInitials(client.name)} 
+                                        </div> */}
                                         <span>{client.name}</span>
                                       </div>
                                     </td>
@@ -1403,6 +1388,8 @@ const AdminDashboard = () => {
           )}
         </div>
 
+        <AdminNotesPanel/>
+
         {/* Loading State */}
         {loading ? (
           <div className="loading-state">
@@ -1415,7 +1402,7 @@ const AdminDashboard = () => {
             {renderMetricsGrid()}
 
             {/* Alert Section */}
-            {renderAlertSection()}
+            {/* {renderAlertSection()}  */}
 
             {/* Dashboard Summary */}
             {renderDashboardSummary()}

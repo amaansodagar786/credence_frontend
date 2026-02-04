@@ -25,7 +25,8 @@ import {
   FiFileText,
   FiFolder,
   FiFile,
-  FiBell
+  FiBell,
+  FiChevronLeft
 } from "react-icons/fi";
 
 import { ToastContainer, toast } from "react-toastify";
@@ -52,6 +53,14 @@ const EmployeeDashboard = () => {
     unviewedCount: 0,
     totalNotes: 0
   });
+  
+  // NEW STATES FOR CLIENT-WISE NOTES
+  const [clientsSummary, setClientsSummary] = useState([]);
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [clientNotes, setClientNotes] = useState([]);
+  const [showClientsModal, setShowClientsModal] = useState(false);
+  const [showClientNotesModal, setShowClientNotesModal] = useState(false);
+  const [loadingClientNotes, setLoadingClientNotes] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [allNotes, setAllNotes] = useState([]);
   const [loadingNotes, setLoadingNotes] = useState(false);
@@ -64,39 +73,78 @@ const EmployeeDashboard = () => {
     { value: "custom", label: "Custom Range", icon: "📅" }
   ];
 
-  /* ==================== NOTES FUNCTIONS ==================== */
-  const fetchAllNotes = async () => {
+  /* ==================== NEW CLIENT-WISE NOTES FUNCTIONS ==================== */
+  const fetchClientsSummary = async () => {
     try {
-      setLoadingNotes(true);
-
-      // Get all notes from backend
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/employee/notes/all-notes`,
-        {
-          params: { limit: 100 },
-          withCredentials: true
-        }
+        `${import.meta.env.VITE_API_URL}/employee/notes/clients-summary`,
+        { withCredentials: true }
       );
-
+      
       if (response.data.success) {
-        setAllNotes(response.data.notes);
-        setShowNotesModal(true);
-      } else {
-        toast.error("No notes data available", {
-          position: "top-right",
-          autoClose: 3000,
-          theme: "dark"
-        });
+        setClientsSummary(response.data.clients);
       }
     } catch (error) {
-      console.error("Error fetching all notes:", error);
-      toast.error("Error loading notes", {
+      console.error("Error fetching clients summary:", error);
+    }
+  };
+
+  const fetchClientNotes = async (clientId) => {
+    try {
+      setLoadingClientNotes(true);
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/employee/notes/client/${clientId}`,
+        { withCredentials: true }
+      );
+      
+      if (response.data.success) {
+        setClientNotes(response.data.notes);
+        setSelectedClient(response.data.client);
+        setShowClientsModal(false);
+        setShowClientNotesModal(true);
+      }
+    } catch (error) {
+      console.error("Error fetching client notes:", error);
+      toast.error("Error loading client notes", {
         position: "top-right",
         autoClose: 3000,
         theme: "dark"
       });
     } finally {
-      setLoadingNotes(false);
+      setLoadingClientNotes(false);
+    }
+  };
+
+  const markClientNotesAsViewed = async (clientId) => {
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_API_URL}/employee/notes/client/${clientId}/mark-viewed`,
+        {},
+        { withCredentials: true }
+      );
+      
+      // Refresh data
+      await fetchClientsSummary();
+      await fetchDashboardData();
+      
+      // Update client notes state
+      if (selectedClient && selectedClient.clientId === clientId) {
+        setClientNotes(prev => prev.map(note => ({ ...note, isUnviewed: false, isNew: false })));
+      }
+      
+      toast.success("Client notes marked as read!", {
+        position: "top-right",
+        autoClose: 3000,
+        theme: "dark"
+      });
+      
+    } catch (error) {
+      console.error("Error marking client notes as viewed:", error);
+      toast.error("Error marking client notes as read", {
+        position: "top-right",
+        autoClose: 3000,
+        theme: "dark"
+      });
     }
   };
 
@@ -120,7 +168,8 @@ const EmployeeDashboard = () => {
         }))
       }));
 
-      // Refresh dashboard data
+      // Refresh all data
+      await fetchClientsSummary();
       await fetchDashboardData();
 
       toast.success("All notes marked as read!", {
@@ -139,8 +188,34 @@ const EmployeeDashboard = () => {
     }
   };
 
+  const fetchAllNotes = async () => {
+    try {
+      setLoadingNotes(true);
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/employee/notes/all-notes`,
+        { params: { limit: 100 }, withCredentials: true }
+      );
+
+      if (response.data.success) {
+        setAllNotes(response.data.notes);
+        setShowNotesModal(true);
+      }
+    } catch (error) {
+      console.error("Error fetching all notes:", error);
+      toast.error("Error loading notes", {
+        position: "top-right",
+        autoClose: 3000,
+        theme: "dark"
+      });
+    } finally {
+      setLoadingNotes(false);
+    }
+  };
+
   const handleViewAllNotes = async () => {
-    await fetchAllNotes();
+    // First show clients modal, not all notes directly
+    await fetchClientsSummary();
+    setShowClientsModal(true);
   };
 
   /* ==================== API CALLS ==================== */
@@ -280,33 +355,24 @@ const EmployeeDashboard = () => {
     setCustomEndDate(lastDay.toISOString().split('T')[0]);
   }, []);
 
+  // Fetch data on mount and when filters change
   useEffect(() => {
     fetchDashboardData();
   }, [timeFilter, customStartDate, customEndDate]);
 
+  // Fetch clients summary on mount
+  useEffect(() => {
+    fetchClientsSummary();
+  }, []);
+
   /* ==================== RENDER FUNCTIONS ==================== */
 
   const renderStandaloneNotesSection = () => {
-    // Get ALL notes from ALL months in dashboard data
-    const getAllNotesFromDashboard = () => {
-      if (!dashboardData || !dashboardData.data) return [];
-
-      let allNotes = [];
-      dashboardData.data.forEach(monthData => {
-        if (monthData.notes && monthData.notes.list) {
-          allNotes = [...allNotes, ...monthData.notes.list];
-        }
-      });
-
-      return allNotes;
-    };
-
-    const allNotes = getAllNotesFromDashboard();
-    const totalNotes = allNotes.length;
-    const unviewedNotes = allNotes.filter(note => note.isUnviewed).length;
+    const totalClientsWithNotes = clientsSummary.length;
+    const totalUnviewed = clientsSummary.reduce((sum, client) => sum + client.unviewedNotes, 0);
 
     // If NO notes at all, don't show section
-    if (totalNotes === 0) {
+    if (totalClientsWithNotes === 0) {
       return null;
     }
 
@@ -315,14 +381,14 @@ const EmployeeDashboard = () => {
         <div className="section-header">
           <h3><FiMessageSquare size={24} /> Notes Overview</h3>
           <div className="notes-summary-badge">
-            <span className="total-notes">Total: {totalNotes}</span>
-            {unviewedNotes > 0 && (
-              <span className="unviewed-notes">• {unviewedNotes} unread</span>
+            <span className="total-notes">Clients with notes: {totalClientsWithNotes}</span>
+            {totalUnviewed > 0 && (
+              <span className="unviewed-notes">• {totalUnviewed} unread</span>
             )}
             <button
               className="mark-all-viewed-btn-small"
               onClick={markAllNotesAsViewed}
-              disabled={unviewedNotes === 0}
+              disabled={totalUnviewed === 0}
             >
               <FiCheck size={14} /> Mark All Read
             </button>
@@ -330,41 +396,51 @@ const EmployeeDashboard = () => {
         </div>
 
         <div className="notes-grid">
-          {allNotes.slice(0, 4).map((note, index) => (
-            <div key={index} className={`note-card-standalone ${note.source} ${note.isUnviewed ? 'unviewed' : ''}`}>
-              <div className="note-card-header-standalone">
-                <span className={`note-type-standalone ${note.source}`}>
-                  {note.source === 'client' ? '📝 Client Note' : '👨‍💼 Your Note'}
+          {clientsSummary.slice(0, 4).map((client, index) => (
+            <div key={index} className="client-notes-card">
+              <div className="client-notes-card-header">
+                <span className="client-name-badge">
+                  <FiUser size={14} /> {client.clientName}
                 </span>
-                {note.isUnviewed && (
-                  <span className="new-badge-standalone">NEW</span>
+                {client.unviewedNotes > 0 && (
+                  <span className="client-unread-badge">{client.unviewedNotes} unread</span>
                 )}
-                <span className="note-client-standalone">
-                  {note.clientName}
-                </span>
               </div>
 
-              <div className="note-card-content-standalone">
-                <p className="note-text-standalone">
-                  {note.note && note.note.length > 80 ? note.note.substring(0, 80) + '...' : note.note}
+              <div className="client-notes-card-content">
+                <p className="client-business">{client.businessName}</p>
+                <p className="client-email">
+                  <FiMail size={12} /> {client.clientEmail}
                 </p>
               </div>
 
-              <div className="note-card-footer-standalone">
-                <span className="note-category-standalone">{note.category}</span>
-                <span className="note-date-standalone">{formatDate(note.addedAt)}</span>
+              <div className="client-notes-card-footer">
+                <button
+                  className="view-client-notes-btn"
+                  onClick={() => fetchClientNotes(client.clientId)}
+                >
+                  <FiEye size={14} /> View Notes
+                </button>
+                {client.unviewedNotes > 0 && (
+                  <button
+                    className="mark-client-read-btn"
+                    onClick={() => markClientNotesAsViewed(client.clientId)}
+                  >
+                    <FiCheck size={14} /> Mark Read
+                  </button>
+                )}
               </div>
             </div>
           ))}
         </div>
 
-        {totalNotes > 4 && (
+        {totalClientsWithNotes > 4 && (
           <div className="notes-section-footer">
             <button
               className="view-all-notes-btn-standalone"
               onClick={handleViewAllNotes}
             >
-              <FiEye size={16} /> View All Notes ({totalNotes})
+              <FiEye size={16} /> View All Clients ({totalClientsWithNotes})
             </button>
           </div>
         )}
@@ -372,7 +448,220 @@ const EmployeeDashboard = () => {
     );
   };
 
-  // All Notes Modal
+  // Clients List Modal
+  const renderClientsModal = () => {
+    if (!showClientsModal) return null;
+
+    const totalUnviewed = clientsSummary.reduce((sum, client) => sum + client.unviewedNotes, 0);
+
+    return (
+      <div className="modal-overlay clients-modal-overlay">
+        <div className="modal clients-modal">
+          <div className="modal-header">
+            <div className="modal-header-left">
+              <FiUsers size={24} />
+              <h3>Clients with Notes ({clientsSummary.length})</h3>
+              {totalUnviewed > 0 && (
+                <span className="modal-unviewed-badge">
+                  {totalUnviewed} unread notes
+                </span>
+              )}
+            </div>
+            <div className="modal-header-right">
+              <button
+                className="mark-all-modal-btn"
+                onClick={markAllNotesAsViewed}
+                disabled={totalUnviewed === 0}
+              >
+                <FiCheck size={16} /> Mark All as Read
+              </button>
+              <button
+                className="close-modal"
+                onClick={() => {
+                  setShowClientsModal(false);
+                  setClientsSummary([]);
+                }}
+              >
+                <FiX size={24} />
+              </button>
+            </div>
+          </div>
+
+          <div className="modal-body clients-modal-body">
+            {clientsSummary.length === 0 ? (
+              <div className="empty-clients">
+                <FiMessageSquare size={48} />
+                <h4>No clients with notes</h4>
+                <p>You don't have any notes from clients yet.</p>
+              </div>
+            ) : (
+              <div className="clients-list-modal">
+                {clientsSummary.map((client, index) => (
+                  <div key={index} className="client-item-modal">
+                    <div className="client-item-header">
+                      <div className="client-info">
+                        <h4>{client.clientName}</h4>
+                        <p className="client-business">{client.businessName}</p>
+                        <p className="client-contact">
+                          <FiMail size={12} /> {client.clientEmail}
+                          {client.clientPhone && (
+                            <>
+                              <span className="contact-separator">•</span>
+                              <FiPhone size={12} /> {client.clientPhone}
+                            </>
+                          )}
+                        </p>
+                      </div>
+                      <div className="client-notes-info">
+                        <span className={`unread-count ${client.unviewedNotes > 0 ? 'has-unread' : ''}`}>
+                          {client.unviewedNotes} unread
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="client-item-actions">
+                      <button
+                        className="view-client-btn"
+                        onClick={() => fetchClientNotes(client.clientId)}
+                      >
+                        <FiEye size={14} /> View Notes
+                      </button>
+                      {client.unviewedNotes > 0 && (
+                        <button
+                          className="mark-client-read-btn"
+                          onClick={() => markClientNotesAsViewed(client.clientId)}
+                        >
+                          <FiCheck size={14} /> Mark as Read
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Client Notes Modal
+  const renderClientNotesModal = () => {
+    if (!showClientNotesModal || !selectedClient) return null;
+
+    const clientUnviewedCount = clientNotes.filter(note => note.isUnviewed).length;
+
+    return (
+      <div className="modal-overlay client-notes-modal-overlay">
+        <div className="modal client-notes-modal">
+          <div className="modal-header">
+            <div className="modal-header-left">
+              <button
+                className="back-to-clients"
+                onClick={() => {
+                  setShowClientNotesModal(false);
+                  setShowClientsModal(true);
+                }}
+              >
+                <FiChevronLeft size={20} />
+              </button>
+              <div>
+                <h3>{selectedClient.clientName}'s Notes</h3>
+                <p className="client-subtitle">
+                  <FiMail size={14} /> {selectedClient.clientEmail}
+                </p>
+              </div>
+              {clientUnviewedCount > 0 && (
+                <span className="modal-unviewed-badge">
+                  {clientUnviewedCount} unread
+                </span>
+              )}
+            </div>
+            <div className="modal-header-right">
+              <button
+                className="mark-all-modal-btn"
+                onClick={() => markClientNotesAsViewed(selectedClient.clientId)}
+                disabled={clientUnviewedCount === 0}
+              >
+                <FiCheck size={16} /> Mark All as Read
+              </button>
+              <button
+                className="close-modal"
+                onClick={() => {
+                  setShowClientNotesModal(false);
+                  setSelectedClient(null);
+                  setClientNotes([]);
+                }}
+              >
+                <FiX size={24} />
+              </button>
+            </div>
+          </div>
+
+          <div className="modal-body client-notes-modal-body">
+            {loadingClientNotes ? (
+              <div className="loading-notes">
+                <div className="spinner"></div>
+                <p>Loading client notes...</p>
+              </div>
+            ) : clientNotes.length === 0 ? (
+              <div className="empty-notes">
+                <FiMessageSquare size={48} />
+                <h4>No notes found</h4>
+                <p>{selectedClient.clientName} doesn't have any notes yet.</p>
+              </div>
+            ) : (
+              <div className="client-notes-list">
+                {clientNotes.map((note, index) => (
+                  <div
+                    key={index}
+                    className={`note-item-full ${note.source} ${note.isUnviewed ? 'unviewed' : ''}`}
+                  >
+                    <div className="note-full-header">
+                      <div className="note-full-type">
+                        <span className={`note-source ${note.source}`}>
+                          {note.source === 'client' ? '📝 Client Note' : '👨‍💼 Your Note'}
+                        </span>
+                        <span className="note-category-full">{note.category}</span>
+                        {note.isUnviewed && (
+                          <span className="new-badge-full">NEW</span>
+                        )}
+                      </div>
+                      <span className="note-full-date">
+                        <FiClock size={12} /> {formatDate(note.addedAt)}
+                      </span>
+                    </div>
+
+                    {note.fileName && (
+                      <div className="note-file-info">
+                        <FiFileText size={14} />
+                        <span>{note.fileName}</span>
+                      </div>
+                    )}
+
+                    <div className="note-full-content">
+                      <p>{note.fullNote || note.note}</p>
+                    </div>
+
+                    <div className="note-full-footer">
+                      <span className="note-month">
+                        {note.monthName} {note.year}
+                      </span>
+                      <span className="note-added-by">
+                        Added by: {note.addedBy || (note.source === 'employee' ? 'You' : 'Client')}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // All Notes Modal (Old - kept for backward compatibility)
   const renderAllNotesModal = () => {
     if (!showNotesModal) return null;
 
@@ -482,6 +771,7 @@ const EmployeeDashboard = () => {
     );
   };
 
+  // Rest of your existing render functions...
   const renderEmployeeInfo = () => {
     if (!dashboardData?.employee) return null;
 
@@ -546,7 +836,6 @@ const EmployeeDashboard = () => {
       );
     }
 
-    // Filter pending tasks (accounting not done)
     const pendingTasks = list.filter(task => !task.accountingDone);
 
     return (
@@ -725,7 +1014,6 @@ const EmployeeDashboard = () => {
           <div className="month-content">
             <div className="content-grid">
               <div className="grid-column">
-                {/* Clients List */}
                 <div className="clients-section">
                   <div className="section-header">
                     <h4><FiUsers size={18} /> Assigned Clients ({monthData.clients.length})</h4>
@@ -787,7 +1075,6 @@ const EmployeeDashboard = () => {
           </div>
 
           <div className="modal-body">
-            {/* Clients Section */}
             <div className="modal-section">
               <h4><FiUsers size={20} /> Assigned Clients ({selectedMonthDetails.clients.length})</h4>
               <div className="clients-grid">
@@ -841,7 +1128,6 @@ const EmployeeDashboard = () => {
               </div>
             </div>
 
-            {/* All Notes Section */}
             <div className="modal-section">
               <h4><FiMessageSquare size={20} /> All Notes ({selectedMonthDetails.notes.total})</h4>
               {selectedMonthDetails.notes.unviewedCount > 0 && (
@@ -928,7 +1214,7 @@ const EmployeeDashboard = () => {
           {renderEmployeeInfo()}
         </div>
 
-        {/* NEW: Standalone Notes Section */}
+        {/* NEW: Standalone Notes Section (Client-wise) */}
         {renderStandaloneNotesSection()}
 
         {/* Time Filter */}
@@ -1020,8 +1306,14 @@ const EmployeeDashboard = () => {
           </div>
         )}
 
-        {/* All Notes Modal */}
+        {/* All Notes Modal (Old) */}
         {renderAllNotesModal()}
+
+        {/* NEW: Clients Modal */}
+        {renderClientsModal()}
+
+        {/* NEW: Client Notes Modal */}
+        {renderClientNotesModal()}
 
         {/* Month Details Modal */}
         {showMonthDetailsModal && renderMonthDetailsModal()}

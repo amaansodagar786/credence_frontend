@@ -22,6 +22,9 @@ import Home from './Pages/Home/Home';
 import ClientProfile from './Pages/Client/Profile/ClientProfile';
 import ActivityLogs from './Pages/Admin/ActivityLogs/ActivityLogs';
 import CustomDesign from './Pages/Employee/Testing/CustomDesign';
+import CustomDesignStable from './Pages/Employee/Testing/CustomDesignStable';
+import EmployeeNotes from './Pages/Employee/Dashboard/EmpNotes/EmployeeNotes';
+import AdminNotesPanel from './Pages/Admin/Dashboard/Notes/AdminNotesPanel';
 
 
 
@@ -42,6 +45,7 @@ function App() {
         <Route path="/admin/enrollments" element={<AdminClientEnrollments />} />
         <Route path="/admin/clients" element={<AdminClients />} />
         <Route path="/admin/logs" element={<ActivityLogs />} />
+        <Route path="/admin/notes" element={<AdminNotesPanel />} />
 
         {/* CLIENT ROUTES  */}
         <Route path="/client/login" element={<ClientLogin />} />
@@ -55,11 +59,13 @@ function App() {
         <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
         <Route path="/employee/assigned" element={<EmployeeAssignedClients />} />
         <Route path="/employee/tasks" element={<EmployeeTaskLogs />} />
+        <Route path="/employee/notes" element={<EmployeeNotes />} />
 
 
 
         <Route path="/login" element={<ClientEmpLogin />} />
         <Route path="/custom" element={<CustomDesign />} />
+        <Route path="/customsafe" element={<CustomDesignStable />} />
 
 
 

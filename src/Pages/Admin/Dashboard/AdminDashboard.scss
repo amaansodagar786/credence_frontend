@@ -311,6 +311,7 @@
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 24px;
     margin-bottom: 32px;
+    margin-top: 32px;
 
     .metric-card {
       background: #ffffff;
@@ -1214,7 +1215,7 @@
       padding: 24px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
       border: 1px solid #e5e7eb;
-      border-top: 4px solid #ff6b6b; // Red for alerts
+      border-top: 4px solid #8B5CF6; // Purple for uploaded locked
       transition: all 0.3s ease;
       position: relative;
       overflow: hidden;
@@ -1224,8 +1225,8 @@
 
         &:hover {
           transform: translateY(-5px);
-          box-shadow: 0 12px 30px rgba(255, 107, 107, 0.15);
-          border-top-color: #ff6b6b;
+          box-shadow: 0 12px 30px rgba(139, 92, 246, 0.15);
+          border-top-color: #8B5CF6;
 
           .alert-action {
             transform: translateX(5px);
@@ -1240,7 +1241,7 @@
         margin-bottom: 16px;
 
         .alert-icon {
-          background: rgba(255, 107, 107, 0.1);
+          background: rgba(139, 92, 246, 0.1);
           width: 56px;
           height: 56px;
           border-radius: 12px;
@@ -1252,7 +1253,7 @@
           svg {
             width: 28px;
             height: 28px;
-            color: #ff6b6b;
+            color: #8B5CF6;
           }
         }
 
@@ -1260,7 +1261,7 @@
           flex: 1;
 
           h3 {
-            font-size: 32px;
+            font-size: 20px;
             font-weight: 700;
             color: #000000;
             margin: 0 0 4px 0;
@@ -1279,7 +1280,7 @@
 
           .alert-subtitle {
             font-size: 12px;
-            color: #ff6b6b;
+            color: #8B5CF6;
             font-weight: 500;
             margin: 0;
             display: flex;
@@ -1288,7 +1289,7 @@
 
             &::before {
               content: "•";
-              color: #ff6b6b;
+              color: #8B5CF6;
               font-weight: bold;
               margin-right: 4px;
             }
@@ -1301,7 +1302,7 @@
         right: 20px;
         top: 50%;
         transform: translateY(-50%);
-        color: #ff6b6b;
+        color: #8B5CF6;
         transition: transform 0.3s;
         display: flex;
         align-items: center;
@@ -1571,119 +1572,6 @@
     }
   }
 }
-
-/* ==================== RESPONSIVE DESIGN ==================== */
-@media (max-width: 768px) {
-  .alert-section {
-    .alert-grid {
-      .alert-card {
-        .alert-header {
-          .alert-icon {
-            width: 48px;
-            height: 48px;
-
-            svg {
-              width: 24px;
-              height: 24px;
-            }
-          }
-
-          .alert-content {
-            h3 {
-              font-size: 28px;
-            }
-
-            .alert-title {
-              font-size: 15px;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  .uploaded-locked-modal {
-    .modal-summary {
-      .summary-stats {
-        gap: 20px;
-
-        .stat-item {
-          flex: 0 0 calc(50% - 10px);
-
-          .stat-value {
-            font-size: 20px;
-          }
-        }
-      }
-    }
-  }
-}
-
-@media (max-width: 480px) {
-  .alert-section {
-    padding: 16px;
-
-    .alert-header {
-      h3 {
-        font-size: 18px;
-      }
-    }
-
-    .alert-grid {
-      .alert-card {
-        padding: 16px;
-        min-width: unset;
-
-        .alert-header {
-          gap: 12px;
-
-          .alert-icon {
-            width: 40px;
-            height: 40px;
-
-            svg {
-              width: 20px;
-              height: 20px;
-            }
-          }
-
-          .alert-content {
-            h3 {
-              font-size: 24px;
-            }
-
-            .alert-title {
-              font-size: 14px;
-            }
-
-            .alert-subtitle {
-              font-size: 11px;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  .uploaded-locked-modal {
-    .modal-summary {
-      padding: 16px;
-
-      .summary-stats {
-        gap: 15px;
-
-        .stat-item {
-          flex: 0 0 100%;
-
-          .stat-value {
-            font-size: 18px;
-          }
-        }
-      }
-    }
-  }
-}
-
 
 /* ==================== UNVIEWED NOTES MODAL ==================== */
 .unviewed-notes-modal {
@@ -2333,3 +2221,8 @@
     transform: rotate(360deg);
   }
 }
+
+
+
+
+

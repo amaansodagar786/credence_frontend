@@ -91,6 +91,10 @@ const AdminClients = () => {
   const [employeeAssignments, setEmployeeAssignments] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
 
+  // Add these states near other state declarations
+  const [monthLockLoading, setMonthLockLoading] = useState(false);
+  const [categoryLockLoading, setCategoryLockLoading] = useState({});
+
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
@@ -226,21 +230,21 @@ const AdminClients = () => {
     if (!previewDoc || !isPreviewOpen) return null;
 
     const fileType = previewDoc.fileType || getFileType(previewDoc.fileName);
-    
+
     // Handle overlay click
     const handleOverlayClick = (e) => {
       if (e.target === e.currentTarget) {
         closeDocumentPreview();
       }
     };
-    
+
     return (
-      <div 
+      <div
         className={`document-preview-modal ${isPreviewOpen ? 'open' : ''}`}
         onClick={handleOverlayClick}
       >
         <div className="preview-modal-overlay"></div>
-        <div 
+        <div
           className="preview-modal-content"
           ref={previewRef}
           onContextMenu={(e) => {
@@ -270,8 +274,8 @@ const AdminClients = () => {
               <FiX size={20} />
             </button>
           </div>
-          
-          <div 
+
+          <div
             className="preview-modal-body"
             onContextMenu={(e) => {
               e.preventDefault();
@@ -288,7 +292,7 @@ const AdminClients = () => {
                 (Scroll to view full content)
               </span>
             </div>
-            
+
             {/* PDF Viewer */}
             {fileType === 'pdf' && (
               <div className="protected-view-container pdf-viewer-container">
@@ -312,10 +316,10 @@ const AdminClients = () => {
                 />
               </div>
             )}
-            
+
             {/* Image Viewer */}
             {fileType === 'image' && (
-              <div 
+              <div
                 className="protected-view-container image-viewer-container"
                 onContextMenu={(e) => {
                   e.preventDefault();
@@ -330,8 +334,8 @@ const AdminClients = () => {
                   position: 'relative'
                 }}
               >
-                <img 
-                  src={previewDoc.url} 
+                <img
+                  src={previewDoc.url}
                   alt={previewDoc.fileName}
                   style={{
                     maxWidth: '100%',
@@ -349,7 +353,7 @@ const AdminClients = () => {
                   onDragStart={(e) => e.preventDefault()}
                 />
                 {/* Protection overlay */}
-                <div 
+                <div
                   style={{
                     position: 'absolute',
                     top: 0,
@@ -362,10 +366,10 @@ const AdminClients = () => {
                 />
               </div>
             )}
-            
+
             {/* Excel Viewer */}
             {fileType === 'excel' && (
-              <div 
+              <div
                 className="protected-view-container excel-viewer-container"
                 onContextMenu={(e) => {
                   e.preventDefault();
@@ -388,7 +392,7 @@ const AdminClients = () => {
                   <FiLock size={16} />
                   <span>Microsoft Excel Online Viewer - Read Only</span>
                 </div> */}
-                
+
                 <iframe
                   src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewDoc.url)}&wdStartOn=1`}
                   width="100%"
@@ -407,24 +411,24 @@ const AdminClients = () => {
                   }}
                   sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
                 />
-                
+
                 <div className="viewer-info" style={{
                   padding: '10px',
                   backgroundColor: '#f5f5f5',
                   fontSize: '12px',
                   borderTop: '1px solid #ddd'
                 }}>
-                  <FiInfo size={12} /> 
-                  <span style={{marginLeft: '5px'}}>
+                  <FiInfo size={12} />
+                  <span style={{ marginLeft: '5px' }}>
                     Using Microsoft Office Online Viewer. File cannot be downloaded from this view.
                   </span>
                 </div>
               </div>
             )}
-            
+
             {/* Other Files */}
             {fileType === 'other' && (
-              <div 
+              <div
                 className="protected-view-container other-file-container"
                 onContextMenu={(e) => e.preventDefault()}
                 style={{
@@ -434,9 +438,9 @@ const AdminClients = () => {
                   borderRadius: '8px'
                 }}
               >
-                <FiFile size={64} style={{marginBottom: '20px', color: '#666'}} />
-                <h4 style={{marginBottom: '10px'}}>File Preview Not Available</h4>
-                <p style={{marginBottom: '20px', color: '#666'}}>
+                <FiFile size={64} style={{ marginBottom: '20px', color: '#666' }} />
+                <h4 style={{ marginBottom: '10px' }}>File Preview Not Available</h4>
+                <p style={{ marginBottom: '20px', color: '#666' }}>
                   This file type cannot be previewed in the browser.
                 </p>
                 <div className="file-info-box" style={{
@@ -452,7 +456,7 @@ const AdminClients = () => {
               </div>
             )}
           </div>
-          
+
           <div className="preview-modal-footer">
             <div className="file-info">
               <span className="file-size">
@@ -467,7 +471,7 @@ const AdminClients = () => {
                 Type: {fileType.toUpperCase()}
               </span>
             </div>
-            
+
             <button
               className="btn-close-preview"
               onClick={closeDocumentPreview}
@@ -653,7 +657,7 @@ const AdminClients = () => {
       // ✅ UPDATED: Set employee assignments array
       const enrichedAssignments = clientData.employeeAssignments || [];
       setEmployeeAssignments(enrichedAssignments);
-      
+
       // Set default selected task
       setSelectedTask("");
 
@@ -692,9 +696,9 @@ const AdminClients = () => {
   /* ================= GET ASSIGNMENTS FOR CURRENT MONTH - NEW ================= */
   const getAssignmentsForCurrentMonth = () => {
     if (!employeeAssignments || !selectedMonth) return [];
-    
-    return employeeAssignments.filter(assignment => 
-      assignment.year === selectedMonth.year && 
+
+    return employeeAssignments.filter(assignment =>
+      assignment.year === selectedMonth.year &&
       assignment.month === selectedMonth.month
     );
   };
@@ -756,7 +760,11 @@ const AdminClients = () => {
 
   /* ================= MONTH LOCK ================= */
   const toggleMonthLock = async (lock) => {
+    if (monthLockLoading) return; // Prevent multiple clicks
+
     try {
+      setMonthLockLoading(true);
+
       await axios.post(
         `${import.meta.env.VITE_API_URL}/admin/clients/${selectedClient.clientId}/month-lock`,
         {
@@ -772,12 +780,26 @@ const AdminClients = () => {
     } catch (error) {
       console.error("Error toggling month lock:", error);
       showSnackbar(`Error: ${error.response?.data?.message || error.message}`, "error");
+    } finally {
+      setMonthLockLoading(false);
     }
   };
 
   /* ================= FILE LOCK ================= */
   const toggleFileLock = async (type, lock, categoryName = null) => {
+    // Create a unique key for this category lock
+    const lockKey = categoryName ? `${type}-${categoryName}` : type;
+
+    // Check if already loading
+    if (categoryLockLoading[lockKey]) return;
+
     try {
+      // Set loading state for this specific category
+      setCategoryLockLoading(prev => ({
+        ...prev,
+        [lockKey]: true
+      }));
+
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/admin/clients/file-lock/${selectedClient.clientId}`,
         {
@@ -795,6 +817,12 @@ const AdminClients = () => {
     } catch (error) {
       console.error("Error toggling file lock:", error);
       showSnackbar(`Error: ${error.response?.data?.message || error.message || "Please try again"}`, "error");
+    } finally {
+      // Clear loading state
+      setCategoryLockLoading(prev => ({
+        ...prev,
+        [lockKey]: false
+      }));
     }
   };
 
@@ -1505,17 +1533,17 @@ const AdminClients = () => {
                             <h5>
                               <FiUserCheck size={16} /> Employee Assignment Details
                             </h5>
-                            
+
                             {(() => {
                               const assignments = getAssignmentsForCurrentMonth();
                               const filteredAssignments = selectedTask
                                 ? assignments.filter(a => a.task === selectedTask)
                                 : assignments;
-                              
+
                               if (filteredAssignments.length === 0) {
                                 return <div className="no-assignments">No employee assignments for selected task</div>;
                               }
-                              
+
                               return (
                                 <div className="assignments-table-container">
                                   <table className="assignments-table">
@@ -1584,18 +1612,36 @@ const AdminClients = () => {
 
                       <div className="action-buttons">
                         <button
-                          className="action-btn lock-btn"
+                          className={`action-btn lock-btn ${monthLockLoading ? 'loading' : ''}`}
                           onClick={() => toggleMonthLock(true)}
-                          disabled={monthData?.isLocked}
+                          disabled={monthData?.isLocked || monthLockLoading}
                         >
-                          <FiLock size={16} /> Lock Entire Month
+                          {monthLockLoading ? (
+                            <>
+                              <div className="spinner-small"></div>
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <FiLock size={16} /> Lock Entire Month
+                            </>
+                          )}
                         </button>
                         <button
-                          className="action-btn unlock-btn"
+                          className={`action-btn unlock-btn ${monthLockLoading ? 'loading' : ''}`}
                           onClick={() => toggleMonthLock(false)}
-                          disabled={!monthData?.isLocked}
+                          disabled={!monthData?.isLocked || monthLockLoading}
                         >
-                          <FiUnlock size={16} /> Unlock Entire Month
+                          {monthLockLoading ? (
+                            <>
+                              <div className="spinner-small"></div>
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <FiUnlock size={16} /> Unlock Entire Month
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
@@ -1671,18 +1717,36 @@ const AdminClients = () => {
                                 {categoryData && (
                                   <div className="category-controls">
                                     <button
-                                      className="control-btn lock"
+                                      className={`control-btn lock ${categoryLockLoading[category] ? 'loading' : ''}`}
                                       onClick={() => toggleFileLock(category, true)}
-                                      disabled={categoryData?.isLocked}
+                                      disabled={categoryData?.isLocked || categoryLockLoading[category]}
                                     >
-                                      <FiLock size={14} /> {categoryData?.isLocked ? `${category.charAt(0).toUpperCase() + category.slice(1)} Already Locked` : `Lock ${category.charAt(0).toUpperCase() + category.slice(1)}`}
+                                      {categoryLockLoading[category] ? (
+                                        <>
+                                          <div className="spinner-tiny"></div>
+                                          Processing...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <FiLock size={14} /> {categoryData?.isLocked ? `${category.charAt(0).toUpperCase() + category.slice(1)} Already Locked` : `Lock ${category.charAt(0).toUpperCase() + category.slice(1)}`}
+                                        </>
+                                      )}
                                     </button>
                                     <button
-                                      className="control-btn unlock"
+                                      className={`control-btn unlock ${categoryLockLoading[category] ? 'loading' : ''}`}
                                       onClick={() => toggleFileLock(category, false)}
-                                      disabled={!categoryData?.isLocked}
+                                      disabled={!categoryData?.isLocked || categoryLockLoading[category]}
                                     >
-                                      <FiUnlock size={14} /> {!categoryData?.isLocked ? `${category.charAt(0).toUpperCase() + category.slice(1)} Already Unlocked` : `Unlock ${category.charAt(0).toUpperCase() + category.slice(1)}`}
+                                      {categoryLockLoading[category] ? (
+                                        <>
+                                          <div className="spinner-tiny"></div>
+                                          Processing...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <FiUnlock size={14} /> {!categoryData?.isLocked ? `${category.charAt(0).toUpperCase() + category.slice(1)} Already Unlocked` : `Unlock ${category.charAt(0).toUpperCase() + category.slice(1)}`}
+                                        </>
+                                      )}
                                     </button>
                                   </div>
                                 )}
@@ -1754,21 +1818,40 @@ const AdminClients = () => {
                                     {renderFilesInCategory(otherCategory.document?.files, 'other', otherCategory.categoryName)}
 
                                     {/* Category Lock Controls */}
+                                    {/* Category Lock Controls */}
                                     {otherCategory.document && (
                                       <div className="category-controls">
                                         <button
-                                          className="control-btn lock"
+                                          className={`control-btn lock ${categoryLockLoading[`other-${otherCategory.categoryName}`] ? 'loading' : ''}`}
                                           onClick={() => toggleFileLock("other", true, otherCategory.categoryName)}
-                                          disabled={otherCategory.document?.isLocked}
+                                          disabled={otherCategory.document?.isLocked || categoryLockLoading[`other-${otherCategory.categoryName}`]}
                                         >
-                                          <FiLock size={14} /> {otherCategory.document?.isLocked ? `${otherCategory.categoryName} Already Locked` : `Lock ${otherCategory.categoryName}`}
+                                          {categoryLockLoading[`other-${otherCategory.categoryName}`] ? (
+                                            <>
+                                              <div className="spinner-tiny"></div>
+                                              Processing...
+                                            </>
+                                          ) : (
+                                            <>
+                                              <FiLock size={14} /> {otherCategory.document?.isLocked ? `${otherCategory.categoryName} Already Locked` : `Lock ${otherCategory.categoryName}`}
+                                            </>
+                                          )}
                                         </button>
                                         <button
-                                          className="control-btn unlock"
+                                          className={`control-btn unlock ${categoryLockLoading[`other-${otherCategory.categoryName}`] ? 'loading' : ''}`}
                                           onClick={() => toggleFileLock("other", false, otherCategory.categoryName)}
-                                          disabled={!otherCategory.document?.isLocked}
+                                          disabled={!otherCategory.document?.isLocked || categoryLockLoading[`other-${otherCategory.categoryName}`]}
                                         >
-                                          <FiUnlock size={14} /> {!otherCategory.document?.isLocked ? `${otherCategory.categoryName} Already Unlocked` : `Unlock ${otherCategory.categoryName}`}
+                                          {categoryLockLoading[`other-${otherCategory.categoryName}`] ? (
+                                            <>
+                                              <div className="spinner-tiny"></div>
+                                              Processing...
+                                            </>
+                                          ) : (
+                                            <>
+                                              <FiUnlock size={14} /> {!otherCategory.document?.isLocked ? `${otherCategory.categoryName} Already Unlocked` : `Unlock ${otherCategory.categoryName}`}
+                                            </>
+                                          )}
                                         </button>
                                       </div>
                                     )}
@@ -1822,7 +1905,7 @@ const AdminClients = () => {
           >
             {snackbar.message}
           </Alert>
-        </Snackbar> 
+        </Snackbar>
       </div>
     </AdminLayout>
   );

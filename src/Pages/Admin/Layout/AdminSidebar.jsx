@@ -161,6 +161,11 @@ const AdminSidebar = ({ children }) => {
       title: "Activity Logs",
       path: "/admin/logs"
     },
+    {
+      icon: <TbUsers />,
+      title: "Admin Notes",
+      path: "/admin/notes"
+    },
   ];
 
   return (
