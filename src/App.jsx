@@ -22,8 +22,8 @@ import AdminAuth from './Pages/Admin/Authentication/AdminAuth';
 import Home from './Pages/Home/Home';
 import ClientProfile from './Pages/Client/Profile/ClientProfile';
 import ActivityLogs from './Pages/Admin/ActivityLogs/ActivityLogs';
-import CustomDesign from './Pages/Employee/Testing/CustomDesign';
-import CustomDesignStable from './Pages/Employee/Testing/CustomDesignStable';
+// import CustomDesign from './Pages/Employee/Testing/CustomDesign';
+// import CustomDesignStable from './Pages/Employee/Testing/CustomDesignStable';
 import AdminNotesPanel from './Pages/Admin/Dashboard/Notes/AdminNotesPanel';
 import EmployeeNotesPanel from './Pages/Employee/Dashboard/EmpNotes/EmployeeNotesPanel';
 
@@ -63,8 +63,7 @@ function App() {
 
           <Route path="/login" element={<ClientEmpLogin />} />
 
-          <Route path="/custom" element={<CustomDesign />} />
-          <Route path="/customsafe" element={<CustomDesignStable />} />
+
 
         </Routes>
       </BrowserRouter>
