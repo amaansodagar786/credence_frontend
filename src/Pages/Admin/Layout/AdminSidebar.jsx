@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 
-// Icons - Add FiSend for payment reminder
+// Icons - Add FiSend for payment reminder and FiRefreshCw for plan change
 import { BiLogOut, BiLogIn } from "react-icons/bi";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { RxCross1 } from "react-icons/rx";
@@ -14,7 +14,8 @@ import {
   FiSettings,
   FiShield,
   FiUserPlus,
-  FiSend // Add this for payment reminder
+  FiSend,
+  FiRefreshCw // Add this for plan change trigger
 } from "react-icons/fi";
 import { MdOutlineDashboard } from "react-icons/md";
 import { TbUsers, TbReportAnalytics } from "react-icons/tb";
@@ -25,7 +26,9 @@ const AdminSidebar = ({ children }) => {
   const [toggle, setToggle] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSendingReminders, setIsSendingReminders] = useState(false);
+  const [isTriggeringPlanChange, setIsTriggeringPlanChange] = useState(false);
   const [reminderResult, setReminderResult] = useState(null);
+  const [planChangeResult, setPlanChangeResult] = useState(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -84,7 +87,7 @@ const AdminSidebar = ({ children }) => {
     }
   };
 
-
+  // Payment Reminder Function
   const handleSendPaymentReminders = async () => {
     if (isSendingReminders) return;
 
@@ -103,14 +106,14 @@ const AdminSidebar = ({ children }) => {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${localStorage.getItem("adminToken")}`
           },
-          credentials: "include" // Add this if using cookies
+          credentials: "include"
         }
       );
 
       const data = await response.json();
 
       if (data.success) {
-        alert(`✅ Success! Sent ${data.details.sent} payment reminders. Failed: ${data.details.failed}`);
+        alert(`✅ Success! Sent ${data.details?.sent || 0} payment reminders. Failed: ${data.details?.failed || 0}`);
       } else {
         alert(`❌ Failed: ${data.message}`);
       }
@@ -119,6 +122,44 @@ const AdminSidebar = ({ children }) => {
       alert(`❌ Network error: ${error.message}`);
     } finally {
       setIsSendingReminders(false);
+    }
+  };
+
+  // Plan Change Trigger Function
+  const handleTriggerPlanChange = async () => {
+    if (isTriggeringPlanChange) return;
+
+    if (!window.confirm("Are you sure you want to manually trigger plan change cron job? This will process all scheduled plan changes.")) {
+      return;
+    }
+
+    setIsTriggeringPlanChange(true);
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/admin/trigger-plan-change`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("adminToken")}`
+          },
+          credentials: "include"
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(`✅ Plan change cron job triggered successfully!\n\nTriggered by: ${data.triggeredBy}\nTime: ${data.timestamp}\nMessage: ${data.message}`);
+      } else {
+        alert(`❌ Failed to trigger plan change: ${data.message}`);
+      }
+
+    } catch (error) {
+      alert(`❌ Network error: ${error.message}`);
+    } finally {
+      setIsTriggeringPlanChange(false);
     }
   };
 
@@ -161,11 +202,11 @@ const AdminSidebar = ({ children }) => {
       title: "Activity Logs",
       path: "/admin/logs"
     },
-    {
-      icon: <TbUsers />,
-      title: "Admin Notes",
-      path: "/admin/notes"
-    },
+    // {
+    //   icon: <TbUsers />,
+    //   title: "Admin Notes",
+    //   path: "/admin/notes"
+    // },
   ];
 
   return (
@@ -228,14 +269,25 @@ const AdminSidebar = ({ children }) => {
             </button>
           </li>
 
-          {/* {isLoggedIn && (
-            <li className="admin-logout-menu-item">
-              <button className="admin-sidebar-logout-btn" onClick={handleLogout}>
-                <BiLogOut />
-                <span>Logout</span>
-              </button>
-            </li>
-          )} */}
+          {/* Plan Change Trigger Button */}
+          <li>
+            <button
+              className="admin-plan-change-btn"
+              onClick={handleTriggerPlanChange}
+              disabled={isTriggeringPlanChange}
+            >
+              <span className="admin-menu-icon">
+                {isTriggeringPlanChange ? (
+                  <span className="reminder-spinner"></span>
+                ) : (
+                  <FiRefreshCw />
+                )}
+              </span>
+              <span className="admin-menu-title">
+                {isTriggeringPlanChange ? "Processing..." : "Trigger Plan Change"}
+              </span>
+            </button>
+          </li>
         </ul>
 
         <div className="admin-sidebar-footer">

@@ -19,6 +19,8 @@ import {
   FiX
 } from "react-icons/fi";
 import "./ClientEmpLogin.scss";
+import { useModal } from "../../Home/Model/ModalProvider"; // Import the modal provider
+
 
 // Validation Schemas
 const employeeLoginSchema = Yup.object().shape({
@@ -55,6 +57,17 @@ const ClientEmpLogin = () => {
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
   const [verifyToken, setVerifyToken] = useState("");
+
+
+  const { openAgreementModal } = useModal();
+
+
+
+  const handleEnrollNowClick = (e) => {
+    e.preventDefault(); // Prevent default link behavior
+    openAgreementModal(); // Open the agreement modal
+  };
+
 
   // Formik initialization for Employee
   const employeeFormik = useFormik({
@@ -390,7 +403,9 @@ const ClientEmpLogin = () => {
               <div className="enrollment-link">
                 <p>
                   Don't have an account?{" "}
-                  <a href="/client/enroll">Enroll here</a>
+                  <a href="#" onClick={handleEnrollNowClick}>
+                    Enroll here
+                  </a>
                 </p>
               </div>
             )}

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import ModalProvider  from './Pages/Home/Model/ModalProvider';
 import AdminLogin from './Pages/Admin/Login/AdminLogin';
 import AdminRegister from './Pages/Admin/Register/AdminRegister';
 import AdminDashboard from './Pages/Admin/Dashboard/AdminDashboard';
@@ -23,56 +24,52 @@ import ClientProfile from './Pages/Client/Profile/ClientProfile';
 import ActivityLogs from './Pages/Admin/ActivityLogs/ActivityLogs';
 import CustomDesign from './Pages/Employee/Testing/CustomDesign';
 import CustomDesignStable from './Pages/Employee/Testing/CustomDesignStable';
-import EmployeeNotes from './Pages/Employee/Dashboard/EmpNotes/EmployeeNotes';
 import AdminNotesPanel from './Pages/Admin/Dashboard/Notes/AdminNotesPanel';
-
-
+import EmployeeNotesPanel from './Pages/Employee/Dashboard/EmpNotes/EmployeeNotesPanel';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <ModalProvider>
+      <BrowserRouter>
+        <Routes>
 
-        <Route path="/" element={<Home />} />
+          <Route path="/" element={<Home />} />
 
-        {/* ADMIN ROUTES  */}
+          {/* ADMIN ROUTES  */}
 
-        <Route path="/admin/login" element={<AdminAuth />} />
-        <Route path="/admin/register" element={<AdminRegister />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/admin/employees" element={<AdminEmployees />} />
-        <Route path="/admin/employees-tasks" element={<AdminEmployeeTasks />} />
-        <Route path="/admin/enrollments" element={<AdminClientEnrollments />} />
-        <Route path="/admin/clients" element={<AdminClients />} />
-        <Route path="/admin/logs" element={<ActivityLogs />} />
-        <Route path="/admin/notes" element={<AdminNotesPanel />} />
+          <Route path="/admin/login" element={<AdminAuth />} />
+          <Route path="/admin/register" element={<AdminRegister />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/employees" element={<AdminEmployees />} />
+          <Route path="/admin/employees-tasks" element={<AdminEmployeeTasks />} />
+          <Route path="/admin/enrollments" element={<AdminClientEnrollments />} />
+          <Route path="/admin/clients" element={<AdminClients />} />
+          <Route path="/admin/logs" element={<ActivityLogs />} />
+          <Route path="/admin/notes" element={<AdminNotesPanel />} />
 
-        {/* CLIENT ROUTES  */}
-        <Route path="/client/login" element={<ClientLogin />} />
-        <Route path="/client/enroll" element={<ClientEnroll />} />
-        <Route path="/client/dashboard" element={<ClientDashboard />} />
-        <Route path="/client/upload" element={<ClientFilesUpload />} />
-        <Route path="/client/profile" element={<ClientProfile />} />
+          {/* CLIENT ROUTES  */}
+          {/* <Route path="/client/login" element={<ClientLogin />} /> */}
+          <Route path="/client/enroll" element={<ClientEnroll />} />
+          <Route path="/client/dashboard" element={<ClientDashboard />} />
+          <Route path="/client/upload" element={<ClientFilesUpload />} />
+          <Route path="/client/profile" element={<ClientProfile />} />
 
-        {/* EMPLOYEE ROUTES  */}
-        <Route path="/employee/login" element={<EmployeeLogin />} />
-        <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
-        <Route path="/employee/assigned" element={<EmployeeAssignedClients />} />
-        <Route path="/employee/tasks" element={<EmployeeTaskLogs />} />
-        <Route path="/employee/notes" element={<EmployeeNotes />} />
+          {/* EMPLOYEE ROUTES  */}
+          {/* <Route path="/employee/login" element={<EmployeeLogin />} /> */}
+          <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
+          <Route path="/employee/assigned" element={<EmployeeAssignedClients />} />
+          <Route path="/employee/tasks" element={<EmployeeTaskLogs />} />
+          <Route path="/employee/notes" element={<EmployeeNotesPanel />} />
 
+          <Route path="/login" element={<ClientEmpLogin />} />
 
+          <Route path="/custom" element={<CustomDesign />} />
+          <Route path="/customsafe" element={<CustomDesignStable />} />
 
-        <Route path="/login" element={<ClientEmpLogin />} />
-        <Route path="/custom" element={<CustomDesign />} />
-        <Route path="/customsafe" element={<CustomDesignStable />} />
-
-
-
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </ModalProvider>
   );
 }
 
 export default App;
-

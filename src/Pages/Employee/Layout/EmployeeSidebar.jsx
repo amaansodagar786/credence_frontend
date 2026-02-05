@@ -63,7 +63,7 @@ const EmployeeSidebar = ({ children }) => {
   const menuData = [
     { icon: <MdOutlineDashboard />, title: "Dashboard", path: "/employee/dashboard" },
     { icon: <FiUsers />, title: "Clients", path: "/employee/assigned" },
-    // { icon: <FiCheckSquare />, title: "Tasks", path: "/employee/tasks" }, 
+    // { icon: <FiCheckSquare />, title: "Notes", path: "/employee/notes" },  
   ];
 
   return (

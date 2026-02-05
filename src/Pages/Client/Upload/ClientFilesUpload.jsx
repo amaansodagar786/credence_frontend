@@ -565,7 +565,8 @@ const ClientFilesUpload = () => {
             const note = categoryName
                 ? otherCategories.find(c => c.categoryName === categoryName)?.note
                 : categoryNotes[type];
-            formData.append("note", note || "");
+            formData.append("note", note || "");  
+            // formData.append("note", "");  
         }
 
         if (lockAfterUpload) {

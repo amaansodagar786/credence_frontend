@@ -33,6 +33,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import EmployeeLayout from "../Layout/EmployeeLayout";
 import "./EmployeeDashboard.scss";
+import EmployeeNotesPanel from "./EmpNotes/EmployeeNotesPanel";
 
 const EmployeeDashboard = () => {
   // State for dashboard data
@@ -53,7 +54,7 @@ const EmployeeDashboard = () => {
     unviewedCount: 0,
     totalNotes: 0
   });
-  
+
   // NEW STATES FOR CLIENT-WISE NOTES
   const [clientsSummary, setClientsSummary] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
@@ -80,7 +81,7 @@ const EmployeeDashboard = () => {
         `${import.meta.env.VITE_API_URL}/employee/notes/clients-summary`,
         { withCredentials: true }
       );
-      
+
       if (response.data.success) {
         setClientsSummary(response.data.clients);
       }
@@ -96,7 +97,7 @@ const EmployeeDashboard = () => {
         `${import.meta.env.VITE_API_URL}/employee/notes/client/${clientId}`,
         { withCredentials: true }
       );
-      
+
       if (response.data.success) {
         setClientNotes(response.data.notes);
         setSelectedClient(response.data.client);
@@ -122,22 +123,22 @@ const EmployeeDashboard = () => {
         {},
         { withCredentials: true }
       );
-      
+
       // Refresh data
       await fetchClientsSummary();
       await fetchDashboardData();
-      
+
       // Update client notes state
       if (selectedClient && selectedClient.clientId === clientId) {
         setClientNotes(prev => prev.map(note => ({ ...note, isUnviewed: false, isNew: false })));
       }
-      
+
       toast.success("Client notes marked as read!", {
         position: "top-right",
         autoClose: 3000,
         theme: "dark"
       });
-      
+
     } catch (error) {
       console.error("Error marking client notes as viewed:", error);
       toast.error("Error marking client notes as read", {
@@ -1213,9 +1214,13 @@ const EmployeeDashboard = () => {
         <div className="employee-summary-section">
           {renderEmployeeInfo()}
         </div>
+        
+        <div>
+          <EmployeeNotesPanel />
+        </div>
 
         {/* NEW: Standalone Notes Section (Client-wise) */}
-        {renderStandaloneNotesSection()}
+        {/* {renderStandaloneNotesSection()}  */}
 
         {/* Time Filter */}
         <div className="filter-section">

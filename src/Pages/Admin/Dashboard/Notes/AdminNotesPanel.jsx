@@ -237,9 +237,9 @@ const AdminNotesPanel = () => {
     const handleMarkAllAsRead = async () => {
         if (!selectedClient) return;
 
-        if (!window.confirm('Are you sure you want to mark ALL unread notes as read for this client?')) {
-            return;
-        }
+        // if (!window.confirm('Are you sure you want to mark ALL unread notes as read for this client?')) {
+        //     return;
+        // }
 
         try {
             const response = await axios.post(
@@ -475,7 +475,7 @@ const AdminNotesPanel = () => {
                 <div className="modal notes-modal">
                     <div className="modal-header">
                         <div className="modal-title">
-                            <FiMessageSquare size={24} />
+                            <FiMessageSquare size={24} color='black' />
                             <h3>
                                 Clients with Unread Notes
                                 {modalData && (
@@ -590,7 +590,7 @@ const AdminNotesPanel = () => {
                             <FiChevronLeft size={20} /> Back to Clients
                         </button>
                         <div className="modal-title">
-                            <FiMessageSquare size={24} />
+                            <FiMessageSquare size={24} color='#000' />
                             <h3>
                                 {selectedClient.clientName} - Notes
                                 <span className="notes-count-badge">

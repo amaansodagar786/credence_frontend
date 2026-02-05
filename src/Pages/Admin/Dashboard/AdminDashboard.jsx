@@ -743,13 +743,13 @@ const AdminDashboard = () => {
               </h3>
             </div>
             <div className="modal-actions">
-              <button
+              {/* <button
                 className="mark-all-read-btn"
                 onClick={markAllNotesAsRead}
                 disabled={notesLoading || modalData.summary.totalUnviewedNotes === 0}
               >
                 <FiCheck size={16} /> Mark All as Read
-              </button>
+              </button> */}
               <button className="close-modal" onClick={closeModal}>
                 <FiX size={24} />
               </button>

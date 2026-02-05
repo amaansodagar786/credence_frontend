@@ -19,18 +19,41 @@ import {
     FiAlertCircle,
     FiInfo,
     FiEdit,
-    FiSave
+    FiSave,
+    FiCheckCircle,
+    FiCreditCard,
+    FiRefreshCw
 } from "react-icons/fi";
 import { MdOutlineBusinessCenter, MdOutlineVpnKey } from "react-icons/md";
 import { TbBuildingBank } from "react-icons/tb";
 import "./ClientProfile.scss";
 import ClientLayout from "../Layout/ClientLayout";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const ClientProfile = () => {
     const navigate = useNavigate();
     const [clientData, setClientData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [isEditing, setIsEditing] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [formData, setFormData] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        address: '',
+        visaType: '',
+        hasStrongId: '',
+        businessAddress: '',
+        bankAccount: '',
+        bicCode: '',
+        businessName: '',
+        vatPeriod: '',
+        businessNature: '',
+        registerTrade: ''
+    });
 
     // Change Password Modal States
     const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
@@ -56,6 +79,21 @@ const ClientProfile = () => {
     const [forgotLoading, setForgotLoading] = useState(false);
     const [verifyToken, setVerifyToken] = useState("");
 
+    // Change Plan Modal States
+    const [showChangePlanModal, setShowChangePlanModal] = useState(false);
+    const [selectedNewPlan, setSelectedNewPlan] = useState("");
+    const [changingPlan, setChangingPlan] = useState(false);
+    const [planChangeInfo, setPlanChangeInfo] = useState(null);
+
+    // Plan prices
+    const planPrices = {
+        'Lite': '40 Euros + VAT',
+        'Taxi': '45 Euros + VAT',
+        'Premium': '50 Euros + VAT',
+        'Pro': '60 Euros + VAT',
+        'Restaurant': '80 Euros + VAT'
+    };
+
     // Fetch client data
     useEffect(() => {
         const fetchClientData = async () => {
@@ -66,6 +104,39 @@ const ClientProfile = () => {
                     { withCredentials: true }
                 );
                 setClientData(response.data);
+                // Initialize form data
+                if (response.data) {
+                    setFormData({
+                        firstName: response.data.firstName || '',
+                        lastName: response.data.lastName || '',
+                        email: response.data.email || '',
+                        phone: response.data.phone || '',
+                        address: response.data.address || '',
+                        visaType: response.data.visaType || '',
+                        hasStrongId: response.data.hasStrongId || '',
+                        businessAddress: response.data.businessAddress || '',
+                        bankAccount: response.data.bankAccount || '',
+                        bicCode: response.data.bicCode || '',
+                        businessName: response.data.businessName || '',
+                        vatPeriod: response.data.vatPeriod || '',
+                        businessNature: response.data.businessNature || '',
+                        registerTrade: response.data.registerTrade || ''
+                    });
+
+                    // Set plan change info if exists
+                    if (response.data.nextMonthPlan) {
+                        const today = new Date();
+                        const currentDate = today.getDate();
+                        const isFirstOfMonth = currentDate === 1;
+
+                        setPlanChangeInfo({
+                            currentPlan: response.data.planSelected,
+                            nextMonthPlan: response.data.nextMonthPlan,
+                            effectiveDate: response.data.planEffectiveFrom ? new Date(response.data.planEffectiveFrom) : null,
+                            changeType: isFirstOfMonth ? 'immediate' : 'scheduled'
+                        });
+                    }
+                }
             } catch (error) {
                 console.error("Failed to fetch client data:", error);
                 if (error.response?.status === 401) {
@@ -81,6 +152,161 @@ const ClientProfile = () => {
         fetchClientData();
     }, [navigate]);
 
+    // Handle form input changes
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    // Handle radio button changes
+    const handleRadioChange = (name, value) => {
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    // Save profile updates
+    const handleSaveProfile = async () => {
+        try {
+            setSaving(true);
+
+            // Validate required fields
+            const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'address', 'visaType', 'hasStrongId', 'businessAddress', 'businessName', 'vatPeriod', 'businessNature', 'registerTrade'];
+            const emptyFields = requiredFields.filter(field => !formData[field] || formData[field].trim() === '');
+
+            if (emptyFields.length > 0) {
+                toast.error(`Please fill all required fields: ${emptyFields.join(', ')}`, {
+                    position: "top-center",
+                    autoClose: 5000,
+                });
+                return;
+            }
+
+            const response = await axios.patch(
+                `${import.meta.env.VITE_API_URL}/client/update-profile`,
+                formData,
+                { withCredentials: true }
+            );
+
+            if (response.data.success) {
+                // Update client data with new values
+                setClientData(prev => ({
+                    ...prev,
+                    ...formData
+                }));
+
+                setIsEditing(false);
+                toast.success("Profile updated successfully!", {
+                    position: "top-center",
+                    autoClose: 3000,
+                });
+            }
+        } catch (error) {
+            console.error("Failed to update profile:", error);
+            toast.error(error.response?.data?.message || "Failed to update profile. Please try again.", {
+                position: "top-center",
+                autoClose: 5000,
+            });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // Cancel editing
+    const handleCancelEdit = () => {
+        // Reset form data to original client data
+        if (clientData) {
+            setFormData({
+                firstName: clientData.firstName || '',
+                lastName: clientData.lastName || '',
+                email: clientData.email || '',
+                phone: clientData.phone || '',
+                address: clientData.address || '',
+                visaType: clientData.visaType || '',
+                hasStrongId: clientData.hasStrongId || '',
+                businessAddress: clientData.businessAddress || '',
+                bankAccount: clientData.bankAccount || '',
+                bicCode: clientData.bicCode || '',
+                businessName: clientData.businessName || '',
+                vatPeriod: clientData.vatPeriod || '',
+                businessNature: clientData.businessNature || '',
+                registerTrade: clientData.registerTrade || ''
+            });
+        }
+        setIsEditing(false);
+    };
+
+    // Handle Change Plan
+    const handleChangePlan = async () => {
+        if (!selectedNewPlan) {
+            toast.error("Please select a plan", {
+                position: "top-center",
+                autoClose: 3000,
+            });
+            return;
+        }
+
+        if (selectedNewPlan === clientData?.planSelected) {
+            toast.error(`You are already on the ${selectedNewPlan} plan`, {
+                position: "top-center",
+                autoClose: 3000,
+            });
+            return;
+        }
+
+        setChangingPlan(true);
+        try {
+            const response = await axios.patch(
+                `${import.meta.env.VITE_API_URL}/client/change-plan`,
+                { newPlan: selectedNewPlan },
+                { withCredentials: true }
+            );
+
+            if (response.data.success) {
+                // Update client data
+                setClientData(prev => ({
+                    ...prev,
+                    planSelected: response.data.planDetails.planSelected,
+                    currentPlan: response.data.planDetails.currentPlan,
+                    nextMonthPlan: response.data.planDetails.nextMonthPlan,
+                    planEffectiveFrom: response.data.planDetails.effectiveFrom
+                }));
+
+                // Update plan change info
+                const today = new Date();
+                const currentDate = today.getDate();
+                const isFirstOfMonth = currentDate === 1;
+
+                setPlanChangeInfo({
+                    currentPlan: response.data.planDetails.currentPlan,
+                    nextMonthPlan: response.data.planDetails.nextMonthPlan,
+                    effectiveDate: new Date(response.data.planDetails.effectiveFrom),
+                    changeType: isFirstOfMonth ? 'immediate' : 'scheduled'
+                });
+
+                toast.success(response.data.message, {
+                    position: "top-center",
+                    autoClose: 5000,
+                });
+
+                setShowChangePlanModal(false);
+                setSelectedNewPlan("");
+            }
+        } catch (error) {
+            console.error("Failed to change plan:", error);
+            toast.error(error.response?.data?.message || "Failed to change plan. Please try again.", {
+                position: "top-center",
+                autoClose: 5000,
+            });
+        } finally {
+            setChangingPlan(false);
+        }
+    };
+
     // Handle Change Password with Old Password Verification
     const handleChangePassword = async () => {
         setPasswordError("");
@@ -89,21 +315,37 @@ const ClientProfile = () => {
         // Validation
         if (!oldPassword || !newPassword || !confirmPassword) {
             setPasswordError("All fields are required");
+            toast.error("All fields are required", {
+                position: "top-center",
+                autoClose: 3000,
+            });
             return;
         }
 
         if (newPassword.length < 6) {
             setPasswordError("New password must be at least 6 characters");
+            toast.error("New password must be at least 6 characters", {
+                position: "top-center",
+                autoClose: 3000,
+            });
             return;
         }
 
         if (newPassword !== confirmPassword) {
             setPasswordError("New passwords do not match");
+            toast.error("New passwords do not match", {
+                position: "top-center",
+                autoClose: 3000,
+            });
             return;
         }
 
         if (oldPassword === newPassword) {
             setPasswordError("New password must be different from current password");
+            toast.error("New password must be different from current password", {
+                position: "top-center",
+                autoClose: 3000,
+            });
             return;
         }
 
@@ -120,15 +362,24 @@ const ClientProfile = () => {
                 setOldPassword("");
                 setNewPassword("");
                 setConfirmPassword("");
+
+                toast.success("Password changed successfully!", {
+                    position: "top-center",
+                    autoClose: 3000,
+                });
+
                 setTimeout(() => {
                     setShowChangePasswordModal(false);
                     setPasswordSuccess("");
                 }, 2000);
             }
         } catch (error) {
-            setPasswordError(
-                error.response?.data?.message || "Failed to change password. Please try again."
-            );
+            const errorMessage = error.response?.data?.message || "Failed to change password. Please try again.";
+            setPasswordError(errorMessage);
+            toast.error(errorMessage, {
+                position: "top-center",
+                autoClose: 5000,
+            });
         } finally {
             setChangingPassword(false);
         }
@@ -142,6 +393,10 @@ const ClientProfile = () => {
         if (step === 1) {
             if (!forgotEmail) {
                 setForgotPasswordError("Please enter your email");
+                toast.error("Please enter your email", {
+                    position: "top-center",
+                    autoClose: 3000,
+                });
                 return;
             }
 
@@ -155,11 +410,18 @@ const ClientProfile = () => {
                 if (response.data.success) {
                     setForgotPasswordStep(2);
                     setForgotPasswordSuccess("OTP sent to your email. Check your inbox.");
+                    toast.success("OTP sent to your email. Check your inbox.", {
+                        position: "top-center",
+                        autoClose: 3000,
+                    });
                 }
             } catch (error) {
-                setForgotPasswordError(
-                    error.response?.data?.message || "Failed to send OTP. Please try again."
-                );
+                const errorMessage = error.response?.data?.message || "Failed to send OTP. Please try again.";
+                setForgotPasswordError(errorMessage);
+                toast.error(errorMessage, {
+                    position: "top-center",
+                    autoClose: 5000,
+                });
             } finally {
                 setForgotLoading(false);
             }
@@ -167,6 +429,10 @@ const ClientProfile = () => {
         } else if (step === 2) {
             if (!forgotOtp || forgotOtp.length !== 4) {
                 setForgotPasswordError("Please enter a valid 4-digit OTP");
+                toast.error("Please enter a valid 4-digit OTP", {
+                    position: "top-center",
+                    autoClose: 3000,
+                });
                 return;
             }
 
@@ -181,11 +447,18 @@ const ClientProfile = () => {
                     setVerifyToken(response.data.verifyToken);
                     setForgotPasswordStep(3);
                     setForgotPasswordSuccess("OTP verified. Now set your new password.");
+                    toast.success("OTP verified. Now set your new password.", {
+                        position: "top-center",
+                        autoClose: 3000,
+                    });
                 }
             } catch (error) {
-                setForgotPasswordError(
-                    error.response?.data?.message || "Invalid OTP. Please try again."
-                );
+                const errorMessage = error.response?.data?.message || "Invalid OTP. Please try again.";
+                setForgotPasswordError(errorMessage);
+                toast.error(errorMessage, {
+                    position: "top-center",
+                    autoClose: 5000,
+                });
             } finally {
                 setForgotLoading(false);
             }
@@ -193,16 +466,28 @@ const ClientProfile = () => {
         } else if (step === 3) {
             if (!forgotNewPassword || !forgotConfirmPassword) {
                 setForgotPasswordError("Please enter and confirm your new password");
+                toast.error("Please enter and confirm your new password", {
+                    position: "top-center",
+                    autoClose: 3000,
+                });
                 return;
             }
 
             if (forgotNewPassword.length < 6) {
                 setForgotPasswordError("Password must be at least 6 characters");
+                toast.error("Password must be at least 6 characters", {
+                    position: "top-center",
+                    autoClose: 3000,
+                });
                 return;
             }
 
             if (forgotNewPassword !== forgotConfirmPassword) {
                 setForgotPasswordError("Passwords do not match");
+                toast.error("Passwords do not match", {
+                    position: "top-center",
+                    autoClose: 3000,
+                });
                 return;
             }
 
@@ -215,6 +500,10 @@ const ClientProfile = () => {
 
                 if (response.data.success) {
                     setForgotPasswordSuccess("Password updated successfully! You can now login.");
+                    toast.success("Password updated successfully! You can now login.", {
+                        position: "top-center",
+                        autoClose: 3000,
+                    });
                     setTimeout(() => {
                         setShowForgotPasswordModal(false);
                         resetForgotPasswordForm();
@@ -222,9 +511,12 @@ const ClientProfile = () => {
                     }, 3000);
                 }
             } catch (error) {
-                setForgotPasswordError(
-                    error.response?.data?.message || "Failed to reset password. Please try again."
-                );
+                const errorMessage = error.response?.data?.message || "Failed to reset password. Please try again.";
+                setForgotPasswordError(errorMessage);
+                toast.error(errorMessage, {
+                    position: "top-center",
+                    autoClose: 5000,
+                });
             } finally {
                 setForgotLoading(false);
             }
@@ -253,57 +545,110 @@ const ClientProfile = () => {
         setShowConfirmPassword(false);
     };
 
+    const resetChangePlanForm = () => {
+        setSelectedNewPlan("");
+        setChangingPlan(false);
+    };
+
+    // Format date
+    const formatDate = (date) => {
+        if (!date) return '';
+        return new Date(date).toLocaleDateString('en-IN', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+    };
+
+    // Check if today is 1st of month
+    const isFirstOfMonth = () => {
+        const today = new Date();
+        return today.getDate() === 1;
+    };
+
     // Loading state
     if (loading) {
         return (
-            <div className="client-profile-loading">
-                <div className="loading-spinner"></div>
-                <p>Loading your profile...</p>
-            </div>
+            <ClientLayout>
+                <div className="client-profile-loading">
+                    <div className="loading-spinner"></div>
+                    <p>Loading your profile...</p>
+                </div>
+            </ClientLayout>
         );
     }
 
     // Error state
     if (error) {
         return (
-            <div className="client-profile-error">
-                <div className="error-icon">⚠️</div>
-                <h3>Error Loading Profile</h3>
-                <p>{error}</p>
-                <button
-                    className="retry-btn"
-                    onClick={() => window.location.reload()}
-                >
-                    Retry
-                </button>
-            </div>
+            <ClientLayout>
+                <div className="client-profile-error">
+                    <div className="error-icon">⚠️</div>
+                    <h3>Error Loading Profile</h3>
+                    <p>{error}</p>
+                    <button
+                        className="retry-btn"
+                        onClick={() => window.location.reload()}
+                    >
+                        Retry
+                    </button>
+                </div>
+            </ClientLayout>
         );
     }
 
     return (
         <ClientLayout>
+            <ToastContainer />
             <div className="client-profile-container">
                 {/* Header - Matching Upload Page */}
                 <div className="profile-header">
                     <div className="header-left">
                         <h2>Client Profile</h2>
                         <p className="subtitle">
-                            View and manage your account information
+                            {isEditing ? "Edit your profile information" : "View and manage your account information"}
                         </p>
                     </div>
+                    <div className="header-actions">
+                        {!isEditing ? (
+                            <button
+                                className="edit-profile-btn"
+                                onClick={() => setIsEditing(true)}
+                            >
+                                <FiEdit size={16} />
+                                Edit Profile
+                            </button>
+                        ) : (
+                            <div className="edit-actions">
+                                <button
+                                    className="cancel-btn"
+                                    onClick={handleCancelEdit}
+                                    disabled={saving}
+                                >
+                                    <FiX size={16} />
+                                    Cancel
+                                </button>
+                                <button
+                                    className="save-btn"
+                                    onClick={handleSaveProfile}
+                                    disabled={saving}
+                                >
+                                    {saving ? (
+                                        <>
+                                            <span className="spinner small"></span>
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FiSave size={16} />
+                                            Save Changes
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
-
-                {/* Messages */}
-                {passwordSuccess && (
-                    <div className="success-message">
-                        <FiCheckCircle /> {passwordSuccess}
-                    </div>
-                )}
-                {passwordError && (
-                    <div className="error-message">
-                        <FiAlertCircle /> {passwordError}
-                    </div>
-                )}
 
                 <div className="main-content">
                     {/* Left Sidebar - Quick Actions */}
@@ -338,6 +683,13 @@ const ClientProfile = () => {
                                     Change Password
                                 </button>
                                 <button
+                                    className="change-plan-btn"
+                                    onClick={() => setShowChangePlanModal(true)}
+                                >
+                                    <FiCreditCard size={16} />
+                                    Change Plan
+                                </button>
+                                <button
                                     className="forgot-password-link"
                                     onClick={() => setShowForgotPasswordModal(true)}
                                 >
@@ -354,8 +706,18 @@ const ClientProfile = () => {
                                         </span>
                                     </div>
                                     <div className="info-item">
-                                        <span className="label">Plan:</span>
+                                        <span className="label">Current Plan:</span>
                                         <span className="value plan-badge">{clientData?.planSelected || "N/A"}</span>
+                                    </div>
+                                    {clientData?.nextMonthPlan && (
+                                        <div className="info-item">
+                                            <span className="label">Plan from next month:</span>
+                                            <span className="value next-plan-badge">{clientData.nextMonthPlan}</span>
+                                        </div>
+                                    )}
+                                    <div className="info-item">
+                                        <span className="label">Client ID:</span>
+                                        <span className="value client-id">{clientData?.clientId}</span>
                                     </div>
                                 </div>
                             )}
@@ -372,45 +734,172 @@ const ClientProfile = () => {
                                 </h3>
                             </div>
                             <div className="section-content">
-                                <div className="info-grid">
-                                    <div className="info-item">
-                                        <label>First Name</label>
-                                        <div className="info-value">{clientData?.firstName || "N/A"}</div>
-                                    </div>
-                                    <div className="info-item">
-                                        <label>Last Name</label>
-                                        <div className="info-value">{clientData?.lastName || "N/A"}</div>
-                                    </div>
-                                    <div className="info-item">
-                                        <label>Email Address</label>
-                                        <div className="info-value email-value">
-                                            <FiMail size={14} />
-                                            {clientData?.email || "N/A"}
+                                {isEditing ? (
+                                    <div className="edit-form">
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label>First Name *</label>
+                                                <input
+                                                    type="text"
+                                                    name="firstName"
+                                                    value={formData.firstName}
+                                                    onChange={handleInputChange}
+                                                    className="form-input"
+                                                    placeholder="Enter first name"
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="form-group">
+                                                <label>Last Name *</label>
+                                                <input
+                                                    type="text"
+                                                    name="lastName"
+                                                    value={formData.lastName}
+                                                    onChange={handleInputChange}
+                                                    className="form-input"
+                                                    placeholder="Enter last name"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label>Email Address *</label>
+                                                <input
+                                                    type="email"
+                                                    name="email"
+                                                    value={formData.email}
+                                                    onChange={handleInputChange}
+                                                    className="form-input"
+                                                    placeholder="Enter email address"
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="form-group">
+                                                <label>Phone Number *</label>
+                                                <input
+                                                    type="tel"
+                                                    name="phone"
+                                                    value={formData.phone}
+                                                    onChange={handleInputChange}
+                                                    className="form-input"
+                                                    placeholder="Enter phone number"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="form-group full-width">
+                                            <label>Address *</label>
+                                            <input
+                                                type="text"
+                                                name="address"
+                                                value={formData.address}
+                                                onChange={handleInputChange}
+                                                className="form-input"
+                                                placeholder="Enter permanent/temporary address"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="radio-row">
+                                            <div className="radio-group">
+                                                <label className="radio-label">Visa Type *</label>
+                                                <div className="radio-options">
+                                                    <label className={`radio-option ${formData.visaType === 'A' ? 'selected' : ''}`}>
+                                                        <input
+                                                            type="radio"
+                                                            name="visaType"
+                                                            value="A"
+                                                            checked={formData.visaType === 'A'}
+                                                            onChange={() => handleRadioChange('visaType', 'A')}
+                                                            required
+                                                        />
+                                                        <span className="radio-custom"></span>
+                                                        <span className="radio-text">A</span>
+                                                    </label>
+                                                    <label className={`radio-option ${formData.visaType === 'B' ? 'selected' : ''}`}>
+                                                        <input
+                                                            type="radio"
+                                                            name="visaType"
+                                                            value="B"
+                                                            checked={formData.visaType === 'B'}
+                                                            onChange={() => handleRadioChange('visaType', 'B')}
+                                                        />
+                                                        <span className="radio-custom"></span>
+                                                        <span className="radio-text">B</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div className="radio-group">
+                                                <label className="radio-label">Strong ID Available? *</label>
+                                                <div className="radio-options">
+                                                    <label className={`radio-option ${formData.hasStrongId === 'yes' ? 'selected' : ''}`}>
+                                                        <input
+                                                            type="radio"
+                                                            name="hasStrongId"
+                                                            value="yes"
+                                                            checked={formData.hasStrongId === 'yes'}
+                                                            onChange={() => handleRadioChange('hasStrongId', 'yes')}
+                                                            required
+                                                        />
+                                                        <span className="radio-custom"></span>
+                                                        <span className="radio-text">Yes</span>
+                                                    </label>
+                                                    <label className={`radio-option ${formData.hasStrongId === 'no' ? 'selected' : ''}`}>
+                                                        <input
+                                                            type="radio"
+                                                            name="hasStrongId"
+                                                            value="no"
+                                                            checked={formData.hasStrongId === 'no'}
+                                                            onChange={() => handleRadioChange('hasStrongId', 'no')}
+                                                        />
+                                                        <span className="radio-custom"></span>
+                                                        <span className="radio-text">No</span>
+                                                    </label>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="info-item">
-                                        <label>Phone Number</label>
-                                        <div className="info-value">
-                                            <FiPhone size={14} />
-                                            {clientData?.phone || "N/A"}
+                                ) : (
+                                    <div className="info-grid">
+                                        <div className="info-item">
+                                            <label>First Name</label>
+                                            <div className="info-value">{clientData?.firstName || "N/A"}</div>
+                                        </div>
+                                        <div className="info-item">
+                                            <label>Last Name</label>
+                                            <div className="info-value">{clientData?.lastName || "N/A"}</div>
+                                        </div>
+                                        <div className="info-item">
+                                            <label>Email Address</label>
+                                            <div className="info-value email-value">
+                                                <FiMail size={14} />
+                                                {clientData?.email || "N/A"}
+                                            </div>
+                                        </div>
+                                        <div className="info-item">
+                                            <label>Phone Number</label>
+                                            <div className="info-value">
+                                                <FiPhone size={14} />
+                                                {clientData?.phone || "N/A"}
+                                            </div>
+                                        </div>
+                                        <div className="info-item full-width">
+                                            <label>Address</label>
+                                            <div className="info-value">
+                                                <FiMapPin size={14} />
+                                                {clientData?.address || "N/A"}
+                                            </div>
+                                        </div>
+                                        <div className="info-item">
+                                            <label>Visa Type</label>
+                                            <div className="info-value">{clientData?.visaType || "N/A"}</div>
+                                        </div>
+                                        <div className="info-item">
+                                            <label>Strong ID Available</label>
+                                            <div className="info-value">{clientData?.hasStrongId || "N/A"}</div>
                                         </div>
                                     </div>
-                                    <div className="info-item full-width">
-                                        <label>Address</label>
-                                        <div className="info-value">
-                                            <FiMapPin size={14} />
-                                            {clientData?.address || "N/A"}
-                                        </div>
-                                    </div>
-                                    <div className="info-item">
-                                        <label>Visa Type</label>
-                                        <div className="info-value">{clientData?.visaType || "N/A"}</div>
-                                    </div>
-                                    <div className="info-item">
-                                        <label>Strong ID Available</label>
-                                        <div className="info-value">{clientData?.hasStrongId || "N/A"}</div>
-                                    </div>
-                                </div>
+                                )}
                             </div>
                         </section>
 
@@ -422,35 +911,215 @@ const ClientProfile = () => {
                                 </h3>
                             </div>
                             <div className="section-content">
-                                <div className="info-grid">
-                                    <div className="info-item">
-                                        <label>Business Name</label>
-                                        <div className="info-value">{clientData?.businessName || "N/A"}</div>
-                                    </div>
-                                    <div className="info-item">
-                                        <label>VAT Period</label>
-                                        <div className="info-value">{clientData?.vatPeriod || "N/A"}</div>
-                                    </div>
-                                    <div className="info-item">
-                                        <label>Business Nature</label>
-                                        <div className="info-value">{clientData?.businessNature || "N/A"}</div>
-                                    </div>
-                                    <div className="info-item">
-                                        <label>Registered Trade</label>
-                                        <div className="info-value">{clientData?.registerTrade || "N/A"}</div>
-                                    </div>
-                                    <div className="info-item full-width">
-                                        <label>Business Address</label>
-                                        <div className="info-value">
-                                            <FiMapPin size={14} />
-                                            {clientData?.businessAddress || "N/A"}
+                                {isEditing ? (
+                                    <div className="edit-form">
+                                        <div className="form-group full-width">
+                                            <label>Business Address *</label>
+                                            <input
+                                                type="text"
+                                                name="businessAddress"
+                                                value={formData.businessAddress}
+                                                onChange={handleInputChange}
+                                                className="form-input"
+                                                placeholder="Enter business address"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="form-group full-width">
+                                            <label>Bank Account Number</label>
+                                            <input
+                                                type="text"
+                                                name="bankAccount"
+                                                value={formData.bankAccount}
+                                                onChange={handleInputChange}
+                                                className="form-input"
+                                                placeholder="Enter bank account number"
+                                            />
+                                        </div>
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label>BIC Code</label>
+                                                <input
+                                                    type="text"
+                                                    name="bicCode"
+                                                    value={formData.bicCode}
+                                                    onChange={handleInputChange}
+                                                    className="form-input"
+                                                    placeholder="Enter BIC code"
+                                                />
+                                            </div>
+                                            <div className="form-group">
+                                                <label>Business Name *</label>
+                                                <input
+                                                    type="text"
+                                                    name="businessName"
+                                                    value={formData.businessName}
+                                                    onChange={handleInputChange}
+                                                    className="form-input"
+                                                    placeholder="Enter business name"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="radio-row">
+                                            <div className="radio-group">
+                                                <label className="radio-label">VAT Reporting Period *</label>
+                                                <div className="radio-options">
+                                                    <label className={`radio-option ${formData.vatPeriod === 'monthly' ? 'selected' : ''}`}>
+                                                        <input
+                                                            type="radio"
+                                                            name="vatPeriod"
+                                                            value="monthly"
+                                                            checked={formData.vatPeriod === 'monthly'}
+                                                            onChange={() => handleRadioChange('vatPeriod', 'monthly')}
+                                                            required
+                                                        />
+                                                        <span className="radio-custom"></span>
+                                                        <span className="radio-text">Monthly</span>
+                                                    </label>
+                                                    <label className={`radio-option ${formData.vatPeriod === 'quarterly' ? 'selected' : ''}`}>
+                                                        <input
+                                                            type="radio"
+                                                            name="vatPeriod"
+                                                            value="quarterly"
+                                                            checked={formData.vatPeriod === 'quarterly'}
+                                                            onChange={() => handleRadioChange('vatPeriod', 'quarterly')}
+                                                        />
+                                                        <span className="radio-custom"></span>
+                                                        <span className="radio-text">Quarterly</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div className="radio-group">
+                                                <label className="radio-label">Nature of Business *</label>
+                                                <div className="radio-options">
+                                                    <label className={`radio-option ${formData.businessNature === 'posti' ? 'selected' : ''}`}>
+                                                        <input
+                                                            type="radio"
+                                                            name="businessNature"
+                                                            value="posti"
+                                                            checked={formData.businessNature === 'posti'}
+                                                            onChange={() => handleRadioChange('businessNature', 'posti')}
+                                                            required
+                                                        />
+                                                        <span className="radio-custom"></span>
+                                                        <span className="radio-text">Posti</span>
+                                                    </label>
+                                                    <label className={`radio-option ${formData.businessNature === 'wolt' ? 'selected' : ''}`}>
+                                                        <input
+                                                            type="radio"
+                                                            name="businessNature"
+                                                            value="wolt"
+                                                            checked={formData.businessNature === 'wolt'}
+                                                            onChange={() => handleRadioChange('businessNature', 'wolt')}
+                                                        />
+                                                        <span className="radio-custom"></span>
+                                                        <span className="radio-text">Wolt</span>
+                                                    </label>
+                                                    <label className={`radio-option ${formData.businessNature === 'taxi' ? 'selected' : ''}`}>
+                                                        <input
+                                                            type="radio"
+                                                            name="businessNature"
+                                                            value="taxi"
+                                                            checked={formData.businessNature === 'taxi'}
+                                                            onChange={() => handleRadioChange('businessNature', 'taxi')}
+                                                        />
+                                                        <span className="radio-custom"></span>
+                                                        <span className="radio-text">Taxi</span>
+                                                    </label>
+                                                    <label className={`radio-option ${formData.businessNature === 'restaurant' ? 'selected' : ''}`}>
+                                                        <input
+                                                            type="radio"
+                                                            name="businessNature"
+                                                            value="restaurant"
+                                                            checked={formData.businessNature === 'restaurant'}
+                                                            onChange={() => handleRadioChange('businessNature', 'restaurant')}
+                                                        />
+                                                        <span className="radio-custom"></span>
+                                                        <span className="radio-text">Restaurant</span>
+                                                    </label>
+                                                    <label className={`radio-option ${formData.businessNature === 'other' ? 'selected' : ''}`}>
+                                                        <input
+                                                            type="radio"
+                                                            name="businessNature"
+                                                            value="other"
+                                                            checked={formData.businessNature === 'other'}
+                                                            onChange={() => handleRadioChange('businessNature', 'other')}
+                                                        />
+                                                        <span className="radio-custom"></span>
+                                                        <span className="radio-text">Other</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="radio-group full-width">
+                                            <label className="radio-label">Register in Trade Register? *</label>
+                                            <div className="radio-options">
+                                                <label className={`radio-option ${formData.registerTrade === 'yes' ? 'selected' : ''}`}>
+                                                    <input
+                                                        type="radio"
+                                                        name="registerTrade"
+                                                        value="yes"
+                                                        checked={formData.registerTrade === 'yes'}
+                                                        onChange={() => handleRadioChange('registerTrade', 'yes')}
+                                                        required
+                                                    />
+                                                    <span className="radio-custom"></span>
+                                                    <span className="radio-text">Yes</span>
+                                                </label>
+                                                <label className={`radio-option ${formData.registerTrade === 'no' ? 'selected' : ''}`}>
+                                                    <input
+                                                        type="radio"
+                                                        name="registerTrade"
+                                                        value="no"
+                                                        checked={formData.registerTrade === 'no'}
+                                                        onChange={() => handleRadioChange('registerTrade', 'no')}
+                                                    />
+                                                    <span className="radio-custom"></span>
+                                                    <span className="radio-text">No</span>
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    <div className="info-grid">
+                                        <div className="info-item">
+                                            <label>Business Name</label>
+                                            <div className="info-value">{clientData?.businessName || "N/A"}</div>
+                                        </div>
+                                        <div className="info-item">
+                                            <label>VAT Period</label>
+                                            <div className="info-value">{clientData?.vatPeriod || "N/A"}</div>
+                                        </div>
+                                        <div className="info-item">
+                                            <label>Business Nature</label>
+                                            <div className="info-value">{clientData?.businessNature || "N/A"}</div>
+                                        </div>
+                                        <div className="info-item">
+                                            <label>Registered Trade</label>
+                                            <div className="info-value">{clientData?.registerTrade || "N/A"}</div>
+                                        </div>
+                                        <div className="info-item full-width">
+                                            <label>Business Address</label>
+                                            <div className="info-value">
+                                                <FiMapPin size={14} />
+                                                {clientData?.businessAddress || "N/A"}
+                                            </div>
+                                        </div>
+                                        <div className="info-item">
+                                            <label>Bank Account</label>
+                                            <div className="info-value">{clientData?.bankAccount || "N/A"}</div>
+                                        </div>
+                                        <div className="info-item">
+                                            <label>BIC Code</label>
+                                            <div className="info-value">{clientData?.bicCode || "N/A"}</div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </section>
 
-                        {/* Account Status */}
+                        {/* Account Status (Read Only) */}
                         <section className="profile-section">
                             <div className="section-header">
                                 <h3>
@@ -469,6 +1138,21 @@ const ClientProfile = () => {
                                         <label>Plan Selected</label>
                                         <div className="info-value plan-badge">{clientData?.planSelected || "N/A"}</div>
                                     </div>
+                                    {clientData?.nextMonthPlan && (
+                                        <div className="info-item">
+                                            <label>Next Month Plan</label>
+                                            <div className="info-value next-plan-badge">{clientData.nextMonthPlan}</div>
+                                        </div>
+                                    )}
+                                    {clientData?.planEffectiveFrom && (
+                                        <div className="info-item">
+                                            <label>Plan Effective From</label>
+                                            <div className="info-value">
+                                                <FiCalendar size={14} />
+                                                {formatDate(clientData.planEffectiveFrom)}
+                                            </div>
+                                        </div>
+                                    )}
                                     {clientData?.enrollmentDate && (
                                         <div className="info-item">
                                             <label>Enrollment Date</label>
@@ -647,10 +1331,138 @@ const ClientProfile = () => {
                     </div>
                 )}
 
+                {/* Change Plan Modal */}
+                {showChangePlanModal && (
+                    <div className="profile-modal-overlay">
+                        <div className="profile-modal change-plan-modal">
+                            <div className="modal-header">
+                                <h3>
+                                    <FiCreditCard size={20} /> Change Your Plan
+                                </h3>
+                                <button
+                                    className="close-btn"
+                                    onClick={() => {
+                                        setShowChangePlanModal(false);
+                                        resetChangePlanForm();
+                                    }}
+                                    disabled={changingPlan}
+                                >
+                                    <FiX size={24} />
+                                </button>
+                            </div>
+
+                            <div className="modal-content">
+                                <div className="plan-change-info">
+                                    <p className="current-plan-info">
+                                        Your current plan: <strong>{clientData?.planSelected}</strong> ({planPrices[clientData?.planSelected] || 'N/A'})
+                                    </p>
+
+                                    {clientData?.nextMonthPlan && (
+                                        <div className="pending-change-alert">
+                                            <FiInfo size={16} />
+                                            <span>You already have a pending change to <strong>{clientData.nextMonthPlan}</strong> effective from <strong>{formatDate(clientData.planEffectiveFrom)}</strong></span>
+                                        </div>
+                                    )}
+
+                                    <div className="date-info">
+                                        <p>
+                                            <strong>Today is {isFirstOfMonth() ? '1st of month' : 'not 1st of month'}</strong>
+                                        </p>
+                                        <p className="small-text">
+                                            {isFirstOfMonth()
+                                                ? 'Plan changes will be effective immediately.'
+                                                : 'Plan changes will be effective from 1st of next month.'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="plan-selection">
+                                    <h4 className="section-title">Select New Plan</h4>
+                                    <div className="plan-list">
+                                        {['Lite', 'Taxi', 'Premium', 'Pro', 'Restaurant'].map((plan) => (
+                                            <label
+                                                key={plan}
+                                                className={`plan-item ${selectedNewPlan === plan ? 'selected' : ''} ${clientData?.planSelected === plan ? 'current' : ''}`}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="newPlan"
+                                                    value={plan}
+                                                    checked={selectedNewPlan === plan}
+                                                    onChange={(e) => setSelectedNewPlan(e.target.value)}
+                                                    disabled={changingPlan}
+                                                />
+                                                <div className="plan-info">
+                                                    <div className="plan-name-section">
+                                                        <span className="plan-name">{plan}</span>
+                                                        {clientData?.planSelected === plan && (
+                                                            <span className="badge current-badge">Current</span>
+                                                        )}
+                                                        {selectedNewPlan === plan && (
+                                                            <span className="badge selected-badge">Selected</span>
+                                                        )}
+                                                    </div>
+                                                    <span className="plan-price">{planPrices[plan]}</span>
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {selectedNewPlan && (
+                                    <div className="plan-summary">
+                                        <h4 className="section-title">Change Summary</h4>
+                                        <div className="summary-details">
+                                            <p><strong>From:</strong> {clientData?.planSelected} ({planPrices[clientData?.planSelected] || 'N/A'})</p>
+                                            <p><strong>To:</strong> {selectedNewPlan} ({planPrices[selectedNewPlan]})</p>
+                                            <p><strong>Effective Date:</strong> {isFirstOfMonth() ? 'Immediately (today)' : '1st of next month'}</p>
+                                            <p><strong>Billing Note:</strong> {
+                                                isFirstOfMonth()
+                                                    ? `You will be billed ${planPrices[selectedNewPlan]} starting this month.`
+                                                    : `You will continue with ${planPrices[clientData?.planSelected] || 'current billing'} this month, and ${planPrices[selectedNewPlan]} from next month.`
+                                            }</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="modal-actions">
+                                    <button
+                                        className="modal-btn secondary"
+                                        onClick={() => {
+                                            setShowChangePlanModal(false);
+                                            resetChangePlanForm();
+                                        }}
+                                        disabled={changingPlan}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        className="modal-btn primary"
+                                        onClick={handleChangePlan}
+                                        disabled={changingPlan || !selectedNewPlan}
+                                    >
+                                        {changingPlan ? (
+                                            <>
+                                                <span className="spinner small"></span>
+                                                Processing...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FiRefreshCw size={16} />
+                                                {isFirstOfMonth() ? 'Change Plan Immediately' : 'Schedule Plan Change'}
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Forgot Password Modal */}
                 {showForgotPasswordModal && (
-                    <div className="forgot-password-modal-overlay">
-                        <div className="forgot-password-modal">
+                    <div className="profile-modal-overlay">
+                        <div className="profile-modal">
                             <div className="modal-header">
                                 <h3>Reset Your Password</h3>
                                 <button

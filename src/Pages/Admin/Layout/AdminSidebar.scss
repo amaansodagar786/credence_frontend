@@ -579,3 +579,203 @@
     font-size: 14px;
   }
 }
+
+
+
+
+/* ---------- PLAN CHANGE BUTTON ---------- */
+.admin-plan-change-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  text-decoration: none;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'Poppins', sans-serif;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.03);
+  border: none;
+  cursor: pointer;
+  margin: 4px 10px;
+  
+  .admin-menu-icon svg {
+    font-size: 18px;
+    flex-shrink: 0;
+    color: #ffffff;
+    transition: all 0.2s ease;
+  }
+  
+  &:hover:not(:disabled) {
+    color: var(--sidebar-hover-text);
+    background: rgba(255, 255, 255, 0.08);
+  }
+  
+  &:hover:not(:disabled) .admin-menu-icon svg {
+    color: #667eea; /* Different hover color for distinction */
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+}
+
+/* Center icon when sidebar is collapsed */
+#admin-sidebar.hide .admin-plan-change-btn {
+  justify-content: center;
+  padding: 10px;
+  margin: 4px 10px;
+}
+
+#admin-sidebar.hide .admin-plan-change-btn .admin-menu-title {
+  display: none;
+}
+
+/* Active state for plan change button */
+#admin-sidebar:not(.hide) .admin-plan-change-btn.active {
+  background: #667eea; /* Purple color when active */
+  color: #ffffff;
+  font-weight: 600;
+  
+  .admin-menu-icon svg {
+    background: #ffffff;
+    color: #667eea;
+    border-radius: 6px;
+    padding: 4px;
+  }
+}
+
+/* Collapsed sidebar active style */
+#admin-sidebar.hide .admin-plan-change-btn.active .admin-menu-icon svg {
+  background: #667eea;
+  color: #ffffff;
+  border-radius: 6px;
+  padding: 4px;
+}
+
+/* Loading spinner for plan change button */
+.admin-plan-change-btn .reminder-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #667eea;
+  animation: spin 1s ease-in-out infinite;
+}
+
+/* Special hover effect for plan change button */
+.admin-plan-change-btn:not(:disabled):hover {
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+  border-left: 3px solid #667eea;
+}
+
+/* Differentiate between payment reminder and plan change buttons */
+.admin-payment-reminder-btn:not(:disabled):hover {
+  box-shadow: 0 4px 12px rgba(124, 214, 75, 0.15);
+  border-left: 3px solid var(--green);
+}
+
+/* Mobile responsiveness for buttons */
+@media (max-width: 768px) {
+  .admin-plan-change-btn,
+  .admin-payment-reminder-btn {
+    margin: 4px 8px;
+    padding: 12px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-plan-change-btn,
+  .admin-payment-reminder-btn {
+    margin: 3px 6px;
+    padding: 10px 8px;
+    font-size: 13px;
+    
+    .admin-menu-icon svg {
+      font-size: 16px;
+    }
+  }
+}
+
+/* Success message for plan change operation */
+.plan-change-result-message {
+  padding: 10px;
+  margin: 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: 'Poppins', sans-serif;
+  
+  &.success {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    border: 1px solid rgba(102, 126, 234, 0.3);
+  }
+  
+  &.error {
+    background: rgba(255, 75, 75, 0.1);
+    color: #ff4b4b;
+    border: 1px solid rgba(255, 75, 75, 0.3);
+  }
+}
+
+/* Tooltip for buttons when sidebar is collapsed */
+#admin-sidebar.hide .admin-side-menu li {
+  position: relative;
+}
+
+#admin-sidebar.hide .admin-plan-change-btn:hover::after,
+#admin-sidebar.hide .admin-payment-reminder-btn:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--nav-bg);
+  color: #ffffff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  margin-left: 10px;
+  z-index: 1000;
+  border: 1px solid #333333;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Add data-tooltip attributes to your JSX */
+/* 
+<button
+  className="admin-plan-change-btn"
+  data-tooltip="Trigger Plan Change"
+  ...
+>
+*/
+
+/* Button grouping for better visual separation */
+.admin-side-menu li:nth-last-child(2) {
+  margin-bottom: 15px;
+}
+
+.admin-side-menu li:nth-last-child(1) {
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.admin-side-menu li:nth-last-child(1)::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 10px;
+  right: 10px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}

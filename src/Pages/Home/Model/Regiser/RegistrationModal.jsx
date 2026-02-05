@@ -96,7 +96,7 @@ const RegistrationModal = () => {
 
         toast.success('Registration submitted successfully!', {
           position: "top-center",
-          autoClose: 5000,
+          autoClose: 3000,
           hideProgressBar: false,
           closeOnClick: true,
           pauseOnHover: true,
@@ -106,6 +106,7 @@ const RegistrationModal = () => {
         // Close modal after successful submission
         setTimeout(() => {
           closeRegistrationModal();
+          window.location.href = '/';
         }, 1500);
 
       } catch (error) {
