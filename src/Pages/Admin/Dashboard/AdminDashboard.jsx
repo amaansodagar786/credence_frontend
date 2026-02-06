@@ -517,14 +517,14 @@ const AdminDashboard = () => {
         color: "#ff4b4b",
         onClick: () => fetchModalData('incompleteTasks')
       },
-      {
-        title: "Unviewed Notes",
-        value: dashboardData.metrics.recentNotes,
-        subtitle: "New notes to review",
-        icon: <FiMessageSquare />,
-        color: "#ff6b6b",
-        onClick: handleOpenUnviewedNotes
-      }
+      // {
+      //   title: "Unviewed Notes",
+      //   value: dashboardData.metrics.recentNotes,
+      //   subtitle: "New notes to review",
+      //   icon: <FiMessageSquare />,
+      //   color: "#ff6b6b",
+      //   onClick: handleOpenUnviewedNotes
+      // }
     ];
 
     return (

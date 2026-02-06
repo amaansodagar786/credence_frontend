@@ -146,6 +146,13 @@ const AdminNotesPanel = () => {
         }
     };
 
+    // Add useEffect to refetch when timeFilter changes
+    useEffect(() => {
+        if (activeModal === 'uploadedLocked') {
+            fetchDocsDetailsData();
+        }
+    }, [timeFilter, customStartDate, customEndDate]); // Add this useEffect
+
     const handleTimeFilterChange = (newFilter) => {
         setTimeFilter(newFilter);
     };
@@ -184,7 +191,7 @@ const AdminNotesPanel = () => {
 
             const params = {};
 
-            // Apply month filter - Default: This Month
+            // Apply month filter
             if (filters.monthFilter === 'current') {
                 const now = new Date();
                 params.year = now.getFullYear();
@@ -194,11 +201,28 @@ const AdminNotesPanel = () => {
                 lastMonth.setMonth(lastMonth.getMonth() - 1);
                 params.year = lastMonth.getFullYear();
                 params.month = lastMonth.getMonth() + 1;
-            } else if (filters.monthFilter === 'custom' && filters.customStartDate && filters.customEndDate) {
-                params.startDate = filters.customStartDate;
-                params.endDate = filters.customEndDate;
+            } else if (filters.monthFilter === 'custom') {
+                // Ensure dates are valid
+                if (filters.customStartDate && filters.customEndDate) {
+                    // Validate dates
+                    const start = new Date(filters.customStartDate);
+                    const end = new Date(filters.customEndDate);
+
+                    if (start <= end) {
+                        params.startDate = filters.customStartDate;
+                        params.endDate = filters.customEndDate;
+                    } else {
+                        showToast('End date must be after start date', 'error');
+                        return;
+                    }
+                } else {
+                    showToast('Please select both start and end dates', 'error');
+                    return;
+                }
             }
             // 'all' filter shows all notes, no params needed
+
+            console.log("Fetching notes with params:", params); // Debug log
 
             const response = await axios.get(
                 `${import.meta.env.VITE_API_URL}/admin/notes/client/${clientId}/notes`,
@@ -237,22 +261,57 @@ const AdminNotesPanel = () => {
     const handleMarkAllAsRead = async () => {
         if (!selectedClient) return;
 
-        // if (!window.confirm('Are you sure you want to mark ALL unread notes as read for this client?')) {
+        // Optional: Add confirmation
+        // if (!window.confirm(`Mark ALL unread notes as read for ${selectedClient.clientName} with current filter?`)) {
         //     return;
         // }
 
         try {
+            // Build filter object based on current filters
+            const filterParams = {};
+
+            if (filters.monthFilter === 'current') {
+                const now = new Date();
+                filterParams.year = now.getFullYear();
+                filterParams.month = now.getMonth() + 1;
+            } else if (filters.monthFilter === 'last') {
+                const lastMonth = new Date();
+                lastMonth.setMonth(lastMonth.getMonth() - 1);
+                filterParams.year = lastMonth.getFullYear();
+                filterParams.month = lastMonth.getMonth() + 1;
+            } else if (filters.monthFilter === 'custom') {
+                if (filters.customStartDate && filters.customEndDate) {
+                    // Validate dates first
+                    const start = new Date(filters.customStartDate);
+                    const end = new Date(filters.customEndDate);
+
+                    if (start <= end) {
+                        filterParams.startDate = filters.customStartDate;
+                        filterParams.endDate = filters.customEndDate;
+                    } else {
+                        showToast('Invalid date range', 'error');
+                        return;
+                    }
+                } else {
+                    showToast('Please select both start and end dates', 'error');
+                    return;
+                }
+            }
+            // For 'all' filter, we send empty filter (will mark all notes)
+
+            console.log("Marking notes with filter:", filterParams); // Debug
+
             const response = await axios.post(
                 `${import.meta.env.VITE_API_URL}/admin/notes/mark-as-viewed`,
                 {
                     clientId: selectedClient.clientId,
-                    filter: {}
+                    filter: filterParams // Send the actual filter
                 },
                 { withCredentials: true }
             );
 
             if (response.data.success) {
-                showToast(`Marked ${response.data.markedCount} notes as read`, 'success');
+                showToast(`Marked ${response.data.markedCount} notes as read for the selected period`, 'success');
                 // Refresh the notes
                 fetchClientNotes(selectedClient.clientId);
                 // Refresh unread count
@@ -298,7 +357,6 @@ const AdminNotesPanel = () => {
             ...prev,
             [name]: value
         }));
-        // Filters auto-apply via useEffect
     };
 
     const getMonthName = (year, month) => {
@@ -620,10 +678,9 @@ const AdminNotesPanel = () => {
                                         <option value="current">This Month</option>
                                         <option value="last">Last Month</option>
                                         <option value="all">All Time</option>
-                                        <option value="custom">Custom Date Range</option>
+                                        {/* <option value="custom">Custom Date Range</option>  */}
                                     </select>
                                 </div>
-
                                 {filters.monthFilter === 'custom' && (
                                     <>
                                         <div className="date-input-group">
@@ -637,6 +694,8 @@ const AdminNotesPanel = () => {
                                                 onChange={handleFilterChange}
                                                 disabled={modalLoading}
                                                 className="date-input"
+                                                // Add max attribute to prevent end date before start date
+                                                max={filters.customEndDate || new Date().toISOString().split('T')[0]}
                                             />
                                         </div>
                                         <div className="date-input-group">
@@ -650,6 +709,9 @@ const AdminNotesPanel = () => {
                                                 onChange={handleFilterChange}
                                                 disabled={modalLoading}
                                                 className="date-input"
+                                                // Add min attribute
+                                                min={filters.customStartDate}
+                                                max={new Date().toISOString().split('T')[0]}
                                             />
                                         </div>
                                     </>
