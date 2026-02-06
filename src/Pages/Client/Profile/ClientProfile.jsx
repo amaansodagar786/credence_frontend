@@ -715,10 +715,10 @@ const ClientProfile = () => {
                                             <span className="value next-plan-badge">{clientData.nextMonthPlan}</span>
                                         </div>
                                     )}
-                                    <div className="info-item">
+                                    {/* <div className="info-item">
                                         <span className="label">Client ID:</span>
                                         <span className="value client-id">{clientData?.clientId}</span>
-                                    </div>
+                                    </div> */}
                                 </div>
                             )}
                         </div>
