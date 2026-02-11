@@ -69,7 +69,7 @@ $gradient-color: rgba(124, 214, 75, 0.15);
 
   .plans-nav-link {
     color: #fff;
-    font-size: 21px;
+    font-size: 19.5px;
     cursor: pointer;
     font-family: "Inter", sans-serif;
     font-weight: 500;
@@ -88,7 +88,7 @@ $gradient-color: rgba(124, 214, 75, 0.15);
   }
 
   .plans-logo-image {
-    height: 95px;
+    height: 130px;
     width: auto;
     object-fit: contain;
   }
@@ -829,21 +829,20 @@ $gradient-color: rgba(124, 214, 75, 0.15);
 
 
 
-// ===== NAVBAR BUTTON STYLES WITH BORDER =====
 .plans-navbar {
   .plans-nav-link {
     padding: 7px 22px !important;
     border-radius: 50px !important;
-    background: #fff !important;
-    color: #7cd64b !important;
+    background: #000 !important;   // Green background
+    color: #fff !important;           // White text
     border: 2px solid #7cd64b !important;
     font-weight: 600 !important;
     transition: all 0.3s ease !important;
 
     &:hover {
-      background: transparent !important;
-      color: #7cd64b !important;
-      border: 2px solid #7cd64b !important;
+      background: #fff !important;    // White background
+      color: #58be22 !important;      // Green text
+      border: 3px solid #58be22 !important;
       transform: translateY(0px) !important;
     }
   }
