@@ -35,9 +35,15 @@ import {
   FiList,
   FiChevronLeft,
   FiImage,
-  FiGrid
+  FiGrid,
+  FiArrowLeft,
+  FiArrowRight,
+  FiCheckSquare,
+  FiSquare
 } from "react-icons/fi";
+import { FaCheck } from "react-icons/fa6";
 import "./EmployeeAssignedClients.scss";
+import audit from "../../../assets/Images/employee/audit.png";
 
 const EmployeeAssignedClients = () => {
   /* ================= STATE ================= */
@@ -46,7 +52,7 @@ const EmployeeAssignedClients = () => {
   const [clientList, setClientList] = useState([]);
   const [activeClient, setActiveClient] = useState(null);
   const [activeAssignment, setActiveAssignment] = useState(null);
-  const [activeMonthYear, setActiveMonthYear] = useState(null); // New: track active month-year
+  const [activeMonthYear, setActiveMonthYear] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -65,6 +71,9 @@ const EmployeeAssignedClients = () => {
   /* ================= DOCUMENT PREVIEW STATES ================= */
   const [previewDoc, setPreviewDoc] = useState(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewCategoryName, setPreviewCategoryName] = useState("");
+  const [currentCategoryFiles, setCurrentCategoryFiles] = useState([]);
+  const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const previewRef = useRef(null);
 
   /* ================= EXPANDED CATEGORY NOTES STATE ================= */
@@ -72,6 +81,12 @@ const EmployeeAssignedClients = () => {
 
   /* ================= EXPANDED MONTH GROUPS STATE ================= */
   const [expandedMonthGroups, setExpandedMonthGroups] = useState({});
+
+  /* ================= FILE VIEWED STATUS STATE ================= */
+  const [fileViewedStatus, setFileViewedStatus] = useState({});
+  const [checkingViewed, setCheckingViewed] = useState(false);
+  const [auditIconStatus, setAuditIconStatus] = useState({});
+
 
   /* ================= ADD FILE TYPE DETECTION FUNCTION ================= */
   const getFileType = (fileName) => {
@@ -92,47 +107,25 @@ const EmployeeAssignedClients = () => {
         { withCredentials: true }
       );
 
-      // ===== CRITICAL FIX: Filter out any assignments with isRemoved: true =====
-      const data = res.data.filter(assignment => {
-        // Log if we find a removed assignment (shouldn't happen with backend fix, but just in case)
-        if (assignment.isRemoved) {
-          console.warn('Removed assignment received from backend:', {
-            clientId: assignment.client?.clientId,
-            clientName: assignment.client?.name,
-            year: assignment.year,
-            month: assignment.month,
-            task: assignment.task,
-            isRemoved: assignment.isRemoved
-          });
-          return false;
-        }
-        return true;
-      });
-
+      const data = res.data.filter(assignment => !assignment.isRemoved);
       setAssignments(data);
 
-      // Group assignments by month-year
       const grouped = groupAssignmentsByMonthYear(data);
       setGroupedAssignments(grouped);
 
-      // Build unique client list (only from non-removed assignments)
       const clientMap = {};
       data.forEach((row) => {
-        if (!row.client || !row.client.clientId) {
-          console.warn('Assignment missing client data:', row);
-          return;
-        }
+        if (!row.client || !row.client.clientId) return;
 
         if (!clientMap[row.client.clientId]) {
           clientMap[row.client.clientId] = {
             ...row.client,
             assignmentCount: 0,
-            tasksByMonth: {} // Track tasks by month
+            tasksByMonth: {}
           };
         }
         clientMap[row.client.clientId].assignmentCount++;
 
-        // Track tasks for each month
         const monthKey = `${row.year}-${row.month}`;
         if (!clientMap[row.client.clientId].tasksByMonth[monthKey]) {
           clientMap[row.client.clientId].tasksByMonth[monthKey] = [];
@@ -143,53 +136,32 @@ const EmployeeAssignedClients = () => {
       const clientsArray = Object.values(clientMap);
       setClientList(clientsArray);
 
-      // Set default active client (only if we have active assignments)
       if (clientsArray.length > 0) {
         const defaultClient = clientsArray[0];
         setActiveClient(defaultClient);
 
-        // Get first month-year for this client
         const clientAssignments = getAssignmentsForClient(defaultClient.clientId);
         if (clientAssignments.length > 0) {
-          const firstMonthYear = Object.keys(groupedAssignments[defaultClient.clientId] || {})[0];
+          const firstMonthYear = Object.keys(grouped[defaultClient.clientId] || {})[0];
           if (firstMonthYear) {
             setActiveMonthYear(firstMonthYear);
-            const monthAssignments = groupedAssignments[defaultClient.clientId][firstMonthYear];
+            const monthAssignments = grouped[defaultClient.clientId][firstMonthYear];
             if (monthAssignments && monthAssignments.length > 0) {
               setActiveAssignment(monthAssignments[0]);
             }
           }
         } else {
-          // No active assignments for this client
           setActiveAssignment(null);
           setActiveMonthYear(null);
         }
       } else {
-        // No clients with active assignments
         setActiveClient(null);
         setActiveAssignment(null);
         setActiveMonthYear(null);
       }
 
-      // Log for debugging
-      console.log('Assigned clients loaded:', {
-        totalFromBackend: res.data.length,
-        activeAssignments: data.length,
-        removedFiltered: res.data.length - data.length,
-        uniqueClients: clientsArray.length
-      });
-
     } catch (error) {
       console.error("Error loading assigned clients", error);
-
-      // Show user-friendly error message
-      if (error.response?.status === 401) {
-        // Handle unauthorized - redirect to login
-        console.error('Session expired, please login again');
-      } else if (error.response?.status === 404) {
-        console.error('No assignments found or employee not found');
-      }
-
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -215,7 +187,6 @@ const EmployeeAssignedClients = () => {
       grouped[clientId][monthKey].push(assignment);
     });
 
-    // Sort each group by task
     Object.keys(grouped).forEach(clientId => {
       Object.keys(grouped[clientId]).forEach(monthKey => {
         grouped[clientId][monthKey].sort((a, b) => {
@@ -260,6 +231,45 @@ const EmployeeAssignedClients = () => {
     }
   }, [activeAssignment]);
 
+
+  useEffect(() => {
+    const loadAllViewedStatus = async () => {
+      if (!activeAssignment || !activeFilesData) return;
+
+      console.log("Loading viewed status for ALL files in current assignment...");
+
+      // Check all categories
+      const categories = [
+        { type: 'sales', files: activeFilesData.categories?.sales?.files },
+        { type: 'purchase', files: activeFilesData.categories?.purchase?.files },
+        { type: 'bank', files: activeFilesData.categories?.bank?.files },
+        ...(activeFilesData.categories?.other?.map(cat => ({
+          type: 'other',
+          name: cat.categoryName,
+          files: cat.files
+        })) || [])
+      ];
+
+      // Check each file
+      for (const category of categories) {
+        if (!category.files) continue;
+
+        for (const file of category.files) {
+          await checkFileViewedStatus({
+            categoryType: category.type,
+            categoryName: category.name || null,
+            fileName: file.fileName,
+            url: file.url
+          });
+        }
+      }
+    };
+
+    if (activeFilesData) {
+      loadAllViewedStatus();
+    }
+  }, [activeFilesData, activeAssignment]);
+
   useEffect(() => {
     loadAssignedClients();
   }, []);
@@ -282,11 +292,127 @@ const EmployeeAssignedClients = () => {
       filtered = filtered.filter(item => item.month.toString() === monthFilter);
     }
 
-    // Regroup filtered assignments
     const grouped = groupAssignmentsByMonthYear(filtered);
     setGroupedAssignments(grouped);
 
   }, [assignments, searchTerm, yearFilter, monthFilter]);
+
+  /* ================= CHECK FILE VIEWED STATUS ================= */
+  const checkFileViewedStatus = async (fileData) => {
+    if (!fileData || !activeAssignment) return;
+
+    try {
+      setCheckingViewed(true);
+
+      const clientId = activeAssignment.client.clientId;
+      const { year, month } = activeAssignment;
+      const { categoryType, categoryName, fileName } = fileData;
+
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/employee/check-file-viewed`,
+        {
+          params: {
+            clientId,
+            year,
+            month,
+            categoryType,
+            categoryName: categoryName || undefined,
+            fileName
+          },
+          withCredentials: true
+        }
+      );
+
+      // Create unique key for this file
+      const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}`;
+
+      setFileViewedStatus(prev => ({
+        ...prev,
+        [fileKey]: response.data.isViewed
+      }));
+
+      return response.data.isViewed;
+
+    } catch (error) {
+      console.error("Error checking file viewed status:", error);
+      return false;
+    } finally {
+      setCheckingViewed(false);
+    }
+  };
+
+  /* ================= TOGGLE FILE VIEWED STATUS ================= */
+  const toggleFileViewed = async (fileData) => {
+    if (!fileData || !activeAssignment || checkingViewed) return;
+
+    // FIX: Get clientId from activeAssignment.client.clientId
+    if (!activeAssignment.client?.clientId) {
+      console.error("No clientId found in activeAssignment");
+      return null;
+    }
+
+    try {
+      setCheckingViewed(true);
+
+      // FIX: Get clientId correctly
+      const clientId = activeAssignment.client.clientId;
+      const { year, month, task } = activeAssignment;
+      const { categoryType, categoryName, fileName, url } = fileData;
+
+      console.log("Toggling file viewed:", {
+        clientId, // Now this should be defined
+        year,
+        month,
+        categoryType,
+        fileName
+      });
+
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/employee/toggle-file-viewed`,
+        {
+          clientId, // This is now correct
+          year,
+          month,
+          categoryType,
+          categoryName: categoryName || undefined,
+          fileName,
+          fileUrl: url,
+          task
+        },
+        { withCredentials: true }
+      );
+
+      // Create unique key for this file
+      const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}`;
+
+      // Update local state
+      setFileViewedStatus(prev => ({
+        ...prev,
+        [fileKey]: response.data.isViewed
+      }));
+
+      return response.data.isViewed;
+
+    } catch (error) {
+      console.error("Error toggling file viewed status:", error);
+      return null;
+    } finally {
+      setCheckingViewed(false);
+    }
+  };
+
+  /* ================= GET FILE VIEWED STATUS ================= */
+  const getFileViewedStatus = (fileData) => {
+    if (!fileData || !activeAssignment) return false;
+
+    const clientId = activeAssignment.client.clientId; // FIX: Get from client object
+    const { year, month } = activeAssignment;
+    const { categoryType, categoryName, fileName } = fileData;
+
+    const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}`;
+
+    return fileViewedStatus[fileKey] || false;
+  };
 
   /* ================= DOCUMENT PREVIEW PROTECTION ================= */
   const applyProtection = () => {
@@ -340,18 +466,140 @@ const EmployeeAssignedClients = () => {
     }
   };
 
-  /* ================= OPEN DOCUMENT PREVIEW (UPDATED) ================= */
-  const openDocumentPreview = (document) => {
+  /* ================= GET FILES FROM CATEGORY ================= */
+  const getFilesFromCategory = (fileName, categoryType, categoryName = null) => {
+    if (!activeFilesData || !activeFilesData.categories) return [];
+
+    if (categoryType === 'sales' && activeFilesData.categories.sales) {
+      return activeFilesData.categories.sales.files || [];
+    } else if (categoryType === 'purchase' && activeFilesData.categories.purchase) {
+      return activeFilesData.categories.purchase.files || [];
+    } else if (categoryType === 'bank' && activeFilesData.categories.bank) {
+      return activeFilesData.categories.bank.files || [];
+    } else if (categoryType === 'other' && activeFilesData.categories.other) {
+      const otherCategory = activeFilesData.categories.other.find(
+        cat => cat.categoryName === categoryName
+      );
+      return otherCategory?.files || [];
+    }
+    return [];
+  };
+
+  /* ================= OPEN DOCUMENT PREVIEW (UPDATED WITH CATEGORY NAVIGATION) ================= */
+  const openDocumentPreview = async (document, categoryType = null, categoryName = null) => {
     if (!document || !document.url) return;
 
     // Determine file type
     const fileType = getFileType(document.fileName);
-    setPreviewDoc({ ...document, fileType });
+
+    // Get category info
+    let actualCategoryType = categoryType;
+    let actualCategoryName = categoryName;
+
+    // If category not provided, try to determine from activeFilesData
+    if (!categoryType && activeFilesData?.categories) {
+      // Search through all categories to find where this file belongs
+      if (activeFilesData.categories.sales?.files?.some(f => f.fileName === document.fileName)) {
+        actualCategoryType = 'sales';
+        actualCategoryName = 'Sales';
+      } else if (activeFilesData.categories.purchase?.files?.some(f => f.fileName === document.fileName)) {
+        actualCategoryType = 'purchase';
+        actualCategoryName = 'Purchase';
+      } else if (activeFilesData.categories.bank?.files?.some(f => f.fileName === document.fileName)) {
+        actualCategoryType = 'bank';
+        actualCategoryName = 'Bank';
+      } else if (activeFilesData.categories.other) {
+        for (const cat of activeFilesData.categories.other) {
+          if (cat.files?.some(f => f.fileName === document.fileName)) {
+            actualCategoryType = 'other';
+            actualCategoryName = cat.categoryName;
+            break;
+          }
+        }
+      }
+    }
+
+    // Get all files from this category
+    const categoryFiles = getFilesFromCategory(document.fileName, actualCategoryType, actualCategoryName);
+
+    // Find current file index
+    const currentIndex = categoryFiles.findIndex(f =>
+      f.fileName === document.fileName &&
+      f.uploadedAt === document.uploadedAt
+    );
+
+    setCurrentCategoryFiles(categoryFiles);
+    setCurrentFileIndex(currentIndex);
+    setPreviewCategoryName(actualCategoryName || 'Documents');
+    setPreviewDoc({ ...document, fileType, categoryType: actualCategoryType });
     setIsPreviewOpen(true);
+
+    // Check file viewed status
+    await checkFileViewedStatus({
+      categoryType: actualCategoryType,
+      categoryName: actualCategoryName,
+      fileName: document.fileName,
+      url: document.url
+    });
 
     setTimeout(() => {
       applyProtection();
     }, 100);
+  };
+
+  /* ================= NAVIGATE TO NEXT/PREVIOUS FILE ================= */
+  const navigateToNextFile = async () => {
+    if (currentFileIndex < currentCategoryFiles.length - 1) {
+      const nextFile = currentCategoryFiles[currentFileIndex + 1];
+      setCurrentFileIndex(currentFileIndex + 1);
+      setPreviewDoc({
+        ...nextFile,
+        fileType: getFileType(nextFile.fileName),
+        categoryType: previewDoc?.categoryType
+      });
+
+      // Check file viewed status for the new file
+      await checkFileViewedStatus({
+        categoryType: previewDoc?.categoryType,
+        categoryName: previewCategoryName === 'Sales' || previewCategoryName === 'Purchase' || previewCategoryName === 'Bank'
+          ? null
+          : previewCategoryName,
+        fileName: nextFile.fileName,
+        url: nextFile.url
+      });
+
+      // Reapply protection for new document
+      setTimeout(() => {
+        applyProtection();
+      }, 100);
+    }
+  };
+
+  const navigateToPreviousFile = async () => {
+    if (currentFileIndex > 0) {
+      const prevFile = currentCategoryFiles[currentFileIndex - 1];
+      setCurrentFileIndex(currentFileIndex - 1);
+      setPreviewDoc({
+        ...prevFile,
+        fileType: getFileType(prevFile.fileName),
+        categoryType: previewDoc?.categoryType
+      });
+
+      // Check file viewed status for the new file
+      await checkFileViewedStatus({
+        categoryType: previewDoc?.categoryType,
+        categoryName: previewCategoryName === 'Sales' || previewCategoryName === 'Purchase' || previewCategoryName === 'Bank'
+          ? null
+          : previewCategoryName,
+        fileName: prevFile.fileName,
+        url: prevFile.url
+      });
+
+      // Reapply protection for new document
+      setTimeout(() => {
+        applyProtection();
+      }, 100);
+    }
   };
 
   /* ================= CLOSE DOCUMENT PREVIEW ================= */
@@ -359,6 +607,9 @@ const EmployeeAssignedClients = () => {
     cleanupProtection();
     setIsPreviewOpen(false);
     setPreviewDoc(null);
+    setCurrentCategoryFiles([]);
+    setCurrentFileIndex(0);
+    setPreviewCategoryName("");
   };
 
   /* ================= ADD NOTE FUNCTIONALITY ================= */
@@ -565,7 +816,6 @@ const EmployeeAssignedClients = () => {
     setActiveAssignment(null);
     setActiveMonthYear(null);
 
-    // Get first month-year for this client
     const clientGrouped = groupedAssignments[client.clientId] || {};
     const firstMonthYear = Object.keys(clientGrouped)[0];
 
@@ -580,8 +830,8 @@ const EmployeeAssignedClients = () => {
 
   /* ================= SEPARATE TOGGLE FOR EXPAND/COLLAPSE ================= */
   const toggleMonthExpand = (monthKey, e) => {
-    e.stopPropagation(); // Prevent month selection when clicking arrow
-    e.preventDefault(); // Add this line
+    e.stopPropagation();
+    e.preventDefault();
 
     setExpandedMonthGroups(prev => ({
       ...prev,
@@ -593,7 +843,6 @@ const EmployeeAssignedClients = () => {
   const handleMonthYearSelect = (monthKey) => {
     setActiveMonthYear(monthKey);
 
-    // Auto-expand when selecting month
     if (!expandedMonthGroups[monthKey]) {
       setExpandedMonthGroups(prev => ({
         ...prev,
@@ -608,11 +857,9 @@ const EmployeeAssignedClients = () => {
 
       const monthAssignments = groupedAssignments[activeClient.clientId][monthKey];
 
-      // Auto-select first task if not already selected
       if (monthAssignments.length === 1) {
         setActiveAssignment(monthAssignments[0]);
       } else if (monthAssignments.length > 0 && !activeAssignment) {
-        // If no task selected yet, select first one
         setActiveAssignment(monthAssignments[0]);
       }
     }
@@ -626,7 +873,6 @@ const EmployeeAssignedClients = () => {
 
   /* ================= RENDER TASK BADGE ================= */
   const renderTaskBadge = (task) => {
-    // Create CSS class from task name
     const taskClass = task.toLowerCase().replace(/\s+/g, '-');
 
     return (
@@ -730,88 +976,164 @@ const EmployeeAssignedClients = () => {
           </div>
         </div>
 
-        {/* Show category notes at the top */}
         {renderCategoryNotes(category, categoryKey)}
 
         {files && files.length > 0 ? (
           <div className="files-list">
-            {files.map((file, index) => (
-              <div key={index} className="file-card">
-                <div className="file-icon">
-                  <FiFileText size={24} />
-                </div>
-                <div className="file-info">
-                  <h5>{file.fileName}</h5>
-                  <div className="file-meta">
-                    <span className="meta-item">
-                      <FiClock size={12} />
-                      {formatDate(file.uploadedAt)}
-                    </span>
-                    <span className="meta-item">
-                      {formatFileSize(file.fileSize)}
-                    </span>
-                  </div>
+            {files.map((file, index) => {
+              // Get viewed status for this file
+              const isViewed = getFileViewedStatus({
+                categoryType: categoryName ? 'other' : title.toLowerCase().split(' ')[0],
+                categoryName: categoryName || null,
+                fileName: file.fileName
+              });
 
-                  {/* Employee File-level Notes Display */}
-                  {file.notes && file.notes.length > 0 && (
-                    <div className="file-notes">
-                      <div className="notes-label">
-                        <FiMessageSquare size={12} /> Employee Notes ({file.notes.length}):
-                      </div>
-                      <div className="notes-list">
-                        {file.notes.slice(0, 2).map((note, noteIndex) => (
-                          <div key={noteIndex} className="note-item">
-                            <div className="note-text">{note.note}</div>
-                            <div className="note-meta">
-                              <span className="note-by">
-                                {note.employeeName || note.addedBy || "Unknown"}
-                              </span>
-                              <span className="note-date">
-                                {formatDate(note.addedAt)}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                        {file.notes.length > 2 && (
-                          <div className="more-notes">
-                            +{file.notes.length - 2} more employee notes
-                          </div>
-                        )}
-                      </div>
+              return (
+                <div key={index} className="file-card">
+                  <div className="file-icon">
+                    <FiFileText size={24} />
+                  </div>
+                  <div className="file-info">
+                    <h5>{file.fileName}</h5>
+                    <div className="file-meta">
+                      <span className="meta-item">
+                        <FiClock size={12} />
+                        {formatDate(file.uploadedAt)}
+                      </span>
+                      <span className="meta-item">
+                        {formatFileSize(file.fileSize)}
+                      </span>
+                      {isViewed && (
+                        <span className="meta-item viewed-badge">
+                          <FiCheckSquare size={12} />
+                          Viewed
+                        </span>
+                      )}
                     </div>
-                  )}
+
+                    {file.notes && file.notes.length > 0 && (
+                      <div className="file-notes">
+                        <div className="notes-label">
+                          <FiMessageSquare size={12} /> Employee Notes ({file.notes.length}):
+                        </div>
+                        <div className="notes-list">
+                          {file.notes.slice(0, 2).map((note, noteIndex) => (
+                            <div key={noteIndex} className="note-item">
+                              <div className="note-text">{note.note}</div>
+                              <div className="note-meta">
+                                <span className="note-by">
+                                  {note.employeeName || note.addedBy || "Unknown"}
+                                </span>
+                                <span className="note-date">
+                                  {formatDate(note.addedAt)}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                          {file.notes.length > 2 && (
+                            <div className="more-notes">
+                              +{file.notes.length - 2} more employee notes
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="file-actions">
+                    <button
+                      className="action-btn view"
+                      onClick={() => {
+                        let catType;
+                        let displayCategoryName;
+
+                        if (categoryName) {
+                          catType = 'other';
+                          displayCategoryName = categoryName;
+                        } else {
+                          catType = title.toLowerCase().split(' ')[0];
+                          if (title === 'Sales Documents') displayCategoryName = 'Sales';
+                          else if (title === 'Purchase Documents') displayCategoryName = 'Purchase';
+                          else if (title === 'Bank Documents') displayCategoryName = 'Bank';
+                          else displayCategoryName = title;
+                        }
+
+                        openDocumentPreview(file, catType, displayCategoryName);
+                      }}
+                      title="Preview Document"
+                    >
+                      <FiEye size={16} />
+                    </button>
+
+                    <div className="add-note-wrapper">
+                      <button
+                        className="action-btn add-note"
+                        onClick={() => {
+                          let catType;
+                          if (categoryName) {
+                            catType = 'other';
+                          } else {
+                            catType = title.toLowerCase().split(' ')[0];
+                          }
+                          openAddNoteModal(file, catType, categoryName);
+                        }}
+                        title="Add Employee Note"
+                      >
+                        <FiPlus size={16} />
+                      </button>
+
+                      {/* Notes count badge - attached to + button */}
+                      {file.notes && file.notes.length > 0 && (
+                        <span className="notes-count-badge">
+                          {file.notes.length}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Checkmark for file viewed status - AFTER notes section */}
+                    <button
+                      className={`action-btn check-btn ${isViewed ? 'checked' : ''}`}
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const newStatus = await toggleFileViewed({
+                          categoryType: categoryName ? 'other' : title.toLowerCase().split(' ')[0],
+                          categoryName: categoryName || null,
+                          fileName: file.fileName,
+                          url: file.url
+                        });
+                      }}
+                      title={isViewed ? "Mark as not viewed" : "Mark as viewed"}
+                      disabled={checkingViewed}
+                    >
+                      {isViewed ? (
+                        <FiCheckSquare size={16} />
+                      ) : (
+                        <FiSquare size={16} />
+                      )}
+                    </button>
+
+                    <div
+                      className={`rotated-tick-icon ${auditIconStatus[file.fileName] ? 'checked' : ''}`}
+                      title="Audit Icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Toggle ONLY the audit icon state (completely independent)
+                        setAuditIconStatus(prev => ({
+                          ...prev,
+                          [file.fileName]: !prev[file.fileName]
+                        }));
+                      }}
+                    >
+                      <img
+                        src={audit}
+                        alt="Audit Icon"
+                        className="audit-icon"
+                      />
+                    </div>
+
+                  </div>
                 </div>
-                <div className="file-actions">
-                  <button
-                    className="action-btn view"
-                    onClick={() => openDocumentPreview(file)}
-                    title="Preview Document"
-                  >
-                    <FiEye size={16} />
-                  </button>
-                  <button
-                    className="action-btn add-note"
-                    onClick={() => {
-                      let catType;
-                      if (categoryName) {
-                        catType = 'other';
-                      } else {
-                        catType = title.toLowerCase().split(' ')[0];
-                      }
-                      openAddNoteModal(file, catType, categoryName);
-                    }}
-                    title="Add Employee Note"
-                  >
-                    <FiPlus size={16} />
-                  </button>
-                  {file.notes && file.notes.length > 0 && (
-                    <span className="notes-count-badge">
-                      {file.notes.length}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : categoryNotes.length > 0 ? (
           <div className="empty-files">
@@ -858,7 +1180,6 @@ const EmployeeAssignedClients = () => {
 
           <div className="modal-body">
             <div className="documents-container">
-              {/* Sales Files */}
               {renderFilesSection(
                 "Sales Documents",
                 activeFilesData.categories?.sales?.files,
@@ -866,7 +1187,6 @@ const EmployeeAssignedClients = () => {
                 null
               )}
 
-              {/* Purchase Files */}
               {renderFilesSection(
                 "Purchase Documents",
                 activeFilesData.categories?.purchase?.files,
@@ -881,7 +1201,6 @@ const EmployeeAssignedClients = () => {
                 null
               )}
 
-              {/* Other Categories */}
               {activeFilesData.categories?.other && activeFilesData.categories.other.length > 0 && (
                 <div className="other-categories">
                   <h4>Other Documents</h4>
@@ -898,7 +1217,6 @@ const EmployeeAssignedClients = () => {
                 </div>
               )}
 
-              {/* No Files Message */}
               {(!activeFilesData.categories ||
                 (!activeFilesData.categories.sales?.files?.length &&
                   !activeFilesData.categories.purchase?.files?.length &&
@@ -1007,13 +1325,24 @@ const EmployeeAssignedClients = () => {
     );
   };
 
-  /* ================= RENDER DOCUMENT PREVIEW (UPDATED FOR ALL FILE TYPES) ================= */
+  /* ================= RENDER DOCUMENT PREVIEW (WITH CATEGORY NAVIGATION AND CHECKMARK) ================= */
   const renderDocumentPreview = () => {
     if (!previewDoc || !isPreviewOpen) return null;
 
     const fileType = previewDoc.fileType || getFileType(previewDoc.fileName);
+    const totalFilesInCategory = currentCategoryFiles.length;
+    const isFirstFile = currentFileIndex === 0;
+    const isLastFile = currentFileIndex === totalFilesInCategory - 1;
 
-    // Handle overlay click
+    // Get viewed status for current file
+    const isFileViewed = getFileViewedStatus({
+      categoryType: previewDoc.categoryType,
+      categoryName: previewCategoryName === 'Sales' || previewCategoryName === 'Purchase' || previewCategoryName === 'Bank'
+        ? null
+        : previewCategoryName,
+      fileName: previewDoc.fileName
+    });
+
     const handleOverlayClick = (e) => {
       if (e.target === e.currentTarget) {
         closeDocumentPreview();
@@ -1036,25 +1365,92 @@ const EmployeeAssignedClients = () => {
           }}
         >
           <div className="preview-modal-header">
-            <h3 className="preview-title">
-              <span className="file-icon">
-                {fileType === 'pdf' && <FiFileText size={18} />}
-                {fileType === 'image' && <FiImage size={18} />}
-                {fileType === 'excel' && <FiGrid size={18} />}
-                {fileType === 'other' && <FiFile size={18} />}
-              </span>
-              {previewDoc.fileName}
-              <span className="file-type-badge">
-                {fileType.toUpperCase()}
-              </span>
-            </h3>
-            <button
-              className="close-preview-btn"
-              onClick={closeDocumentPreview}
-              title="Close Preview"
-            >
-              <FiX size={20} />
-            </button>
+            <div className="preview-header-left">
+              <h3 className="preview-title">
+                <span className="file-icon">
+                  {fileType === 'pdf' && <FiFileText size={18} />}
+                  {fileType === 'image' && <FiImage size={18} />}
+                  {fileType === 'excel' && <FiGrid size={18} />}
+                  {fileType === 'other' && <FiFile size={18} />}
+                </span>
+
+                {/* Category and file name */}
+                <div className="category-file-name">
+                  <span className="category-label">{previewCategoryName}</span>
+                  <FiChevronRight size={12} className="separator-icon" />
+                  <span className="file-name-text">{previewDoc.fileName}</span>
+                </div>
+
+                <span className="file-type-badge">
+                  {fileType.toUpperCase()}
+                </span>
+              </h3>
+
+              {/* File counter in header */}
+              {totalFilesInCategory > 1 && (
+                <div className="file-counter">
+                  {currentFileIndex + 1} of {totalFilesInCategory}
+                </div>
+              )}
+            </div>
+
+            <div className="preview-header-right">
+              {/* Checkmark button */}
+              <button
+                className={`checkmark-btn ${isFileViewed ? 'checked' : ''}`}
+                onClick={async () => {
+                  const newStatus = await toggleFileViewed({
+                    categoryType: previewDoc.categoryType,
+                    categoryName: previewCategoryName === 'Sales' || previewCategoryName === 'Purchase' || previewCategoryName === 'Bank'
+                      ? null
+                      : previewCategoryName,
+                    fileName: previewDoc.fileName,
+                    url: previewDoc.url
+                  });
+                }}
+                title={isFileViewed ? "Mark as not viewed" : "Mark as viewed"}
+                disabled={checkingViewed}
+              >
+                {isFileViewed ? (
+                  <FiCheckSquare size={24} />
+                ) : (
+                  <FiSquare size={24} />
+                )}
+                <span className="checkmark-text">
+                  {isFileViewed ? "Viewed" : "Mark as Viewed"}
+                </span>
+              </button>
+
+              <div
+                className={`rotated-tick-icon ${auditIconStatus[previewDoc?.fileName] ? 'checked' : ''}`}
+                title="Audit Icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Toggle ONLY the audit icon state
+                  if (previewDoc?.fileName) {
+                    setAuditIconStatus(prev => ({
+                      ...prev,
+                      [previewDoc.fileName]: !prev[previewDoc.fileName]
+                    }));
+                  }
+                }}
+              >
+                <img
+                  src={audit}
+                  alt="Audit Icon"
+                  className="audit-icon"
+                />
+              </div>
+
+              {/* Close button */}
+              <button
+                className="close-preview-btn"
+                onClick={closeDocumentPreview}
+                title="Close Preview"
+              >
+                <FiX size={20} />
+              </button>
+            </div>
           </div>
 
           <div
@@ -1141,7 +1537,7 @@ const EmployeeAssignedClients = () => {
               </div>
             )}
 
-            {/* Excel Viewer - Microsoft Office Online */}
+            {/* Excel Viewer */}
             {fileType === 'excel' && (
               <div
                 className="protected-view-container excel-viewer-container"
@@ -1151,19 +1547,6 @@ const EmployeeAssignedClients = () => {
                   position: 'relative'
                 }}
               >
-                {/* <div className="protection-note" style={{
-                  backgroundColor: '#2196F3',
-                  color: 'white',
-                  padding: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}>
-                  <FiLock size={16} />
-                  <span>Microsoft Excel Online Viewer - Read Only</span>
-                </div> */}
-
-                {/* Microsoft Office Online Viewer */}
                 <iframe
                   src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewDoc.url)}&wdStartOn=1`}
                   width="100%"
@@ -1222,6 +1605,7 @@ const EmployeeAssignedClients = () => {
                 }}>
                   <p><strong>File Name:</strong> {previewDoc.fileName}</p>
                   <p><strong>File Size:</strong> {formatFileSize(previewDoc.fileSize)}</p>
+                  <p><strong>Category:</strong> {previewCategoryName}</p>
                   <p><strong>Security:</strong> File download is disabled</p>
                 </div>
               </div>
@@ -1241,13 +1625,47 @@ const EmployeeAssignedClients = () => {
               <span className="file-type-indicator">
                 Type: {fileType.toUpperCase()}
               </span>
+              {totalFilesInCategory > 1 && (
+                <span className="category-files-count">
+                  {totalFilesInCategory} files in {previewCategoryName}
+                </span>
+              )}
             </div>
+
+            {/* Navigation buttons at bottom */}
+            {totalFilesInCategory > 1 && (
+              <div className="file-navigation-bottom">
+                <button
+                  className="nav-btn prev-btn"
+                  onClick={navigateToPreviousFile}
+                  disabled={isFirstFile}
+                  title="Previous File"
+                >
+                  <FiArrowLeft size={20} />
+                  <span className="nav-text">Previous</span>
+                </button>
+
+                <div className="file-position">
+                  {currentFileIndex + 1} / {totalFilesInCategory}
+                </div>
+
+                <button
+                  className="nav-btn next-btn"
+                  onClick={navigateToNextFile}
+                  disabled={isLastFile}
+                  title="Next File"
+                >
+                  <span className="nav-text">Next</span>
+                  <FiArrowRight size={20} />
+                </button>
+              </div>
+            )}
 
             <button
               className="btn-close-preview"
               onClick={closeDocumentPreview}
             >
-              Close Preview
+              Close
             </button>
           </div>
         </div>
@@ -1481,15 +1899,12 @@ const EmployeeAssignedClients = () => {
                           key={monthKey}
                           className={`assignment-month-card ${isActiveMonth ? 'active-month' : ''}`}
                           onClick={() => {
-                            // Set this month as active
                             setActiveMonthYear(monthKey);
 
-                            // Close all other months, open only this one
                             const newExpandedState = {};
                             newExpandedState[monthKey] = !isExpanded;
                             setExpandedMonthGroups(newExpandedState);
 
-                            // Select first task
                             if (monthAssignments.length > 0) {
                               setActiveAssignment(monthAssignments[0]);
                             }
@@ -1516,15 +1931,12 @@ const EmployeeAssignedClients = () => {
                                   e.stopPropagation();
                                   e.preventDefault();
 
-                                  // 1. Set this month as active
                                   setActiveMonthYear(monthKey);
 
-                                  // 2. Close all other months, keep only this one expanded
                                   const newExpandedState = {};
                                   newExpandedState[monthKey] = !isExpanded;
                                   setExpandedMonthGroups(newExpandedState);
 
-                                  // 3. Select first task of this month (if not already selected)
                                   if (monthAssignments.length > 0) {
                                     const currentAssignmentKey = activeAssignment ?
                                       `${activeAssignment.client.clientId}-${activeAssignment.year}-${activeAssignment.month}-${activeAssignment.task}` : '';

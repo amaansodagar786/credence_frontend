@@ -13,7 +13,13 @@ import {
   FiSave,
   FiUsers,
   FiFileText,
-  FiDatabase
+  FiDatabase,
+  FiDollarSign,
+  FiCalendar,
+  FiMail,
+  FiCheck,
+  FiAlertCircle,
+  FiFileMinus
 } from "react-icons/fi";
 import { MdOutlineFilterList } from "react-icons/md";
 import { AiOutlineSearch } from "react-icons/ai";
@@ -23,7 +29,7 @@ const AdminClientEnrollments = () => {
   // State for sections
   const [activeSection, setActiveSection] = useState("enrollments");
 
-  // State for Enrollments (existing code - NO CHANGES)
+  // State for Enrollments
   const [enrollments, setEnrollments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -42,7 +48,7 @@ const AdminClientEnrollments = () => {
   // State for Active Control
   const [clients, setClients] = useState([]);
   const [clientsLoading, setClientsLoading] = useState(false);
-  const [activeFilter, setActiveFilter] = useState("all"); // all, active, inactive
+  const [activeFilter, setActiveFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
 
   // State for Clients Data
@@ -52,7 +58,23 @@ const AdminClientEnrollments = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [updatingClient, setUpdatingClient] = useState(false);
 
-  // Fetch enrollments (existing function)
+  // NEW: State for Finance Requests
+  const [financialRequests, setFinancialRequests] = useState([]);
+  const [financeLoading, setFinanceLoading] = useState(false);
+  const [financeSearchTerm, setFinanceSearchTerm] = useState("");
+  const [financeStatusFilter, setFinanceStatusFilter] = useState("all");
+  const [showFinanceModal, setShowFinanceModal] = useState(false);
+  const [financeModalData, setFinanceModalData] = useState(null);
+  const [approvingRequest, setApprovingRequest] = useState(false);
+  const [approvingRequestId, setApprovingRequestId] = useState(null);
+  const [showFinanceConfirmModal, setShowFinanceConfirmModal] = useState(false);
+  const [financeConfirmData, setFinanceConfirmData] = useState({
+    requestId: null,
+    clientName: "",
+    monthYear: ""
+  });
+
+  // Fetch enrollments
   const fetchEnrollments = async () => {
     try {
       setRefreshing(true);
@@ -87,6 +109,38 @@ const AdminClientEnrollments = () => {
     }
   };
 
+  // NEW: Fetch financial statement requests
+  const fetchFinancialRequests = async () => {
+    try {
+      setFinanceLoading(true);
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_URL}/client-management/all-requests`,
+        { withCredentials: true }
+      );
+
+      console.log("🔍 Fetching all financial requests");
+      console.log("🔍 Response data:", res.data);
+      console.log("🔍 Data array:", res.data.data);
+
+      if (res.data.data && res.data.data.length > 0) {
+        console.log("🔍 First request status:", res.data.data[0].status);
+        console.log("🔍 All statuses:", res.data.data.map(r => ({
+          id: r.requestId,
+          status: r.status
+        })));
+      }
+
+      setFinancialRequests(res.data.data || []);
+    } catch (error) {
+      console.error("Error fetching financial requests:", error);
+      showToast("Failed to fetch financial requests", "error");
+      setFinancialRequests([]);
+    } finally {
+      setFinanceLoading(false);
+    }
+  };
+
+  
   // Toggle client active status
   const toggleClientStatus = async (clientId, currentStatus) => {
     try {
@@ -97,7 +151,6 @@ const AdminClientEnrollments = () => {
         { withCredentials: true }
       );
 
-      // Update local state
       setClients(prev => prev.map(client =>
         client.clientId === clientId
           ? { ...client, isActive: newStatus }
@@ -124,6 +177,75 @@ const AdminClientEnrollments = () => {
       showToast("Failed to fetch client details", "error");
       return null;
     }
+  };
+
+  // NEW: Approve financial statement request
+  const approveFinancialRequest = async (requestId, downloadUrl = "", adminNotes = "") => {
+    try {
+      setApprovingRequest(true);
+      setApprovingRequestId(requestId);
+
+      console.log("📤 Sending approve request for:", requestId);
+      console.log("📤 Sending data:", { adminNotes, downloadUrl });
+
+      const res = await axios.put(
+        `${import.meta.env.VITE_API_URL}/client-management/approve/${requestId}`,
+        {
+          adminNotes,
+          downloadUrl
+        },
+        { withCredentials: true }
+      );
+
+      console.log("✅ Backend response:", res.data);
+      console.log("✅ Backend success:", res.data.success);
+      console.log("✅ Backend message:", res.data.message);
+      console.log("✅ Backend data status:", res.data.data?.status);
+      console.log("✅ Full backend data:", res.data.data);
+
+      // Update local state
+      setFinancialRequests(prev => prev.map(req =>
+        req.requestId === requestId
+          ? { ...req, ...res.data.data, status: 'approved' }
+          : req
+      ));
+
+      showToast("Financial statement approved and email sent to client!", "success");
+      setShowFinanceConfirmModal(false);
+    } catch (error) {
+      console.error("❌ Error approving financial request:", error);
+      console.error("❌ Error response:", error.response?.data);
+      console.error("❌ Error status:", error.response?.status);
+      showToast("Failed to approve request", "error");
+    } finally {
+      setApprovingRequest(false);
+      setApprovingRequestId(null);
+    }
+  };
+
+  // NEW: Open finance request details modal
+  const openFinanceModal = async (requestId) => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_URL}/client-management/request/${requestId}`,
+        { withCredentials: true }
+      );
+      setFinanceModalData(res.data.data);
+      setShowFinanceModal(true);
+    } catch (error) {
+      console.error("Error fetching finance request details:", error);
+      showToast("Failed to fetch request details", "error");
+    }
+  };
+
+  // NEW: Open finance confirmation modal
+  const openFinanceConfirmation = (requestId, clientName, monthYear) => {
+    setFinanceConfirmData({
+      requestId,
+      clientName,
+      monthYear
+    });
+    setShowFinanceConfirmModal(true);
   };
 
   // Open client modal
@@ -160,7 +282,6 @@ const AdminClientEnrollments = () => {
       setEditingClient(res.data.client);
       setIsEditing(false);
 
-      // Update clients list
       setClients(prev => prev.map(client =>
         client.clientId === editingClient.clientId
           ? { ...client, ...res.data.client }
@@ -176,13 +297,11 @@ const AdminClientEnrollments = () => {
     }
   };
 
-  // Filter clients based on activeFilter and searchTerm
+  // Filter clients
   const filteredClients = clients.filter(client => {
-    // Apply active filter
     if (activeFilter === "active" && !client.isActive) return false;
     if (activeFilter === "inactive" && client.isActive) return false;
 
-    // Apply search filter
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       return (
@@ -196,16 +315,39 @@ const AdminClientEnrollments = () => {
     return true;
   });
 
+  // NEW: Filter financial requests
+  const filteredFinancialRequests = financialRequests.filter(request => {
+    // Status filter
+    if (financeStatusFilter !== 'all' && request.status !== financeStatusFilter) {
+      return false;
+    }
+
+    // Search filter
+    if (financeSearchTerm) {
+      const searchLower = financeSearchTerm.toLowerCase();
+      return (
+        request.clientName?.toLowerCase().includes(searchLower) ||
+        request.clientEmail?.toLowerCase().includes(searchLower) ||
+        request.requestId?.toLowerCase().includes(searchLower) ||
+        `${request.month} ${request.year}`.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return true;
+  });
+
   // Load data based on active section
   useEffect(() => {
     if (activeSection === "enrollments") {
       fetchEnrollments();
     } else if (activeSection === "activeControl" || activeSection === "clientsData") {
       fetchClients();
+    } else if (activeSection === "financeRequests") {
+      fetchFinancialRequests();
     }
   }, [activeSection]);
 
-  // Existing functions for enrollments (NO CHANGES)
+  // Existing functions for enrollments
   const fetchEnrollmentDetails = async (enrollId) => {
     try {
       const res = await axios.get(
@@ -287,6 +429,36 @@ const AdminClientEnrollments = () => {
     }
   };
 
+  // NEW: Get financial request status icon
+  const getFinanceStatusIcon = (status) => {
+    switch (status) {
+      case "approved":
+        return <FiCheckCircle className="status-icon approved" />;
+      case "sent":
+        return <FiCheckCircle className="status-icon sent" />;
+      case "cancelled":
+        return <FiXCircle className="status-icon rejected" />;
+      case "in_progress":
+        return <FiClock className="status-icon in-progress" />;
+      case "pending":
+      default:
+        return <FiClock className="status-icon pending" />;
+    }
+  };
+
+  // NEW: Get financial status text
+  const getFinanceStatusText = (status) => {
+    switch (status) {
+      case "pending": return "Pending";
+      case "in_progress": return "In Progress";
+      case "approved": return "Approved";
+      case "sent": return "Sent";
+      case "cancelled": return "Cancelled";
+      default: return status;
+    }
+  };
+
+  // Toast function
   const showToast = (message, type = 'info') => {
     const toast = document.createElement('div');
     toast.className = 'admin-toast';
@@ -316,9 +488,6 @@ const AdminClientEnrollments = () => {
     }, 3000);
   };
 
-
-
-
   // Close view modal
   const closeViewModal = () => {
     setShowViewModal(false);
@@ -336,6 +505,21 @@ const AdminClientEnrollments = () => {
     });
   };
 
+  // NEW: Close finance modal
+  const closeFinanceModal = () => {
+    setShowFinanceModal(false);
+    setFinanceModalData(null);
+  };
+
+  // NEW: Close finance confirmation modal
+  const closeFinanceConfirmModal = () => {
+    setShowFinanceConfirmModal(false);
+    setFinanceConfirmData({
+      requestId: null,
+      clientName: "",
+      monthYear: ""
+    });
+  };
 
   // Render Client Modal
   const renderClientModal = () => {
@@ -438,7 +622,6 @@ const AdminClientEnrollments = () => {
                   </div>
 
                   {isEditing ? (
-                    // EDIT MODE
                     <div className="edit-form">
                       {/* Visa Type */}
                       <div className="form-group">
@@ -587,7 +770,6 @@ const AdminClientEnrollments = () => {
                       </div>
                     </div>
                   ) : (
-                    // VIEW MODE
                     <div className="details-grid">
                       <div className="detail-item">
                         <span className="detail-label">Business Name</span>
@@ -646,6 +828,385 @@ const AdminClientEnrollments = () => {
                 Close
               </button>
             )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // NEW: Render Finance Requests Section
+  const renderFinanceRequests = () => {
+    return (
+      <div className="section-content">
+        <div className="filters-container">
+          <div className="search-box">
+            <AiOutlineSearch className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search by client name, email, or period..."
+              value={financeSearchTerm}
+              onChange={(e) => setFinanceSearchTerm(e.target.value)}
+              className="search-input"
+            />
+          </div>
+          <div className="filter-buttons">
+            <button
+              className={`filter-btn ${financeStatusFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setFinanceStatusFilter('all')}
+            >
+              All
+            </button>
+            <button
+              className={`filter-btn ${financeStatusFilter === 'pending' ? 'active' : ''}`}
+              onClick={() => setFinanceStatusFilter('pending')}
+            >
+              Pending
+            </button>
+            <button
+              className={`filter-btn ${financeStatusFilter === 'approved' ? 'active' : ''}`}
+              onClick={() => setFinanceStatusFilter('approved')}
+            >
+              Approved
+            </button>
+            <button
+              className={`filter-btn ${financeStatusFilter === 'sent' ? 'active' : ''}`}
+              onClick={() => setFinanceStatusFilter('sent')}
+            >
+              Sent
+            </button>
+          </div>
+        </div>
+
+        <div className="table-container">
+          <table className="enrollments-table">
+            <thead>
+              <tr>
+                <th>Client Name</th>
+                <th>Email</th>
+                <th>Period</th>
+                <th>Requested</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {financeLoading ? (
+                <tr>
+                  <td colSpan="6" className="loading-cell">
+                    <div className="loading-spinner"></div>
+                    Loading finance requests...
+                  </td>
+                </tr>
+              ) : filteredFinancialRequests.length === 0 ? (
+                <tr className="no-data">
+                  <td colSpan="6">
+                    <div className="empty-state">
+                      <FiFileMinus size={40} />
+                      <p>No finance requests found</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredFinancialRequests.map((request) => (
+                  <tr key={request.requestId} className="finance-row">
+                    <td className="name-cell">
+                      <div className="client-name">
+                        <strong>{request.clientName}</strong>
+                        <small className="client-id">{request.clientId?.substring(0, 8)}...</small>
+                      </div>
+                    </td>
+                    <td className="email-cell">
+                      <a href={`mailto:${request.clientEmail}`}>{request.clientEmail}</a>
+                    </td>
+                    <td className="period-cell">
+                      <div className="period-info">
+                        <FiCalendar className="period-icon" />
+                        <span className="period-text">{request.month} {request.year}</span>
+                      </div>
+                    </td>
+                    <td className="date-cell">
+                      {new Date(request.requestedAt).toLocaleDateString('en-GB')}
+                    </td>
+                    <td className="status-cell">
+                      <div className="status-wrapper">
+                        {getFinanceStatusIcon(request.status)}
+                        <span className={`status-badge ${request.status}`}>
+                          {getFinanceStatusText(request.status)}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="actions-cell">
+                      <div className="action-buttons">
+                        <button
+                          className="action-btn view-btn"
+                          onClick={() => openFinanceModal(request.requestId)}
+                        >
+                          <FiEye />
+                          <span>View</span>
+                        </button>
+                        {request.status === 'pending' && (
+                          <button
+                            className="action-btn approve-btn finance-approve"
+                            onClick={() => openFinanceConfirmation(
+                              request.requestId,
+                              request.clientName,
+                              `${request.month} ${request.year}`
+                            )}
+                            disabled={approvingRequest && approvingRequestId === request.requestId}
+                          >
+                            {approvingRequest && approvingRequestId === request.requestId ? (
+                              <>
+                                <div className="spinner-small"></div>
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                <FiCheck />
+                                <span>Approve</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="table-footer">
+          <div className="footer-info">
+            <div className="total-count">
+              <span className="count-label">Total Requests:</span>
+              <span className="count-value">{filteredFinancialRequests.length}</span>
+            </div>
+            <div className="status-summary">
+              <span className="pending-count">
+                Pending: {financialRequests.filter(r => r.status === 'pending').length}
+              </span>
+              <span className="approved-count">
+                Approved: {financialRequests.filter(r => r.status === 'approved').length}
+              </span>
+              <span className="sent-count">
+                Sent: {financialRequests.filter(r => r.status === 'sent').length}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // NEW: Render Finance Request Modal
+  const renderFinanceModal = () => {
+    if (!showFinanceModal || !financeModalData) return null;
+
+    return (
+      <div className="view-modal-overlay">
+        <div className="view-modal finance-modal">
+          <div className="view-modal-header">
+            <h3>Financial Statement Request Details</h3>
+            <button className="modal-close-btn" onClick={closeFinanceModal}>
+              &times;
+            </button>
+          </div>
+
+          <div className="view-modal-body">
+            <div className="client-summary">
+              <div className="summary-header">
+                <div className="client-avatar">
+                  <FiDollarSign size={24} />
+                </div>
+                <div className="client-info">
+                  <h4>{financeModalData.clientName}</h4>
+                  <div className="client-meta">
+                    <span className="email">
+                      <FiMail size={14} /> {financeModalData.clientEmail}
+                    </span>
+                    <span className={`status-badge ${financeModalData.status}`}>
+                      {getFinanceStatusText(financeModalData.status)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="enrollment-details-grid">
+                {/* Request Information */}
+                <div className="details-section">
+                  <h5 className="section-title">Request Information</h5>
+                  <div className="details-grid">
+                    <div className="detail-item">
+                      <span className="detail-label">Request ID</span>
+                      <span className="detail-value">{financeModalData.requestId}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Period</span>
+                      <span className="detail-value highlight">
+                        <FiCalendar size={14} /> {financeModalData.month} {financeModalData.year}
+                      </span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Client ID</span>
+                      <span className="detail-value">{financeModalData.clientId}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Requested Date</span>
+                      <span className="detail-value">
+                        {new Date(financeModalData.requestedAt).toLocaleString('en-GB')}
+                      </span>
+                    </div>
+                    {financeModalData.sentDate && (
+                      <div className="detail-item">
+                        <span className="detail-label">Sent Date</span>
+                        <span className="detail-value">
+                          {new Date(financeModalData.sentDate).toLocaleString('en-GB')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Additional Information */}
+                <div className="details-section">
+                  <h5 className="section-title">Additional Information</h5>
+                  <div className="details-grid">
+                    {financeModalData.additionalNotes ? (
+                      <div className="detail-item full-width">
+                        <span className="detail-label">Client Notes</span>
+                        <div className="detail-value notes-box">
+                          {financeModalData.additionalNotes}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="detail-item">
+                        <span className="detail-label">Client Notes</span>
+                        <span className="detail-value">No additional notes</span>
+                      </div>
+                    )}
+                    {financeModalData.adminNotes && (
+                      <div className="detail-item full-width">
+                        <span className="detail-label">Admin Notes</span>
+                        <div className="detail-value notes-box admin">
+                          {financeModalData.adminNotes}
+                        </div>
+                      </div>
+                    )}
+                    {financeModalData.downloadUrl && (
+                      <div className="detail-item">
+                        <span className="detail-label">Download URL</span>
+                        <a href={financeModalData.downloadUrl} target="_blank" className="detail-value link">
+                          View Statements
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Processing Information */}
+                {financeModalData.processedBy && (
+                  <div className="details-section">
+                    <h5 className="section-title">Processing Information</h5>
+                    <div className="details-grid">
+                      <div className="detail-item">
+                        <span className="detail-label">Processed By</span>
+                        <span className="detail-value">{financeModalData.processedBy.adminName}</span>
+                      </div>
+                      {financeModalData.processedAt && (
+                        <div className="detail-item">
+                          <span className="detail-label">Processed Date</span>
+                          <span className="detail-value">
+                            {new Date(financeModalData.processedAt).toLocaleString('en-GB')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="view-modal-footer">
+            <div className="action-buttons">
+              <button
+                className="modal-btn close-btn"
+                onClick={closeFinanceModal}
+              >
+                Close
+              </button>
+              {financeModalData.status === 'pending' && (
+                <button
+                  className="modal-btn approve-btn"
+                  onClick={() => openFinanceConfirmation(
+                    financeModalData.requestId,
+                    financeModalData.clientName,
+                    `${financeModalData.month} ${financeModalData.year}`
+                  )}
+                >
+                  <FiCheck />
+                  Approve & Send Statements
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // NEW: Render Finance Confirmation Modal
+  const renderFinanceConfirmModal = () => {
+    if (!showFinanceConfirmModal) return null;
+
+    return (
+      <div className="confirmation-modal-overlay">
+        <div className="confirmation-modal">
+          <div className="modal-header">
+            <h3>Approve Financial Statements</h3>
+            <button className="modal-close-btn" onClick={closeFinanceConfirmModal} disabled={approvingRequest}>
+              &times;
+            </button>
+          </div>
+          <div className="modal-body">
+            <div className="modal-icon">
+              <FiCheckCircle className="modal-icon-approve" />
+            </div>
+            <p className="modal-message">
+              Are you sure you want to approve the financial statement request for
+              <strong> "{financeConfirmData.clientName}"</strong>?
+            </p>
+            <p className="modal-details">
+              <FiCalendar size={16} /> <strong>Period:</strong> {financeConfirmData.monthYear}
+            </p>
+            <p className="modal-warning">
+              <FiAlertCircle size={16} /> This will send an email to the client and mark the request as approved.
+            </p>
+          </div>
+          <div className="modal-footer">
+            <button
+              className="modal-btn modal-cancel-btn"
+              onClick={closeFinanceConfirmModal}
+              disabled={approvingRequest}
+            >
+              Cancel
+            </button>
+            <button
+              className="modal-btn modal-approve-btn"
+              onClick={() => approveFinancialRequest(financeConfirmData.requestId)}
+              disabled={approvingRequest}
+            >
+              {approvingRequest ? (
+                <>
+                  <div className="modal-btn-spinner"></div>
+                  Processing...
+                </>
+              ) : (
+                "Approve & Send Email"
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -870,7 +1431,6 @@ const AdminClientEnrollments = () => {
                     <td className="name-cell">
                       <div className="client-name">
                         <strong>{client.name}</strong>
-                        {/* <small className="client-id">{client.clientId?.substring(0, 8)}...</small> */}
                       </div>
                     </td>
                     <td className="email-cell">
@@ -894,9 +1454,6 @@ const AdminClientEnrollments = () => {
                         ) : (
                           <FiUserX className="status-icon inactive" />
                         )}
-                        {/* <span className={`status-badge ${client.isActive ? 'active' : 'inactive'}`}>
-                          {client.isActive ? 'Active' : 'Inactive'}
-                        </span> */}
                       </div>
                     </td>
                     <td className="actions-cell">
@@ -937,7 +1494,7 @@ const AdminClientEnrollments = () => {
     );
   };
 
-  // Render Enrollments Section (existing code)
+  // Render Enrollments Section
   const renderEnrollments = () => {
     if (loading) {
       return (
@@ -1073,6 +1630,19 @@ const AdminClientEnrollments = () => {
               <span className="tab-badge">{clients.length}</span>
             )}
           </button>
+          {/* NEW: Finance Requests Tab */}
+          <button
+            className={`section-tab ${activeSection === 'financeRequests' ? 'active' : ''}`}
+            onClick={() => setActiveSection('financeRequests')}
+          >
+            <FiDollarSign />
+            <span>Finance Requests</span>
+            {financialRequests.filter(r => r.status === 'pending').length > 0 && (
+              <span className="tab-badge">
+                {financialRequests.filter(r => r.status === 'pending').length}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Page Header */}
@@ -1082,23 +1652,26 @@ const AdminClientEnrollments = () => {
               {activeSection === 'enrollments' && 'Client Enrollment Requests'}
               {activeSection === 'activeControl' && 'Client Active Control'}
               {activeSection === 'clientsData' && 'Clients Data Management'}
+              {activeSection === 'financeRequests' && 'Financial Statement Requests'}
             </h2>
             <p className="subtitle">
               {activeSection === 'enrollments' && 'Review and manage client enrollment submissions'}
               {activeSection === 'activeControl' && 'Activate or deactivate client accounts'}
               {activeSection === 'clientsData' && 'View and manage client information'}
+              {activeSection === 'financeRequests' && 'Approve and manage financial statement requests'}
             </p>
           </div>
           <button
             className="refresh-btn"
             onClick={() => {
               if (activeSection === 'enrollments') fetchEnrollments();
-              else fetchClients();
+              else if (activeSection === 'activeControl' || activeSection === 'clientsData') fetchClients();
+              else if (activeSection === 'financeRequests') fetchFinancialRequests();
             }}
-            disabled={refreshing || clientsLoading}
+            disabled={refreshing || clientsLoading || financeLoading}
           >
-            <FiRefreshCw className={refreshing || clientsLoading ? "spinning" : ""} />
-            {refreshing || clientsLoading ? "Refreshing..." : "Refresh"}
+            <FiRefreshCw className={refreshing || clientsLoading || financeLoading ? "spinning" : ""} />
+            {refreshing || clientsLoading || financeLoading ? "Refreshing..." : "Refresh"}
           </button>
         </div>
 
@@ -1106,7 +1679,9 @@ const AdminClientEnrollments = () => {
         {activeSection === 'enrollments' && renderEnrollments()}
         {activeSection === 'activeControl' && renderActiveControl()}
         {activeSection === 'clientsData' && renderClientsData()}
+        {activeSection === 'financeRequests' && renderFinanceRequests()}
 
+        {/* Existing Modals */}
         {showViewModal && viewModalData && (
           <div className="view-modal-overlay">
             <div className="view-modal">
@@ -1136,7 +1711,6 @@ const AdminClientEnrollments = () => {
                   </div>
 
                   <div className="enrollment-details-grid">
-                    {/* Personal Information Section */}
                     <div className="details-section">
                       <h5 className="section-title">Personal Information</h5>
                       <div className="details-grid">
@@ -1167,7 +1741,6 @@ const AdminClientEnrollments = () => {
                       </div>
                     </div>
 
-                    {/* Business Information Section */}
                     <div className="details-section">
                       <h5 className="section-title">Business Information</h5>
                       <div className="details-grid">
@@ -1202,7 +1775,6 @@ const AdminClientEnrollments = () => {
                       </div>
                     </div>
 
-                    {/* Plan Information Section */}
                     <div className="details-section">
                       <h5 className="section-title">Plan & Enrollment</h5>
                       <div className="details-grid">
@@ -1262,6 +1834,12 @@ const AdminClientEnrollments = () => {
 
         {/* Client Details Modal */}
         {renderClientModal()}
+
+        {/* NEW: Finance Request Modal */}
+        {renderFinanceModal()}
+
+        {/* NEW: Finance Confirmation Modal */}
+        {renderFinanceConfirmModal()}
 
         {showConfirmationModal && (
           <div className="confirmation-modal-overlay">

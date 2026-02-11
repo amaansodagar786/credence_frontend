@@ -61,7 +61,7 @@
 
         .subtitle {
           margin: 0;
-          color: #666666;
+          color: #000;
           font-size: 14px;
           font-weight: 400;
         }
@@ -76,7 +76,7 @@
           background: #f8f9fa;
           border: 1px solid #e5e7eb;
           border-radius: 8px;
-          color: #333333;
+          color: #000;
           font-size: 14px;
           font-weight: 500;
           cursor: pointer;
@@ -147,7 +147,7 @@
 
           .stat-label {
             font-size: 13px;
-            color: #666666;
+            color: #000;
             margin-top: 4px;
             display: block;
           }
@@ -2742,4 +2742,852 @@
       }
     }
   }
+}
+
+
+
+/* Document Preview Modal - New Category Navigation Styles */
+
+.preview-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: #2c3e50;
+  color: white;
+  border-bottom: 1px solid #34495e;
+
+  .preview-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .preview-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    font-size: 18px;
+
+    .file-info-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .file-category {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        opacity: 0.9;
+
+        .category-badge {
+          background: #3498db;
+          padding: 2px 8px;
+          border-radius: 12px;
+          font-weight: 600;
+        }
+
+        .separator-icon {
+          opacity: 0.7;
+        }
+      }
+
+      .file-name {
+        font-size: 16px;
+        font-weight: 600;
+        max-width: 500px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+
+    .file-type-badge {
+      background: #e74c3c;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+  }
+
+  .file-counter {
+    font-size: 13px;
+    opacity: 0.8;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 3px 10px;
+    border-radius: 12px;
+    align-self: flex-start;
+  }
+}
+
+.preview-modal-body {
+  position: relative;
+
+  .file-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s;
+
+      &:hover:not(:disabled) {
+        background: #2980b9;
+        transform: translateY(-1px);
+      }
+
+      &:disabled {
+        background: #bdc3c7;
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      &.prev-btn {
+        .nav-text {
+          order: 2;
+        }
+      }
+
+      &.next-btn {
+        .nav-text {
+          order: 1;
+        }
+      }
+    }
+
+    .file-position {
+      font-size: 14px;
+      font-weight: 600;
+      color: #2c3e50;
+      background: white;
+      padding: 6px 15px;
+      border-radius: 20px;
+      border: 1px solid #dee2e6;
+      min-width: 70px;
+      text-align: center;
+    }
+  }
+
+  /* Adjust viewer height to accommodate navigation */
+  .protected-view-container {
+
+    &.pdf-viewer-container,
+    &.excel-viewer-container {
+      height: 60vh;
+    }
+  }
+}
+
+.preview-modal-footer {
+  .file-info-simple {
+    .category-files-count {
+      background: #f1f8ff;
+      color: #0366d6;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      border: 1px solid #d1e5ff;
+    }
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .preview-modal-header {
+    .preview-title {
+      .file-info-stack {
+        .file-name {
+          max-width: 250px;
+        }
+      }
+    }
+  }
+
+  .preview-modal-body {
+    .file-navigation {
+      .nav-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+
+        .nav-text {
+          display: none;
+        }
+      }
+    }
+  }
+}
+
+/* Category file name display */
+.category-file-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .category-label {
+    background: #3498db;
+    color: white;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .separator-icon {
+    opacity: 0.7;
+    color: #7f8c8d;
+  }
+
+  .file-name-text {
+    font-weight: 600;
+    max-width: 400px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* Navigation at bottom */
+.file-navigation-bottom {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin: 15px 0;
+  padding: 10px;
+
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s;
+
+    &:hover:not(:disabled) {
+      background: #2980b9;
+      transform: translateY(-1px);
+    }
+
+    &:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+  }
+
+  .file-position {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3e50;
+    background: white;
+    padding: 6px 15px;
+    border-radius: 20px;
+    border: 1px solid #dee2e6;
+    min-width: 70px;
+    text-align: center;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+/* ===============================
+   FILE VIEWED CHECKMARK STYLES
+================================ */
+
+/* Checkmark button in file cards */
+.file-actions {
+  .check-btn {
+    background: none;
+    border: none;
+    color: #95a5a6;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    transition: all 0.3s;
+
+    &:hover {
+      color: #3498db;
+      background: rgba(52, 152, 219, 0.1);
+    }
+
+    &.checked {
+      color: #27ae60;
+
+      &:hover {
+        color: #2ecc71;
+        background: rgba(46, 204, 113, 0.1);
+      }
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+/* Viewed badge in file meta */
+.file-meta {
+  .viewed-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #d5f4e6;
+    color: #27ae60;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+
+    svg {
+      flex-shrink: 0;
+    }
+  }
+}
+
+/* Checkmark button in preview modal header */
+.preview-modal-header {
+  .preview-header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+
+    .checkmark-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 14px;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.3);
+        transform: translateY(-1px);
+      }
+
+      &.checked {
+        background: rgba(46, 204, 113, 0.3);
+        border-color: rgba(46, 204, 113, 0.5);
+
+        &:hover {
+          background: rgba(46, 204, 113, 0.4);
+          border-color: rgba(46, 204, 113, 0.6);
+        }
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .checkmark-text {
+        font-weight: 500;
+      }
+
+      svg {
+        flex-shrink: 0;
+      }
+    }
+  }
+}
+
+/* File counter styling */
+.file-counter {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+/* Category and file name styling */
+.category-file-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .category-label {
+    background: #3498db;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .separator-icon {
+    color: #7f8c8d;
+    opacity: 0.7;
+  }
+
+  .file-name-text {
+    font-weight: 600;
+    max-width: 400px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* Navigation at bottom */
+.file-navigation-bottom {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin: 15px 0;
+  padding: 10px;
+
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s;
+
+    &:hover:not(:disabled) {
+      background: #2980b9;
+      transform: translateY(-1px);
+    }
+
+    &:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+  }
+
+  .file-position {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3e50;
+    background: white;
+    padding: 6px 15px;
+    border-radius: 20px;
+    border: 1px solid #dee2e6;
+    min-width: 70px;
+    text-align: center;
+  }
+}
+
+/* Category files count in footer */
+.category-files-count {
+  background: #f1f8ff;
+  color: #0366d6;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  border: 1px solid #d1e5ff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .preview-modal-header {
+    .preview-header-right {
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+
+      .checkmark-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+
+        .checkmark-text {
+          display: none;
+        }
+      }
+    }
+  }
+
+  .category-file-name {
+    .file-name-text {
+      max-width: 200px;
+    }
+  }
+
+  .file-navigation-bottom {
+    .nav-btn {
+      padding: 6px 12px;
+      font-size: 13px;
+
+      .nav-text {
+        display: none;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .category-file-name {
+    .file-name-text {
+      max-width: 150px;
+    }
+  }
+
+  .file-counter {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+}
+
+
+/* ===============================
+   FILE ACTIONS WITH NOTES COUNT
+================================ */
+
+.file-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .add-note-wrapper {
+    position: relative;
+
+    .action-btn.add-note {
+      position: relative;
+    }
+
+    .notes-count-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #e74c3c;
+      color: white;
+      font-size: 10px;
+      font-weight: bold;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid white;
+      z-index: 2;
+    }
+  }
+
+  .action-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    background: white;
+    color: #6c757d;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+
+    &:hover {
+      background: #f8f9fa;
+      border-color: #adb5bd;
+      color: #495057;
+    }
+
+    &.check-btn {
+      &.checked {
+        background: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+
+        &:hover {
+          background: #c3e6cb;
+          border-color: #b1dfbb;
+        }
+      }
+
+      &:not(.checked):hover {
+        background: #e2e3e5;
+        border-color: #d6d8db;
+      }
+    }
+  }
+}
+
+
+/* ===============================
+   PREVIEW MODAL CHECKMARK BUTTON FIX
+================================ */
+
+.preview-modal-header {
+  .preview-header-right {
+    .checkmark-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 2px solid rgba(34, 33, 33, 0.4);
+      color: black;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 14px;
+      font-weight: 400;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.25);
+        border-color: rgba(0, 0, 0, 0.6);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      &.checked {
+        background: rgba(46, 204, 113, 0.4);
+        border-color: #2ecc71;
+        color: #fff;
+
+        &:hover {
+          background: rgba(46, 204, 113, 0.6);
+          border-color: #27ae60;
+        }
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .checkmark-text {
+        font-weight: 600;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      }
+
+      svg {
+        flex-shrink: 0;
+        width: 20px;
+        height: 20px;
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+      }
+    }
+  }
+}
+
+/* ================= AUDIT ICON STYLES ================= */
+.rotated-tick-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  /* Different sizes for different contexts */
+  &.small {
+    width: 20px;
+    height: 20px;
+
+    .audit-icon {
+      width: 12px;
+      height: 12px;
+    }
+  }
+
+  &.medium {
+    width: 24px;
+    height: 24px;
+
+    .audit-icon {
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  &.large {
+    width: 28px;
+    height: 28px;
+
+    .audit-icon {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  /* Checked state - Green background */
+  &.checked {
+    background: #7cd64b;
+    border-color: #7cd64b;
+
+    .audit-icon {
+      filter: brightness(0) invert(1);
+      /* Makes the icon white */
+    }
+  }
+
+  /* Hover effect */
+  &:hover:not(.checked) {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+  }
+
+  .audit-icon {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+    transition: all 0.3s ease;
+  }
+}
+
+/* For file actions section */
+.file-actions {
+  .rotated-tick-icon {
+    margin-left: 0px;
+
+    &.medium {
+      .audit-icon {
+        width: 12px;
+        height: 12px;
+      }
+    }
+  }
+}
+
+/* For preview modal header */
+.preview-header-right {
+  .rotated-tick-icon {
+    margin-left: 12px;
+
+    &.large {
+      .audit-icon {
+        width: 14px;
+        height: 14px;
+      }
+    }
+  }
+}
+
+/* Optional: Add a pulse animation for attention */
+@keyframes pulse-green {
+  0% {
+    box-shadow: 0 0 0 0 rgba(124, 214, 75, 0.7);
+  }
+
+  70% {
+    box-shadow: 0 0 0 6px rgba(124, 214, 75, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(124, 214, 75, 0);
+  }
+}
+
+.rotated-tick-icon.checked {
+  animation: pulse-green 1.5s ease-in-out;
+}
+
+
+
+
+
+
+
+
+
+
+/* ================= AUDIT ICON STYLES (COMPLETELY INDEPENDENT) ================= */
+.rotated-tick-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  /* Checked state - Green background (INDEPENDENT OF FILE VIEWED STATUS) */
+  &.checked {
+    background: #7cd64b !important;
+    border-color: #7cd64b !important;
+
+    .audit-icon {
+      filter: brightness(0) invert(1) !important;
+    }
+  }
+
+  /* Hover effect */
+  &:hover:not(.checked) {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+  }
+
+  &:hover.checked {
+    background: #6bc542 !important;
+    border-color: #6bc542 !important;
+  }
+
+  .audit-icon {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+    transition: all 0.3s ease;
+  }
+}
+
+/* REMOVE ANY CONNECTION TO VIEWED STATUS */
+.viewed-badge {
+  /* This stays for the file viewed status, but doesn't affect audit icon */
+}
+
+/* The check-btn stays for file viewed status */
+.action-btn.check-btn.checked {
+  /* This is for the checkmark button, NOT the audit icon */
 }

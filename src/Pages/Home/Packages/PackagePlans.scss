@@ -8,56 +8,189 @@
   font-display: swap;
 }
 
-// ===== PACKAGES SECTION BACKGROUND =====
-.packages {
-  background:
-    radial-gradient(circle at left top,
-      rgba(124, 214, 75, 0.25),
-      transparent 55%),
-    #000;
-  color: #fff;
+@font-face {
+  font-family: "LightHeading";
+  src: url("../../../assets/fonts/cy-grotesk-wide-light.ttf") format("truetype");
+  font-style: normal;
+  font-display: swap;
 }
 
-// ===== ADDITIONAL SERVICES BACKGROUND =====
-.additional-services {
+body {
+  background-color: #000 ;
+}
+// ===== COMMON BACKGROUND THEME FOR ALL SECTIONS =====
+$primary-bg: #000;
+$gradient-color: rgba(124, 214, 75, 0.15);
+
+// ===== NEW HEADER SECTION =====
+.plans-header {
+  min-height: 40vh;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background: 
+    radial-gradient(circle at left top, $gradient-color, transparent 55%),
+    $primary-bg;
+}
+
+.plans-header-bg {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   background:
-    radial-gradient(circle at right center,
-      rgba(124, 214, 75, 0.22),
-      transparent 60%),
-    #000;
-  color: #fff;
+    radial-gradient(circle at 70% 30%, $gradient-color, transparent 50%),
+    $primary-bg;
+  z-index: 1;
+}
+
+// NAVBAR
+.plans-navbar-wrapper {
+  display: flex;
+  justify-content: center;
+  z-index: 2;
+  margin-bottom: 40px;
+}
+
+.plans-navbar {
+  width: 75%;
+  background: transparent;
+  // border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50px;
+  padding: 12px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.3);
+
+  .plans-nav-link {
+    color: #fff;
+    font-size: 21px;
+    cursor: pointer;
+    font-family: "Inter", sans-serif;
+    font-weight: 500;
+    transition: all 0.3s ease;
+
+    &:hover {
+      color: #7cd64b;
+      transform: translateY(-1px);
+    }
+  }
+
+  .plans-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .plans-logo-image {
+    height: 80px;
+    width: auto;
+    object-fit: contain;
+  }
+}
+
+// ===== HEADER CONTENT - UPDATED FOR SINGLE LINE DESKTOP =====
+.plans-header-content {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 20px;
+  text-align: center;
+  z-index: 2;
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  h1 {
+    display: flex;
+    flex-direction: row;     // ← ROW FOR DESKTOP (SINGLE LINE)
+    flex-wrap: wrap;        // ← ALLOW WRAPPING IF NEEDED
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    font-size: 45px;
+    line-height: 1.15;
+    margin-bottom: 20px;
+
+    .plans-heading-line {
+      display: inline;       // ← INLINE FOR DESKTOP
+      margin-bottom: 0;
+       white-space: nowrap;
+      
+      &:first-child {
+        margin-right: 5px;  // ← SPACE BETWEEN PHRASES
+      }
+    }
+
+    span {
+      font-weight: 400;
+      display: inline;
+    }
+  }
+
+  .plans-heading-light {
+    font-family: "LightHeading", sans-serif;
+    color: #fff;
+  }
+
+  .plans-heading-dark {
+    font-family: "Heading", sans-serif;
+    color: #fff;
+  }
+
+  .plans-subtitle {
+    margin-top: 16px;
+    font-size: 18px;
+    font-family: "Arimo", sans-serif;
+    color: #fff;
+    opacity: 0.9;
+    max-width: 600px;
+    line-height: 1.5;
+  }
 }
 
 // ===== PACKAGES SECTION =====
 .packages {
-  padding: 40px 20px 20px 20px;
+  background:
+    radial-gradient(circle at left top, $gradient-color, transparent 55%),
+    $primary-bg;
+  color: #fff;
+  padding: 60px 20px 40px 20px;
+  position: relative;
+  overflow: hidden;
 }
 
 // HEADING
 .packages-header {
   text-align: center;
   margin-bottom: 50px;
-}
 
-.packages-header h2 {
-  font-family: "Heading", sans-serif;
-  font-size: 36px;
-  margin: 0;
-}
+  h2 {
+    font-family: "Heading", sans-serif;
+    font-size: 36px;
+    margin: 0;
+  }
 
-.underline {
-  width: 60px;
-  height: 3px;
-  background: #7cd64b;
-  margin: 10px auto 18px;
-  display: block;
-}
+  .underline {
+    width: 60px;
+    height: 3px;
+    background: #7cd64b;
+    margin: 10px auto 18px;
+    display: block;
+  }
 
-// SUBHEADING
-.packages-header p {
-  font-family: "Arimo", sans-serif;
-  font-size: 15px;
-  opacity: 0.9;
+  p {
+    font-family: "Arimo", sans-serif;
+    font-size: 15px;
+    opacity: 0.9;
+  }
 }
 
 // TABLE WRAPPER - HORIZONTAL SCROLL ON MOBILE
@@ -68,6 +201,7 @@
   height: 380px;
   margin: 0 auto;
   -webkit-overflow-scrolling: touch;
+  position: relative;
 }
 
 // PRICING TABLE
@@ -77,6 +211,7 @@
   border-collapse: collapse;
   border: 2px solid #7cd64b;
   font-family: "Inter", sans-serif;
+  transform-origin: top center;
 }
 
 .pricing-table th {
@@ -86,6 +221,7 @@
   font-weight: 600;
   border: 1px solid #000;
   font-family: "Inter", sans-serif;
+  transform-origin: center;
 }
 
 .pricing-table td {
@@ -94,6 +230,7 @@
   text-align: center;
   font-size: 14px;
   font-family: "Inter", sans-serif;
+  transform-origin: center;
 }
 
 .pricing-table td:first-child {
@@ -154,7 +291,7 @@
   position: absolute;
   bottom: -14px;
   left: 50%;
-  transform: translateX(-50%) !important; // !important is needed
+  transform: translateX(-50%) !important;
   background: #000;
   border: 2px solid #7cd64b;
   color: #7cd64b;
@@ -164,38 +301,51 @@
   cursor: pointer;
   z-index: 3;
   font-family: "Arimo", sans-serif;
-  transition: all 0.3s ease !important; // Add !important here too
+  transition: all 0.3s ease !important;
   min-width: 90px;
+  transform-origin: center;
 
   &:hover {
     background: #7cd64b !important;
     color: #000 !important;
-    transform: translateX(-50%) scale(1.05) !important; // Keep both transforms
+    transform: translateX(-50%) scale(1.05) !important;
   }
 }
 
-
 // ===== ADDITIONAL SERVICES SECTION =====
 .additional-services {
-  padding: 40px 20px 50px;
+  background:
+    radial-gradient(circle at right center, $gradient-color, transparent 60%),
+    $primary-bg;
+  color: #fff;
+  padding: 60px 20px 50px;
   position: relative;
+  overflow: hidden;
 }
 
 .section-header {
   text-align: center;
   margin-bottom: 50px;
-}
 
-.section-header h2 {
-  font-family: "Heading", sans-serif;
-  font-size: 34px;
-  margin: 0;
-}
+  h2 {
+    font-family: "Heading", sans-serif;
+    font-size: 34px;
+    margin: 0;
+  }
 
-.section-header p {
-  font-family: "Arimo", sans-serif;
-  font-size: 14px;
-  opacity: 0.9;
+  .underline {
+    width: 60px;
+    height: 3px;
+    background: #7cd64b;
+    margin: 10px auto 18px;
+    display: block;
+  }
+
+  p {
+    font-family: "Arimo", sans-serif;
+    font-size: 14px;
+    opacity: 0.9;
+  }
 }
 
 // SERVICES BOX
@@ -208,42 +358,44 @@
   display: flex;
   align-items: stretch;
   background: rgba(0, 0, 0, 0.75);
+  transform-origin: center;
 }
 
 // COLUMNS
 .service-col {
   flex: 1;
-}
 
-.service-col h3 {
-  font-size: 22px;
-  color: #7cd64b;
-  margin-bottom: 18px;
-  font-family: "Arimo", sans-serif;
-}
+  h3 {
+    font-size: 22px;
+    color: #7cd64b;
+    margin-bottom: 18px;
+    font-family: "Arimo", sans-serif;
+  }
 
-.service-col ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  font-family: "Inter", sans-serif;
-}
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-family: "Inter", sans-serif;
+  }
 
-.service-col ul li {
-  position: relative;
-  padding-left: 18px;
-  margin-bottom: 14px;
-  font-size: 14px;
-  line-height: 1.6;
-}
+  ul li {
+    position: relative;
+    padding-left: 18px;
+    margin-bottom: 14px;
+    font-size: 14px;
+    line-height: 1.6;
+    transform-origin: left center;
 
-.service-col ul li::before {
-  content: "•";
-  position: absolute;
-  left: 0;
-  color: #7cd64b;
-  font-size: 18px;
-  line-height: 1;
+    &::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: #7cd64b;
+      font-size: 18px;
+      line-height: 1;
+    }
+  }
 }
 
 // DIVIDER
@@ -270,6 +422,7 @@
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
+  transform-origin: center;
 
   &:hover {
     background: #6ac94c;
@@ -449,39 +602,61 @@
   }
 }
 
-// :global(.Toastify__toast-container) {
-//   z-index: 10000 !important;
-// }
-
-:global(.Toastify__toast) {
-  z-index: 10001 !important;
-}
-
-// ===== LOADING ANIMATION =====
-@keyframes pulse {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.5;
-  }
-}
-
-.connect-submit-btn:disabled {
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
 // ===== MOBILE RESPONSIVE =====
+// ALL MOBILE STYLES REMAIN EXACTLY THE SAME (TWO LINES)
 @media (max-width: 768px) {
+
+  // NEW HEADER SECTION MOBILE
+  .plans-header {
+    min-height: 55vh;
+    padding: 16px;
+  }
+
+  .plans-navbar {
+    width: 100%;
+    padding: 10px 18px;
+
+    .plans-nav-link {
+      font-size: 14px;
+    }
+
+    .plans-logo-image {
+      height: 30px;
+    }
+  }
+
+  .plans-header-content {
+    padding: 0 10px;
+
+    h1 {
+      display: flex;
+      flex-direction: column;  // ← STAYS COLUMN ON MOBILE (TWO LINES)
+      
+      .plans-heading-line {
+        display: block;        // ← STAYS BLOCK ON MOBILE (TWO LINES)
+        margin-bottom: 0;
+        
+        &:first-child {
+          margin-right: 0;     // ← REMOVE DESKTOP SPACING
+        }
+      }
+      
+      font-size: 32px;
+    }
+
+    .plans-subtitle {
+      font-size: 14px;
+      padding: 0 10px;
+    }
+  }
+
+  // PACKAGES SECTION MOBILE
   .packages {
-    padding: 60px 16px;
+    padding: 40px 16px 30px;
   }
 
   .additional-services {
-    padding: 0px 16px 40px;
+    padding: 40px 16px 40px;
   }
 
   .packages-header h2 {
@@ -495,6 +670,7 @@
   // Table stays scrollable horizontally on mobile
   .table-wrapper {
     overflow-x: auto;
+    height: 420px;
   }
 
   .pricing-table {
@@ -568,6 +744,31 @@
 }
 
 @media (max-width: 480px) {
+  .plans-header {
+    min-height: 50vh;
+  }
+
+  .plans-header-content h1 {
+    font-size: 28px;
+    flex-direction: column;  // ← STAYS COLUMN ON MOBILE
+  }
+
+  .plans-subtitle {
+    font-size: 13px;
+  }
+
+  .plans-navbar {
+    padding: 8px 14px;
+
+    .plans-nav-link {
+      font-size: 13px;
+    }
+
+    .plans-logo-image {
+      height: 25px;
+    }
+  }
+
   .connect-modal-container {
     padding: 25px 16px;
   }
@@ -624,4 +825,26 @@
 .connect-form-input:invalid:not(:focus):not(:placeholder-shown) {
   animation: shakeError 0.5s ease-in-out;
   background-color: rgba(255, 0, 0, 0.1);
+}
+
+
+
+// ===== NAVBAR BUTTON STYLES WITH BORDER =====
+.plans-navbar {
+  .plans-nav-link {
+    padding: 7px 22px !important;
+    border-radius: 50px !important;
+    background: #fff !important;
+    color: #7cd64b !important;
+    border: 2px solid #7cd64b !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+
+    &:hover {
+      background: transparent !important;
+      color: #7cd64b !important;
+      border: 2px solid #7cd64b !important;
+      transform: translateY(0px) !important;
+    }
+  }
 }

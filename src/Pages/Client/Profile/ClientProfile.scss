@@ -27,7 +27,7 @@
 
     .subtitle {
       margin: 0;
-      color: #666666;
+      color: #000;
       font-size: 14px;
       font-weight: 400;
     }
@@ -65,7 +65,7 @@
         gap: 8px;
         padding: 12px 20px;
         background: #e5e7eb;
-        color: #333333;
+        color: #000;
         border: none;
         border-radius: 8px;
         font-weight: 600;
@@ -215,7 +215,7 @@
 
         .email {
           margin: 0;
-          color: #666666;
+          color: #000;
           font-size: 14px;
         }
       }
@@ -314,12 +314,12 @@
         }
 
         .label {
-          color: #666666;
+          color: #000;
           font-size: 14px;
         }
 
         .value {
-          color: #333333;
+          color: #000;
           font-weight: 600;
           font-size: 14px;
 
@@ -410,7 +410,7 @@
 
     label {
       display: block;
-      color: #666666;
+      color: #000;
       font-size: 13px;
       font-weight: 500;
       margin-bottom: 8px;
@@ -422,7 +422,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      color: #333333;
+      color: #000;
       font-size: 15px;
       font-weight: 500;
       padding: 12px 16px;
@@ -481,7 +481,7 @@
 
     label {
       display: block;
-      color: #333333;
+      color: #000;
       font-size: 14px;
       font-weight: 600;
       margin-bottom: 8px;
@@ -500,7 +500,7 @@
       border: 2px solid #e5e7eb;
       border-radius: 8px;
       background: #ffffff;
-      color: #333333;
+      color: #000;
       transition: all 0.3s ease;
       box-sizing: border-box;
 
@@ -536,7 +536,7 @@
 
       .radio-label {
         display: block;
-        color: #333333;
+        color: #000;
         font-size: 14px;
         font-weight: 600;
         margin-bottom: 12px;
@@ -625,7 +625,7 @@
           }
 
           .radio-text {
-            color: #333333;
+            color: #000;
             font-weight: 500;
             font-size: 14px;
           }
@@ -654,7 +654,7 @@
   }
 
   p {
-    color: #666666;
+    color: #000;
     font-size: 16px;
     margin: 0;
   }
@@ -683,7 +683,7 @@
   }
 
   p {
-    color: #666666;
+    color: #000;
     margin: 0 0 20px 0;
     font-size: 16px;
     max-width: 500px;
@@ -761,7 +761,7 @@
       .close-btn {
         background: transparent;
         border: none;
-        color: #666666;
+        color: #000;
         font-size: 28px;
         cursor: pointer;
         width: 40px;
@@ -841,7 +841,7 @@
           gap: 10px;
           font-size: 14px;
           font-weight: 600;
-          color: #333333;
+          color: #000;
           margin-bottom: 10px;
 
           svg {
@@ -859,7 +859,7 @@
             border: 2px solid #e5e7eb;
             border-radius: 8px;
             background: #ffffff;
-            color: #333333;
+            color: #000;
             transition: all 0.3s ease;
             box-sizing: border-box;
 
@@ -888,7 +888,7 @@
             transform: translateY(-50%);
             background: transparent;
             border: none;
-            color: #666666;
+            color: #000;
             cursor: pointer;
             width: 32px;
             height: 32px;
@@ -950,7 +950,7 @@
 
           &.secondary {
             background: #e5e7eb;
-            color: #333333;
+            color: #000;
 
             &:hover:not(:disabled) {
               background: #d1d5db;
@@ -1027,7 +1027,7 @@
             height: 36px;
             border-radius: 50%;
             background: #e5e7eb;
-            color: #666666;
+            color: #000;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1039,7 +1039,7 @@
           p {
             margin: 0;
             font-size: 12px;
-            color: #666666;
+            color: #000;
             text-align: center;
             transition: all 0.3s ease;
           }
@@ -1083,7 +1083,7 @@
 
         .otp-hint {
           font-size: 13px;
-          color: #666666;
+          color: #000;
           margin-top: 8px;
           margin-bottom: 0;
         }
@@ -1092,7 +1092,7 @@
       .resend-link {
         text-align: center;
         margin-top: 20px;
-        color: #666666;
+        color: #000;
         font-size: 14px;
 
         button {

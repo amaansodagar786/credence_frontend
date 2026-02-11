@@ -6,7 +6,7 @@
   max-width: 1400px;
   margin: 0 auto;
   font-family: 'Poppins', sans-serif;
-  color: #333333;
+  color: #000;
   min-height: calc(100vh - 120px);
   background: #ffffff;
 
@@ -53,7 +53,7 @@
 
       .page-subtitle {
         font-size: 14px;
-        color: #666666;
+        color: #000;
         margin: 0;
       }
     }
@@ -106,7 +106,7 @@
     background: #ffffff;
     border-radius: 16px;
     padding: 24px;
-    color: #333333;
+    color: #000;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     border: 1px solid #e5e7eb;
     border-top: 4px solid #7cd64b;
@@ -149,7 +149,7 @@
           align-items: center;
           gap: 8px;
           font-size: 14px;
-          color: #666666;
+          color: #000;
           margin-bottom: 8px;
 
           svg {
@@ -210,7 +210,7 @@
           flex: 1;
           overflow: hidden;
           text-overflow: ellipsis;
-          color: #333333;
+          color: #000;
         }
       }
     }
@@ -236,7 +236,7 @@
         .stat-label {
           display: block;
           font-size: 12px;
-          color: #666666;
+          color: #000;
           margin-bottom: 8px;
           text-transform: uppercase;
           letter-spacing: 0.5px;
@@ -261,7 +261,7 @@
         .stat-subtext {
           display: block;
           font-size: 11px;
-          color: #666666;
+          color: #000;
           margin-top: 4px;
         }
       }
@@ -306,7 +306,7 @@
 
       p {
         font-size: 14px;
-        color: #666666;
+        color: #000;
         margin: 0;
       }
     }
@@ -329,7 +329,7 @@
         transition: all 0.3s;
         border: 2px solid #e5e7eb;
         background: #ffffff;
-        color: #666666;
+        color: #000;
         font-family: 'Poppins', sans-serif;
 
         .filter-icon {
@@ -387,7 +387,7 @@
             gap: 8px;
             font-size: 14px;
             font-weight: 600;
-            color: #333333;
+            color: #000;
             margin-bottom: 8px;
             font-family: 'Poppins', sans-serif;
 
@@ -404,7 +404,7 @@
             border-radius: 8px;
             transition: all 0.2s;
             background: #ffffff;
-            color: #333333;
+            color: #000;
             font-family: 'Poppins', sans-serif;
             box-sizing: border-box;
 
@@ -484,7 +484,7 @@
     }
 
     p {
-      color: #666666;
+      color: #000;
       font-size: 16px;
       margin: 0;
     }
@@ -556,7 +556,7 @@
 
               &.status-no-tasks {
                 background: rgba(155, 155, 155, 0.15);
-                color: #666666;
+                color: #000;
                 border: 1px solid rgba(155, 155, 155, 0.3);
               }
             }
@@ -564,7 +564,7 @@
 
           .month-summary {
             font-size: 14px;
-            color: #666666;
+            color: #000;
             margin: 0;
           }
         }
@@ -693,7 +693,7 @@
                 .client-name {
                   font-size: 15px;
                   font-weight: 600;
-                  color: #333333;
+                  color: #000;
                 }
 
                 .client-tasks {
@@ -755,7 +755,7 @@
 
             .task-summary {
               font-size: 12px;
-              color: #666666;
+              color: #000;
               font-weight: 500;
             }
           }
@@ -763,7 +763,7 @@
           .empty-tasks {
             text-align: center;
             padding: 40px 20px;
-            color: #666666;
+            color: #000;
 
             svg {
               margin-bottom: 12px;
@@ -816,7 +816,7 @@
                 .task-name {
                   font-size: 15px;
                   font-weight: 600;
-                  color: #333333;
+                  color: #000;
                   flex: 1;
                 }
               }
@@ -853,7 +853,7 @@
 
                   .assigned-by {
                     font-size: 11px;
-                    color: #666666;
+                    color: #000;
                     font-style: italic;
                   }
                 }
@@ -910,7 +910,7 @@
 
             .notes-count {
               font-size: 12px;
-              color: #666666;
+              color: #000;
               font-weight: 500;
             }
           }
@@ -968,7 +968,7 @@
 
                 .note-client {
                   font-size: 12px;
-                  color: #666666;
+                  color: #000;
                   font-weight: 500;
                 }
 
@@ -985,7 +985,7 @@
               .note-content {
                 p {
                   font-size: 14px;
-                  color: #333333;
+                  color: #000;
                   line-height: 1.6;
                   margin: 0 0 8px 0;
                 }
@@ -1001,7 +1001,7 @@
 
                 .note-category {
                   font-size: 11px;
-                  color: #666666;
+                  color: #000;
                   font-weight: 500;
                 }
 
@@ -1062,13 +1062,13 @@
 
     h4 {
       font-size: 20px;
-      color: #333333;
+      color: #000;
       margin: 0 0 8px 0;
       font-weight: 600;
     }
 
     p {
-      color: #666666;
+      color: #000;
       font-size: 14px;
       margin: 0;
     }
@@ -1131,7 +1131,7 @@
           .close-modal {
             background: transparent;
             border: none;
-            color: #666666;
+            color: #000;
             cursor: pointer;
             padding: 4px;
             border-radius: 4px;
@@ -1199,7 +1199,7 @@
                   h5 {
                     font-size: 16px;
                     font-weight: 600;
-                    color: #333333;
+                    color: #000;
                     margin: 0;
                   }
 
@@ -1240,7 +1240,7 @@
                     h6 {
                       font-size: 14px;
                       font-weight: 600;
-                      color: #333333;
+                      color: #000;
                       margin: 0 0 12px 0;
                     }
 
@@ -1268,7 +1268,7 @@
                         .task-name {
                           font-size: 14px;
                           font-weight: 500;
-                          color: #333333;
+                          color: #000;
                         }
 
                         .task-status {
@@ -1291,7 +1291,7 @@
 
                       .task-info {
                         font-size: 11px;
-                        color: #666666;
+                        color: #000;
                       }
                     }
                   }
@@ -1349,7 +1349,7 @@
 
                   .note-card-client {
                     font-size: 13px;
-                    color: #666666;
+                    color: #000;
                     font-weight: 500;
                   }
 
@@ -1363,7 +1363,7 @@
                 .note-card-content {
                   p {
                     font-size: 14px;
-                    color: #333333;
+                    color: #000;
                     line-height: 1.6;
                     margin: 0 0 12px 0;
                   }
@@ -1372,7 +1372,7 @@
                 .note-card-footer {
                   .note-card-category {
                     font-size: 12px;
-                    color: #666666;
+                    color: #000;
                     font-style: italic;
                   }
                 }

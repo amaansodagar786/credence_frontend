@@ -13,12 +13,13 @@ import ModalProvider from './Model/ModalProvider'
 
 const Home = () => {
   return (
-    <ModalProvider> {/* Wrap everything with ModalProvider */}
-      <Hero/>
+    <ModalProvider> 
+      {/* <Hero/> */}
+      <PackagePlans/> 
       <AboutCredence/>
       <Services/>
       <WhyChooseCredence/>
-      <PackagePlans/> 
+      
       <CTASection/>
       <Faq/>
       <ScheduleCall/>

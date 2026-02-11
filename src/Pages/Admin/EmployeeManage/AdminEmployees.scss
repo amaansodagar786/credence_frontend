@@ -6,7 +6,7 @@
   max-width: 1400px;
   margin: 0 auto;
   font-family: 'Poppins', sans-serif;
-  color: #333333;
+  color: #000;
   min-height: calc(100vh - 120px);
   background: #ffffff;
 
@@ -39,7 +39,7 @@
 
       .page-subtitle {
         font-size: 14px;
-        color: #666666;
+        color: #000;
         margin: 0;
       }
     }
@@ -160,7 +160,7 @@
             left: 14px;
             top: 50%;
             transform: translateY(-50%);
-            color: #666666;
+            color: #000;
           }
 
           input {
@@ -171,7 +171,7 @@
             font-size: 14px;
             transition: all 0.2s;
             background: #ffffff;
-            color: #333333;
+            color: #000;
             font-family: 'Poppins', sans-serif;
             box-sizing: border-box;
 
@@ -202,13 +202,13 @@
 
       h4 {
         font-size: 20px;
-        color: #333333;
+        color: #000;
         margin: 0 0 8px 0;
         font-weight: 600;
       }
 
       p {
-        color: #666666;
+        color: #000;
         font-size: 14px;
         margin: 0 0 24px 0;
       }
@@ -291,7 +291,7 @@
           td {
             padding: 20px 24px;
             vertical-align: middle;
-            color: #333333;
+            color: #000;
 
             &.employee-info {
               display: flex;
@@ -518,7 +518,7 @@
         .close-modal {
           background: transparent;
           border: none;
-          color: #666666;
+          color: #000;
           cursor: pointer;
           padding: 4px;
           border-radius: 4px;
@@ -575,7 +575,7 @@
 
           p {
             font-size: 14px;
-            color: #666666;
+            color: #000;
             margin: 0;
           }
 
@@ -631,14 +631,14 @@
             }
 
             .employee-email {
-              color: #666666;
+              color: #000;
               font-size: 14px;
               margin: 0 0 20px 0;
             }
 
             .confirmation-message {
               font-size: 16px;
-              color: #333333;
+              color: #000;
               line-height: 1.6;
               margin: 0 0 20px 0;
             }
@@ -741,7 +741,7 @@
                 td {
                   padding: 10px 12px;
                   font-size: 13px;
-                  color: #333333;
+                  color: #000;
                   vertical-align: middle;
 
                   &.client-name {
@@ -811,7 +811,7 @@
               gap: 8px;
               font-size: 14px;
               font-weight: 600;
-              color: #333333;
+              color: #000;
               margin-bottom: 8px;
               font-family: 'Poppins', sans-serif;
 
@@ -909,7 +909,7 @@
                     }
 
                     .unassigned {
-                      color: #666666;
+                      color: #000;
                       font-style: italic;
                     }
                   }
@@ -953,7 +953,7 @@
               border-radius: 8px;
               transition: all 0.2s;
               background: #ffffff;
-              color: #333333;
+              color: #000;
               font-family: 'Poppins', sans-serif;
               box-sizing: border-box;
 
@@ -1000,7 +1000,7 @@
             }
 
             .hint {
-              color: #666666;
+              color: #000;
               font-size: 12px;
               margin-top: 4px;
               display: block;
@@ -1105,7 +1105,7 @@
 
               &.secondary-btn {
                 background: #e5e7eb;
-                color: #333333;
+                color: #000;
 
                 &:hover:not(:disabled) {
                   background: #d1d5db;
@@ -1504,7 +1504,7 @@
 
       &.secondary-btn {
         background: #e5e7eb;
-        color: #333333;
+        color: #000;
 
         &:hover:not(:disabled) {
           background: #d1d5db;
@@ -1639,7 +1639,7 @@
   .document-hint {
     display: block;
     margin-top: 8px;
-    color: #666666;
+    color: #000;
     font-size: 12px;
     font-style: italic;
   }
@@ -1681,7 +1681,7 @@
     
     &.secondary-btn {
       background: #e5e7eb;
-      color: #333333;
+      color: #000;
       
       &:hover:not(:disabled) {
         background: #d1d5db;
@@ -1743,7 +1743,7 @@
     
     &.secondary-btn {
       background: #e5e7eb;
-      color: #333333;
+      color: #000;
       border: 1px solid #d1d5db;
       
       &:hover:not(:disabled) {

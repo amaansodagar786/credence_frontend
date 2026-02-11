@@ -6,7 +6,7 @@
   max-width: 1400px;
   margin: 0 auto;
   font-family: 'Poppins', sans-serif;
-  color: #333333;
+  color: #000;
   min-height: calc(100vh - 120px);
   background: #ffffff;
 
@@ -53,7 +53,7 @@
 
       .page-subtitle {
         font-size: 14px;
-        color: #666666;
+        color: #000;
         margin: 0;
       }
     }
@@ -246,7 +246,7 @@
 
       p {
         font-size: 14px;
-        color: #666666;
+        color: #000;
         margin: 0;
       }
     }
@@ -269,7 +269,7 @@
         transition: all 0.3s;
         border: 2px solid #e5e7eb;
         background: #ffffff;
-        color: #666666;
+        color: #000;
         font-family: 'Poppins', sans-serif;
 
         .filter-icon {
@@ -328,7 +328,7 @@
             gap: 8px;
             font-size: 14px;
             font-weight: 600;
-            color: #333333;
+            color: #000;
             margin-bottom: 8px;
             font-family: 'Poppins', sans-serif;
 
@@ -345,7 +345,7 @@
             border-radius: 8px;
             transition: all 0.2s;
             background: #ffffff;
-            color: #333333;
+            color: #000;
             font-family: 'Poppins', sans-serif;
             box-sizing: border-box;
 
@@ -425,7 +425,7 @@
     }
 
     p {
-      color: #666666;
+      color: #000;
       font-size: 16px;
       margin: 0;
     }
@@ -504,7 +504,7 @@
 
           .summary-label {
             font-size: 13px;
-            color: #666666;
+            color: #000;
             font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -513,7 +513,7 @@
           .summary-value {
             font-size: 15px;
             font-weight: 600;
-            color: #333333;
+            color: #000;
 
             &.highlight {
               color: #7cd64b;
@@ -603,7 +603,7 @@
 
           .month-summary {
             font-size: 14px;
-            color: #666666;
+            color: #000;
             margin: 0;
           }
         }
@@ -730,7 +730,7 @@
 
             .notes-count {
               font-size: 12px;
-              color: #666666;
+              color: #000;
               font-weight: 500;
             }
           }
@@ -775,7 +775,7 @@
                 .category-name {
                   font-size: 15px;
                   font-weight: 600;
-                  color: #333333;
+                  color: #000;
                   text-transform: capitalize;
                 }
               }
@@ -795,7 +795,7 @@
                   .file-name {
                     flex: 1;
                     font-size: 14px;
-                    color: #333333;
+                    color: #000;
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
@@ -803,7 +803,7 @@
 
                   .file-date {
                     font-size: 12px;
-                    color: #666666;
+                    color: #000;
                   }
                 }
 
@@ -826,7 +826,7 @@
               h5 {
                 font-size: 14px;
                 font-weight: 600;
-                color: #666666;
+                color: #000;
                 margin: 0 0 12px 0;
                 padding-bottom: 8px;
                 border-bottom: 1px solid #e5e7eb;
@@ -892,7 +892,7 @@
                 .task-name {
                   font-size: 15px;
                   font-weight: 600;
-                  color: #333333;
+                  color: #000;
                   flex: 1;
                 }
               }
@@ -1014,7 +1014,7 @@
 
                 .note-category {
                   font-size: 12px;
-                  color: #666666;
+                  color: #000;
                   font-weight: 500;
                 }
 
@@ -1031,7 +1031,7 @@
               .note-content {
                 p {
                   font-size: 14px;
-                  color: #333333;
+                  color: #000;
                   line-height: 1.6;
                   margin: 0;
                 }
@@ -1083,13 +1083,13 @@
 
     h4 {
       font-size: 20px;
-      color: #333333;
+      color: #000;
       margin: 0 0 8px 0;
       font-weight: 600;
     }
 
     p {
-      color: #666666;
+      color: #000;
       font-size: 14px;
       margin: 0;
     }
@@ -1152,7 +1152,7 @@
           .close-modal {
             background: transparent;
             border: none;
-            color: #666666;
+            color: #000;
             cursor: pointer;
             padding: 4px;
             border-radius: 4px;
@@ -1229,7 +1229,7 @@
                   h5 {
                     font-size: 16px;
                     font-weight: 600;
-                    color: #333333;
+                    color: #000;
                     text-transform: capitalize;
                     margin: 0;
                     flex: 1;
@@ -1237,7 +1237,7 @@
 
                   .files-count {
                     font-size: 12px;
-                    color: #666666;
+                    color: #000;
                     font-weight: 500;
                   }
                 }
@@ -1264,13 +1264,13 @@
                         display: block;
                         font-size: 14px;
                         font-weight: 500;
-                        color: #333333;
+                        color: #000;
                         margin-bottom: 4px;
                       }
 
                       .file-date {
                         font-size: 11px;
-                        color: #666666;
+                        color: #000;
                       }
                     }
                   }
@@ -1320,7 +1320,7 @@
                   h5 {
                     font-size: 16px;
                     font-weight: 600;
-                    color: #333333;
+                    color: #000;
                     margin: 0;
                   }
 
@@ -1392,14 +1392,14 @@
                         display: block;
                         font-size: 13px;
                         font-weight: 500;
-                        color: #333333;
+                        color: #000;
                         margin-bottom: 6px;
                       }
 
                       .completed-by,
                       .assigned-by {
                         font-size: 12px;
-                        color: #666666;
+                        color: #000;
                       }
                     }
                   }
@@ -1457,7 +1457,7 @@
 
                   .note-card-category {
                     font-size: 13px;
-                    color: #666666;
+                    color: #000;
                     font-weight: 500;
                   }
 
@@ -1471,7 +1471,7 @@
                 .note-card-content {
                   p {
                     font-size: 14px;
-                    color: #333333;
+                    color: #000;
                     line-height: 1.6;
                     margin: 0 0 12px 0;
                   }
@@ -1480,7 +1480,7 @@
                 .note-card-footer {
                   .note-added-by {
                     font-size: 12px;
-                    color: #666666;
+                    color: #000;
                     font-style: italic;
                   }
                 }
@@ -1828,7 +1828,7 @@
 
           .note-preview-text {
             font-size: 13px;
-            color: #333333;
+            color: #000;
             margin: 0 0 8px 0;
             line-height: 1.4;
           }
@@ -1840,7 +1840,7 @@
 
             .note-category {
               font-size: 11px;
-              color: #666666;
+              color: #000;
               font-weight: 500;
               background: rgba(0, 0, 0, 0.05);
               padding: 2px 6px;
@@ -1976,7 +1976,7 @@
         }
 
         p {
-          color: #666666;
+          color: #000;
           font-size: 16px;
           margin: 0;
         }
@@ -1994,13 +1994,13 @@
 
         h4 {
           font-size: 20px;
-          color: #333333;
+          color: #000;
           margin: 0 0 8px 0;
           font-weight: 600;
         }
 
         p {
-          color: #666666;
+          color: #000;
           font-size: 14px;
           margin: 0;
         }
@@ -2084,7 +2084,7 @@
 
               .note-category-full {
                 font-size: 12px;
-                color: #666666;
+                color: #000;
                 font-weight: 500;
               }
             }
@@ -2114,7 +2114,7 @@
 
             span {
               font-size: 13px;
-              color: #333333;
+              color: #000;
               font-weight: 500;
             }
           }
@@ -2122,7 +2122,7 @@
           .note-full-content {
             p {
               font-size: 14px;
-              color: #333333;
+              color: #000;
               line-height: 1.6;
               margin: 0 0 12px 0;
             }
@@ -2137,7 +2137,7 @@
 
             .note-added-by {
               font-size: 12px;
-              color: #666666;
+              color: #000;
               font-style: italic;
             }
 
@@ -2902,7 +2902,7 @@
 
       .total-notes {
         font-size: 14px;
-        color: #666666;
+        color: #000;
         font-weight: 500;
       }
 
@@ -3043,7 +3043,7 @@
           margin: 0 0 16px 0;
           font-size: 14px;
           line-height: 1.5;
-          color: #333333;
+          color: #000;
           display: -webkit-box;
           -webkit-line-clamp: 3;
           -webkit-box-orient: vertical;
@@ -3056,7 +3056,7 @@
         justify-content: space-between;
         align-items: center;
         font-size: 12px;
-        color: #666666;
+        color: #000;
         padding-top: 12px;
         border-top: 1px solid #e5e7eb;
 
@@ -3181,7 +3181,7 @@
         .close-modal {
           background: transparent;
           border: none;
-          color: #666666;
+          color: #000;
           cursor: pointer;
           padding: 8px;
           border-radius: 8px;
@@ -3222,7 +3222,7 @@
           }
 
           p {
-            color: #666666;
+            color: #000;
             font-size: 16px;
             margin: 0;
           }
@@ -3240,13 +3240,13 @@
 
           h4 {
             font-size: 20px;
-            color: #333333;
+            color: #000;
             margin: 0 0 8px 0;
             font-weight: 600;
           }
 
           p {
-            color: #666666;
+            color: #000;
             font-size: 14px;
             margin: 0;
           }
@@ -3340,7 +3340,7 @@
 
                 .note-category-full {
                   font-size: 12px;
-                  color: #666666;
+                  color: #000;
                   font-weight: 500;
                   background: rgba(124, 214, 75, 0.1);
                   padding: 4px 8px;
@@ -3350,7 +3350,7 @@
 
               .note-full-date {
                 font-size: 12px;
-                color: #666666;
+                color: #000;
                 display: flex;
                 align-items: center;
                 gap: 4px;
@@ -3368,7 +3368,7 @@
               border-radius: 6px;
               border: 1px solid rgba(124, 214, 75, 0.1);
               font-size: 13px;
-              color: #333333;
+              color: #000;
 
               svg {
                 color: #7cd64b;
@@ -3378,7 +3378,7 @@
             .note-full-content {
               p {
                 font-size: 14px;
-                color: #333333;
+                color: #000;
                 line-height: 1.6;
                 margin: 0 0 12px 0;
               }
@@ -3391,7 +3391,7 @@
               padding-top: 12px;
               border-top: 1px solid #e5e7eb;
               font-size: 12px;
-              color: #666666;
+              color: #000;
 
               .note-added-by {
                 font-style: italic;
@@ -3608,7 +3608,7 @@
 
         .stats-label {
           font-size: 12px;
-          color: #666666;
+          color: #000;
           font-weight: 500;
           text-transform: uppercase;
           letter-spacing: 0.5px;
@@ -3752,7 +3752,7 @@
           margin: 0 0 16px 0;
           font-size: 14px;
           line-height: 1.5;
-          color: #333333;
+          color: #000;
           display: -webkit-box;
           -webkit-line-clamp: 3;
           -webkit-box-orient: vertical;
@@ -3765,7 +3765,7 @@
         justify-content: space-between;
         align-items: center;
         font-size: 12px;
-        color: #666666;
+        color: #000;
         padding-top: 12px;
         border-top: 1px solid #e5e7eb;
 

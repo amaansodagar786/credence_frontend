@@ -63,7 +63,8 @@ const assignSchema = Yup.object().shape({
       "Bookkeeping",
       "VAT Filing Computation",
       "VAT Filing",
-      "Financial Statement Generation"
+      "Financial Statement Generation",
+      "Audit"
     ], "Please select a valid task")
     .required("Task is required")
 });
@@ -100,7 +101,8 @@ const AdminEmployees = () => {
     { value: "Bookkeeping", label: "Bookkeeping" },
     { value: "VAT Filing Computation", label: "VAT Filing Computation" },
     { value: "VAT Filing", label: "VAT Filing" },
-    { value: "Financial Statement Generation", label: "Financial Statement Generation" }
+    { value: "Financial Statement Generation", label: "Financial Statement Generation" },
+    { value: "Audit", label: "Audit" }
   ];
 
   // Current month/year
@@ -1153,7 +1155,7 @@ const AdminEmployees = () => {
                       {clientTaskStatus && (
                         <div className="task-status-info">
                           <FiInfo size={14} />
-                          <span>{clientTaskStatus.totalAssigned}/4 tasks assigned</span>
+                          <span>{clientTaskStatus.totalAssigned}/5 tasks assigned</span>
                         </div>
                       )}
                     </div>

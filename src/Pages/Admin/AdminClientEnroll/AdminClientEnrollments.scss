@@ -101,7 +101,7 @@
         border-radius: 8px;
         font-size: 14px;
         color: #333;
-        background: #f8f9fa; 
+        background: #f8f9fa;
         transition: all 0.2s ease;
 
         @media (max-width: 768px) {
@@ -201,7 +201,8 @@
       align-items: center;
       margin-bottom: 16px;
 
-      .edit-btn, .save-btn {
+      .edit-btn,
+      .save-btn {
         display: flex;
         align-items: center;
         gap: 6px;
@@ -363,17 +364,39 @@
           font-weight: 600;
           text-transform: uppercase;
 
-          &.lite { background: rgba(59, 130, 246, 0.1); color: #1d4ed8; }
-          &.taxi { background: rgba(245, 158, 11, 0.1); color: #92400e; }
-          &.premium { background: rgba(16, 185, 129, 0.1); color: #065f46; }
-          &.pro { background: rgba(139, 92, 246, 0.1); color: #5b21b6; }
-          &.restaurant { background: rgba(239, 68, 68, 0.1); color: #991b1b; }
+          &.lite {
+            background: rgba(59, 130, 246, 0.1);
+            color: #1d4ed8;
+          }
+
+          &.taxi {
+            background: rgba(245, 158, 11, 0.1);
+            color: #92400e;
+          }
+
+          &.premium {
+            background: rgba(16, 185, 129, 0.1);
+            color: #065f46;
+          }
+
+          &.pro {
+            background: rgba(139, 92, 246, 0.1);
+            color: #5b21b6;
+          }
+
+          &.restaurant {
+            background: rgba(239, 68, 68, 0.1);
+            color: #991b1b;
+          }
         }
       }
 
       &.actions-cell {
         .action-buttons {
-          .activate-btn, .deactivate-btn, .view-btn {
+
+          .activate-btn,
+          .deactivate-btn,
+          .view-btn {
             display: flex;
             align-items: center;
             gap: 6px;
@@ -488,6 +511,7 @@
    ENROLLMENTS SECTION STYLES (KEEP EXACTLY AS IS - CLIENT APPROVED)
 ================================ */
 .admin-client-management {
+
   /* ========== VIEW MODAL STYLES ========== */
   .view-modal-overlay {
     position: fixed;
@@ -973,7 +997,7 @@
 
       .subtitle {
         margin: 0;
-        color: #666666;
+        color: #000;
         font-size: 14px;
         font-weight: 400;
       }
@@ -987,7 +1011,7 @@
       background: #f8f9fa;
       border: 1px solid #e5e7eb;
       border-radius: 8px;
-      color: #333333;
+      color: #000;
       font-size: 14px;
       font-weight: 500;
       cursor: pointer;
@@ -1100,7 +1124,7 @@
         td {
           padding: 16px 20px;
           border-bottom: 1px solid #f0f0f0;
-          color: #333333;
+          color: #000;
           font-size: 14px;
           vertical-align: middle;
 
@@ -1440,5 +1464,23 @@
     .enrollments-table {
       min-width: 600px;
     }
+  }
+}
+
+
+
+.finance-approve {
+  background: rgba(16, 185, 129, 0.1);
+  color: #065f46;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 9px; 
+  margin-top: 5px;
+  border-radius: 5px;
+
+  &:hover {
+    background: #10b981;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
   }
 }

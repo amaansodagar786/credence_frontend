@@ -24,6 +24,7 @@ import {
   FiBook,
   FiBriefcase
 } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -32,6 +33,8 @@ import "./AdminDashboard.scss";
 import AdminNotesPanel from "./Notes/AdminNotesPanel";
 
 const AdminDashboard = () => {
+
+  const navigate = useNavigate();
   // State for dashboard data
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +52,9 @@ const AdminDashboard = () => {
   const [unviewedNotesSummary, setUnviewedNotesSummary] = useState(null);
   const [selectedClientNotes, setSelectedClientNotes] = useState(null);
   const [notesLoading, setNotesLoading] = useState(false);
+
+
+
 
   // Time filter options
   const timeFilterOptions = [
@@ -517,14 +523,14 @@ const AdminDashboard = () => {
         color: "#ff4b4b",
         onClick: () => fetchModalData('incompleteTasks')
       },
-      // {
-      //   title: "Unviewed Notes",
-      //   value: dashboardData.metrics.recentNotes,
-      //   subtitle: "New notes to review",
-      //   icon: <FiMessageSquare />,
-      //   color: "#ff6b6b",
-      //   onClick: handleOpenUnviewedNotes
-      // }
+      {
+        title: "Pending Finance Requests",
+        value: dashboardData.metrics.pendingFinancialRequests || 0,
+        subtitle: "Financial statement requests pending",
+        icon: <FiDollarSign />, // or use FiFileText for document icon
+        color: "#3498db", // Blue color for finance
+        onClick: () => navigate("/admin/enrollments")
+      }
     ];
 
     return (
@@ -567,7 +573,7 @@ const AdminDashboard = () => {
         title: "Clients with Uploaded Documents FOr This Month",
         value: "Docs Details",
         // subtitle: "Clients needing month unlock",
-        icon: <FiLock />, 
+        icon: <FiLock />,
         color: "#8B5CF6",
         onClick: () => fetchModalData('uploadedLocked')
       }
@@ -1388,7 +1394,7 @@ const AdminDashboard = () => {
           )}
         </div>
 
-        <AdminNotesPanel/>
+        <AdminNotesPanel />
 
         {/* Loading State */}
         {loading ? (

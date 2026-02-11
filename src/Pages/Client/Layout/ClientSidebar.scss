@@ -536,3 +536,85 @@
     font-size: 14px;
   }
 }
+
+
+/* ---------- FINANCIAL STATEMENTS BUTTON ---------- */
+.client-financial-button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  text-decoration: none;
+  color: #ffffff; // White text like other non-active links
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'Poppins', sans-serif;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.03); // Same background as other links
+  border: none;
+  cursor: pointer;
+  
+  .client-menu-icon svg {
+    font-size: 18px;
+    flex-shrink: 0;
+    color: #ffffff; // White icon color like other non-active links
+    transition: all 0.2s ease;
+  }
+  
+  &:hover {
+    color: var(--sidebar-hover-text);
+    background: rgba(255, 255, 255, 0.08); // Same hover as other links
+    
+    .client-menu-icon svg {
+      color: var(--green);
+    }
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.03);
+      color: #ffffff;
+      
+      .client-menu-icon svg {
+        color: #ffffff;
+      }
+    }
+  }
+}
+
+/* Center icons when sidebar is collapsed */
+#client-sidebar.hide .client-financial-button {
+  justify-content: center;
+  padding: 10px;
+}
+
+#client-sidebar.hide .client-financial-button .client-menu-title {
+  display: none;
+}
+
+/* Active style for expanded sidebar */
+#client-sidebar:not(.hide) .client-financial-button.active {
+  background: var(--green);
+  color: #000000;
+  font-weight: 600;
+  
+  .client-menu-icon svg {
+    background: #000000;
+    color: var(--green);
+    border-radius: 6px;
+    padding: 4px;
+  }
+}
+
+/* Active style for collapsed sidebar */
+#client-sidebar.hide .client-financial-button.active .client-menu-icon svg {
+  background: var(--green);
+  color: #000000;
+  border-radius: 6px;
+  padding: 4px;
+}

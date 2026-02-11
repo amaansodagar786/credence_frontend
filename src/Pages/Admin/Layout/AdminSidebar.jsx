@@ -15,7 +15,9 @@ import {
   FiShield,
   FiUserPlus,
   FiSend,
-  FiRefreshCw // Add this for plan change trigger
+  FiRefreshCw,
+  FiActivity, // For Activity Logs
+  FiBriefcase
 } from "react-icons/fi";
 import { MdOutlineDashboard } from "react-icons/md";
 import { TbUsers, TbReportAnalytics } from "react-icons/tb";
@@ -175,7 +177,6 @@ const AdminSidebar = ({ children }) => {
     setToggle(!toggle);
   };
 
-  // Menu Data for Admin
   const menuData = [
     {
       icon: <MdOutlineDashboard />,
@@ -184,7 +185,7 @@ const AdminSidebar = ({ children }) => {
     },
     {
       icon: <FiFileText />,
-      title: "Client Enrollments",
+      title: "Client Manage",
       path: "/admin/enrollments"
     },
     {
@@ -193,20 +194,15 @@ const AdminSidebar = ({ children }) => {
       path: "/admin/employees"
     },
     {
-      icon: <TbUsers />,
+      icon: <FiBriefcase />, // Changed from TbUsers
       title: "Clients Info",
       path: "/admin/clients"
     },
     {
-      icon: <TbUsers />,
+      icon: <FiActivity />, // Changed from TbUsers
       title: "Activity Logs",
       path: "/admin/logs"
     },
-    // {
-    //   icon: <TbUsers />,
-    //   title: "Admin Notes",
-    //   path: "/admin/notes"
-    // },
   ];
 
   return (
@@ -316,7 +312,7 @@ const AdminSidebar = ({ children }) => {
               {(() => {
                 const path = location.pathname;
                 if (path.includes("dashboard")) return "Admin Dashboard";
-                if (path.includes("enrollments")) return "Client Enrollments";
+                if (path.includes("enrollments")) return "Client Management";
                 if (path.includes("employees")) return "Employees";
                 if (path.includes("employees-tasks")) return "Employees Tasks";
                 if (path.includes("clients")) return "Clients";

@@ -1,72 +1,149 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
+import axios from "axios"; // IMPORTANT: Add axios
 
-// Icons - Add the terms icon
+// Icons
 import { BiLogOut, BiLogIn } from "react-icons/bi";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { RxCross1 } from "react-icons/rx";
 import {
   FiUser,
-  FiHome,
   FiUploadCloud,
-  FiFileText,
-  FiDollarSign,
-  FiCalendar,
-  FiSettings,
   FiShield,
-  FiFile // Add this for terms icon
+  FiFile,
+  FiFileMinus
 } from "react-icons/fi";
 import { MdOutlineDashboard } from "react-icons/md";
-import { TbFileInvoice } from "react-icons/tb";
 
 import "./ClientSidebar.scss";
+import FinancialStatementModal from "../FInancialStatements/FinancialStatementModal";
 import pdf from "../../../assets/pdf/newterms.pdf";
 
 const ClientSidebar = ({ children }) => {
   const [toggle, setToggle] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showFinancialStatementModal, setShowFinancialStatementModal] = useState(false);
+  const [clientInfo, setClientInfo] = useState(null);
+  const [loadingClientInfo, setLoadingClientInfo] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check login status
+  // UPDATED: Fetch client info with proper debugging
   useEffect(() => {
-    const token = localStorage.getItem("clientToken") || document.cookie.includes("clientToken");
-    setIsLoggedIn(!!token);
+    console.log("=== CLIENT SIDEBAR MOUNTED ===");
+
+    // Check if logged in
+    const hasToken = document.cookie.includes("clientToken");
+    console.log("1. Has clientToken cookie:", hasToken);
+    setIsLoggedIn(hasToken);
+
+    if (hasToken) {
+      fetchClientInfo();
+    } else {
+      console.log("2. Not logged in, skipping client info fetch");
+    }
   }, []);
 
+  // Function to fetch client info
+  const fetchClientInfo = async () => {
+    console.log("=== FETCHING CLIENT INFO ===");
+    setLoadingClientInfo(true);
+
+    try {
+
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/client/profile`,
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+     
+
+      if (response.data) {
+        setClientInfo(response.data);
+        console.log("4. Client info set successfully:", response.data);
+      } else {
+        console.log("4. No data in response");
+      }
+    } catch (error) {
+      console.log("=== ERROR FETCHING CLIENT INFO ===");
+      console.log("Error:", error);
+     
+      // Try alternative endpoint
+      try {
+        console.log("Trying alternative endpoint: /client/dashboard/overview");
+        const altResponse = await axios.get(
+          `${import.meta.env.VITE_API_URL}/client/dashboard/overview`,
+          { withCredentials: true }
+        );
+
+        if (altResponse.data?.client) {
+          console.log("Got client info from dashboard:", altResponse.data.client);
+          setClientInfo(altResponse.data.client);
+        }
+      } catch (altError) {
+        console.log("Alternative endpoint also failed:", altError);
+      }
+    } finally {
+      setLoadingClientInfo(false);
+      
+    }
+  };
+
+  // Handle Financial Statements button click - WITH DEBUG
+  const handleFinancialStatementsClick = () => {
+    
+
+    // If no client info, try to fetch it first
+    if (!clientInfo || Object.keys(clientInfo).length === 0) {
+      console.log("Client info missing, fetching now...");
+      fetchClientInfo().then(() => {
+        console.log("After fetch, opening modal...");
+        setShowFinancialStatementModal(true);
+      });
+    } else {
+      console.log("Client info exists, opening modal directly");
+      setShowFinancialStatementModal(true);
+    }
+  };
+
+  // Rest of your existing functions...
   const handleLogin = () => navigate("/login");
 
   const handleLogout = async () => {
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/client/logout`, {
-        method: 'POST',
-        credentials: 'include'
-      });
+      await axios.post(
+        `${import.meta.env.VITE_API_URL}/client/logout`,
+        {},
+        { withCredentials: true }
+      );
     } catch (error) {
       console.error("Logout error:", error);
     }
 
-    localStorage.removeItem("clientToken");
     document.cookie = "clientToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     setIsLoggedIn(false);
+    setClientInfo(null);
     navigate("/login");
   };
 
-  // Function to handle Terms PDF download
+  // Handle Terms PDF download
   const handleTermsDownload = () => {
     const link = document.createElement('a');
     link.href = pdf;
     link.download = 'Terms_and_Conditions.pdf';
     link.target = '_blank';
-
-    // Append to body, click, and remove
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  // Auto-collapse sidebar on route change (mobile only)
+  // Auto-collapse sidebar
   useEffect(() => {
     if (window.innerWidth < 768) {
       setToggle(true);
@@ -78,12 +155,16 @@ const ClientSidebar = ({ children }) => {
     setToggle(!toggle);
   };
 
-  // Menu Data for Client
+  // Handle modal success
+  const handleFinancialStatementSuccess = (data) => {
+    console.log("Financial statement request successful:", data);
+  };
+
+  // Menu Data
   const menuData = [
     { icon: <MdOutlineDashboard />, title: "Dashboard", path: "/client/dashboard" },
     { icon: <FiUploadCloud />, title: "Upload Files", path: "/client/upload" },
-    { icon: <FiUser />, title: "Profile", path: "/client/profile" }, // Add this line
-
+    { icon: <FiUser />, title: "Profile", path: "/client/profile" },
   ];
 
   return (
@@ -93,20 +174,14 @@ const ClientSidebar = ({ children }) => {
         <div className="client-logo">
           <div className="client-logoBox">
             {toggle ? (
-              <GiHamburgerMenu
-                className="client-menuIconHidden"
-                onClick={handleToggle}
-              />
+              <GiHamburgerMenu className="client-menuIconHidden" onClick={handleToggle} />
             ) : (
               <>
                 <div className="client-sidebar-logo">
                   <FiShield size={24} />
                   <span>Client Portal</span>
                 </div>
-                <RxCross1
-                  className="client-menuIconHidden"
-                  onClick={handleToggle}
-                />
+                <RxCross1 className="client-menuIconHidden" onClick={handleToggle} />
               </>
             )}
           </div>
@@ -125,6 +200,23 @@ const ClientSidebar = ({ children }) => {
               </NavLink>
             </li>
           ))}
+
+          {/* Financial Statements Button */}
+          <li>
+            <button
+              className="client-financial-button"
+              onClick={handleFinancialStatementsClick}
+              disabled={loadingClientInfo}
+            >
+              <span className="client-menu-icon">
+                <FiFileMinus />
+              </span>
+              <span className="client-menu-title">
+                Finance Statements
+                {loadingClientInfo && " (Loading...)"}
+              </span>
+            </button>
+          </li>
 
           {/* Terms & Conditions Button */}
           <li>
@@ -159,21 +251,13 @@ const ClientSidebar = ({ children }) => {
         {/* TOP NAVBAR */}
         <nav className="client-top-nav">
           <div className="client-nav-left">
-            <GiHamburgerMenu
-              className="client-menuIcon"
-              onClick={handleToggle}
-            />
+            <GiHamburgerMenu className="client-menuIcon" onClick={handleToggle} />
             <div className="client-page-title">
               {(() => {
                 const path = location.pathname;
                 if (path.includes("dashboard")) return "Dashboard";
                 if (path.includes("upload")) return "Upload Files";
-                if (path.includes("documents")) return "My Documents";
-                if (path.includes("invoices")) return "Invoices";
-                if (path.includes("payments")) return "Payments";
-                if (path.includes("appointments")) return "Appointments";
-                if (path.includes("settings")) return "Settings";
-                if (path.includes("profile")) return "My Profile"; 
+                if (path.includes("profile")) return "My Profile";
                 return "Client Portal";
               })()}
             </div>
@@ -181,7 +265,7 @@ const ClientSidebar = ({ children }) => {
 
           <div className="client-nav-right">
             {!isLoggedIn ? (
-              <button className="client-icon-button" onClick={handleLogout}>
+              <button className="client-icon-button" onClick={handleLogin}>
                 <BiLogIn />
               </button>
             ) : (
@@ -197,10 +281,36 @@ const ClientSidebar = ({ children }) => {
           </div>
         </nav>
 
-        {/* PAGE CONTENT (passed from ClientLayout) */}
+        {/* PAGE CONTENT */}
         <div className="client-page-content">
           {children}
         </div>
+      </div>
+
+      {/* FINANCIAL STATEMENT MODAL */}
+      <FinancialStatementModal
+        isOpen={showFinancialStatementModal}
+        onClose={() => setShowFinancialStatementModal(false)}
+        clientInfo={clientInfo || {}}
+        onSuccess={handleFinancialStatementSuccess}
+      />
+
+      {/* DEBUG INFO (visible in UI) */}
+      <div style={{
+        position: 'fixed',
+        bottom: '10px',
+        right: '10px',
+        background: '#f0f0f0',
+        padding: '10px',
+        borderRadius: '5px',
+        fontSize: '12px',
+        zIndex: 9999,
+        display: 'none' // Change to 'block' to see debug info in UI
+      }}>
+        <strong>Client Info Debug:</strong><br />
+        Has Token: {document.cookie.includes("clientToken") ? 'Yes' : 'No'}<br />
+        Client Info: {clientInfo ? JSON.stringify(clientInfo) : 'null'}<br />
+        Loading: {loadingClientInfo ? 'Yes' : 'No'}
       </div>
     </div>
   );
