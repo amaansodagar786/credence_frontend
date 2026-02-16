@@ -131,9 +131,10 @@
 
 // ===== FORM INPUTS =====
 .sc-form input {
-  background-color: #000;
-  color: #fff;
-  border: none;
+  // background-color: #000; 
+  background-color: #FFF;
+  color: #000;
+  border: 2px solid black;
   padding: 16px;
   font-size: 14px;
   font-family: "Inter", sans-serif;
@@ -172,7 +173,7 @@
   }
 
   &::placeholder {
-    color: #aaa;
+    color: #000;
     letter-spacing: 1px;
     opacity: 0.8;
     transition: all 0.3s ease;

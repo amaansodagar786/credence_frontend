@@ -125,8 +125,8 @@ const Services = () => {
 
   // Service item variants - appearing one by one
   const itemVariants = {
-    hidden: { 
-      y: 30, 
+    hidden: {
+      y: 30,
       opacity: 0,
       scale: 0.9
     },
@@ -182,14 +182,14 @@ const Services = () => {
   };
 
   return (
-    <motion.section 
+    <motion.section
       className="services"
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.2 }}
     >
       {/* Heading Section */}
-      <motion.div 
+      <motion.div
         className="services-header"
         initial="hidden"
         whileInView="visible"
@@ -198,16 +198,16 @@ const Services = () => {
         <motion.h2 variants={headerVariants}>
           Services
         </motion.h2>
-        
-        <motion.span 
+
+        <motion.span
           className="underline"
           variants={underlineVariants}
         />
-        
+
         <motion.h4 variants={subtitleVariants}>
           Complete Bookkeeping & Financial Services Under One Roof
         </motion.h4>
-        
+
         <motion.p variants={descriptionVariants}>
           We offer end-to-end bookkeeping and financial support designed to meet
           your business needs.
@@ -215,7 +215,7 @@ const Services = () => {
       </motion.div>
 
       {/* Services Grid - Now with proper staggered animation */}
-      <motion.div 
+      <motion.div
         className="services-grid"
         variants={containerVariants}
         initial="hidden"
@@ -223,7 +223,7 @@ const Services = () => {
         viewport={{ once: true, amount: 0.1 }}
       >
         {services.map((item, index) => (
-          <motion.div 
+          <motion.div
             className="service-item"
             key={item.no}
             variants={itemVariants}
@@ -231,13 +231,13 @@ const Services = () => {
             whileTap="tap"
             custom={index}
           >
-            <motion.div 
+            <motion.div
               className="number"
               variants={numberVariants}
             >
               {item.no}
             </motion.div>
-            
+
             <div className="content">
               <h5>{item.title}</h5>
               <p>{item.desc}</p>

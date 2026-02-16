@@ -301,6 +301,14 @@ const PackagePlans = () => {
     <>
       {/* ================= HEADER SECTION (Same background theme as packages) ================= */}
       <section className="plans-header">
+
+        <div className="pulse-layer"></div>
+
+        <div className="flow-particle"></div>
+        <div className="flow-particle"></div>
+        <div className="flow-particle"></div>
+        <div className="flow-particle"></div>
+        <div className="flow-particle"></div>
         {/* Background with same theme as packages */}
         <div className="plans-header-bg"></div>
 
@@ -319,7 +327,7 @@ const PackagePlans = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              Enroll Now
+              <span>Enroll Now</span>
             </motion.span>
 
             <motion.div

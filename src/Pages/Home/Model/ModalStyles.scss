@@ -29,7 +29,7 @@ body.modal-open {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -40,7 +40,7 @@ body.modal-open {
 
 // ===== MODAL CONTAINER =====
 .modal-container {
-  background: #000;
+  background: #ffffff;
   border: 2px solid #7cd64b;
   border-radius: 12px;
   padding: 40px;
@@ -49,8 +49,9 @@ body.modal-open {
   max-height: 85vh;
   overflow-y: auto;
   position: relative;
-  color: #fff;
+  color: #1a1a1a;
   margin: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
 
   &.form-modal {
     max-width: 900px;
@@ -61,7 +62,7 @@ body.modal-open {
   }
 
   &::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
+    background: #f0f0f0;
     border-radius: 4px;
   }
 
@@ -90,14 +91,14 @@ body.modal-open {
   transition: all 0.3s ease;
 
   &:hover {
-    background: rgba(124, 214, 75, 0.2);
+    background: rgba(124, 214, 75, 0.1);
   }
 }
 
 // ===== HEADING =====
 .modal-heading {
   font-family: "Heading", sans-serif;
-  color: #7cd64b;
+  color: #1a1a1a;
   font-size: 32px;
   text-align: center;
   margin-bottom: 30px;
@@ -111,11 +112,12 @@ body.modal-open {
 }
 
 .agreement-list {
-  background: rgba(255, 255, 255, 0.05);
+  background: #f9f9f9;
   border-left: 3px solid #7cd64b;
   padding: 20px;
   margin-bottom: 25px;
   border-radius: 0 8px 8px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 
   ol {
     padding-left: 20px;
@@ -124,7 +126,7 @@ body.modal-open {
     li {
       margin-bottom: 12px;
       line-height: 1.6;
-      color: #ccc;
+      color: #4a4a4a;
     }
   }
 
@@ -142,9 +144,9 @@ body.modal-open {
   gap: 12px;
   margin: 20px 0;
   padding: 15px;
-  background: rgba(255, 255, 255, 0.03);
+  background: #f9f9f9;
   border-radius: 8px;
-  border: 1px solid #333;
+  border: 1px solid #e0e0e0;
 }
 
 .checkbox-input {
@@ -157,7 +159,7 @@ body.modal-open {
 
 .checkbox-label {
   flex: 1;
-  color: #fff;
+  color: #1a1a1a;
   line-height: 1.5;
   cursor: pointer;
   font-size: 15px;
@@ -171,7 +173,7 @@ body.modal-open {
   width: 100%;
   padding: 16px;
   background: #7cd64b;
-  color: #000;
+  color: #1a1a1a;
   border: none;
   border-radius: 8px;
   font-family: "Arimo", sans-serif;
@@ -184,7 +186,7 @@ body.modal-open {
   &:hover:not(.disabled) {
     background: #6ac94c;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(124, 214, 75, 0.4);
+    box-shadow: 0 4px 12px rgba(124, 214, 75, 0.3);
   }
 
   &.disabled {
@@ -195,7 +197,7 @@ body.modal-open {
 
 // ===== VALIDATION MESSAGE =====
 .validation-msg {
-  color: #ff6b6b;
+  color: #ff4d4d;
   text-align: center;
   font-size: 14px;
   margin-top: 10px;
@@ -216,7 +218,7 @@ body.modal-open {
 
   &.radio-row {
     gap: 20px;
-    
+
     .radio-group {
       margin: 0;
     }
@@ -225,25 +227,26 @@ body.modal-open {
 
 // ===== FORM INPUTS =====
 .form-input {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid #444;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
   border-radius: 6px;
   padding: 14px;
-  color: #fff;
+  color: #1a1a1a;
   font-family: "Inter", sans-serif;
   font-size: 14px;
   transition: all 0.3s ease;
 
   &::placeholder {
-    color: #888;
+    color: #888888;
     text-transform: uppercase;
     letter-spacing: 1px;
+    font-size: 12px;
   }
 
   &:focus {
     outline: none;
     border-color: #7cd64b;
-    box-shadow: 0 0 0 2px rgba(124, 214, 75, 0.2);
+    box-shadow: 0 0 0 3px rgba(124, 214, 75, 0.1);
   }
 }
 
@@ -251,18 +254,17 @@ body.modal-open {
   grid-column: 1 / -1;
   width: 97%;
 
-  @media (max-width: 768px) 
-  {
+  @media (max-width: 768px) {
     width: 93%;
   }
 }
 
 // ===== RADIO GROUP STYLES =====
 .radio-group {
-  background: rgba(255, 255, 255, 0.05);
+  background: #f9f9f9;
   padding: 15px;
   border-radius: 8px;
-  border: 1px solid #333;
+  border: 1px solid #e0e0e0;
   margin-bottom: 0;
 
   &.full-width-radio {
@@ -289,7 +291,7 @@ body.modal-open {
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    color: #fff;
+    color: #1a1a1a;
 
     input[type="radio"] {
       accent-color: #7cd64b;
@@ -311,28 +313,136 @@ body.modal-open {
 
 .form-select {
   width: 100%;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid #444;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
   border-radius: 6px;
   padding: 14px;
-  color: #fff;
+  color: #1a1a1a;
   font-family: "Inter", sans-serif;
   font-size: 14px;
   appearance: none;
   cursor: pointer;
 
   option {
-    background: #000;
-    color: #fff;
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 10px;
   }
 
   &:focus {
     outline: none;
     border-color: #7cd64b;
+    box-shadow: 0 0 0 3px rgba(124, 214, 75, 0.1);
   }
 }
 
-// ===== MOBILE RESPONSIVE STYLES (768px and below) =====
+// ===== SELECTED PLAN INFO =====
+.selected-plan-info {
+  background: rgba(124, 214, 75, 0.05);
+  border: 1px solid #7cd64b;
+  border-radius: 8px;
+  padding: 12px 20px;
+  margin-bottom: 20px;
+  text-align: center;
+
+  p {
+    color: #1a1a1a;
+    font-family: "Inter", sans-serif;
+    font-size: 15px;
+    margin: 0;
+
+    strong {
+      font-weight: 700;
+      color: #7cd64b;
+    }
+  }
+
+  .plan-price {
+    font-size: 14px;
+    opacity: 0.8;
+    margin-left: 8px;
+    font-weight: 500;
+    color: #666666;
+  }
+}
+
+.plan-note {
+  color: #7cd64b;
+  font-size: 12px;
+  margin-top: 5px;
+  font-style: italic;
+  text-align: center;
+}
+
+// ===== SELECT LABEL WITH ASTERISK =====
+.select-label-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.select-label {
+  color: #1a1a1a;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: "Inter", sans-serif;
+}
+
+.asterisk {
+  color: #7cd64b;
+  font-size: 16px;
+  line-height: 1;
+  vertical-align: middle;
+  display: inline-block;
+  margin-top: -2px;
+}
+
+// ===== LOADING SPINNER =====
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(124, 214, 75, 0.3);
+  border-radius: 50%;
+  border-top-color: #7cd64b;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ===== DISABLED STATES =====
+.form-input:disabled,
+.radio-options input:disabled+span,
+.form-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f0f0f0;
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+// ===== TOAST STYLES =====
+.Toastify__toast-container {
+  z-index: 10000 !important;
+}
+
+.Toastify__toast {
+  z-index: 10001 !important;
+  position: relative;
+}
+
+// ===== MOBILE RESPONSIVE (768px and below) =====
 @media (max-width: 768px) {
   .modal-overlay {
     padding: 10px;
@@ -345,7 +455,7 @@ body.modal-open {
     max-height: 90vh;
     border-width: 1.5px;
     border-radius: 10px;
-    
+
     &.form-modal {
       max-width: 100%;
       padding: 20px 16px;
@@ -360,7 +470,6 @@ body.modal-open {
     font-size: 24px;
   }
 
-  // HEADING
   .modal-heading {
     font-size: 24px;
     margin-bottom: 20px;
@@ -368,39 +477,35 @@ body.modal-open {
     border-bottom-width: 1.5px;
   }
 
-  // FORM ROWS - Stack all on mobile
   .form-row {
     grid-template-columns: 1fr;
     gap: 12px;
-    
+
     &.radio-row {
       gap: 12px;
-      
+
       .radio-group {
         margin: 0;
       }
     }
   }
 
-  // FULL WIDTH ON MOBILE
   .full-width,
   .radio-group.full-width-radio,
   .select-group {
     grid-column: 1;
   }
 
-  // FORM INPUTS
   .form-input {
     padding: 12px;
     font-size: 13px;
-    
+
     &::placeholder {
-      font-size: 12px;
+      font-size: 11px;
       letter-spacing: 0.5px;
     }
   }
 
-  // RADIO GROUPS
   .radio-group {
     padding: 12px;
   }
@@ -412,12 +517,12 @@ body.modal-open {
 
   .radio-options {
     gap: 20px;
-    
+
     label {
       span {
         font-size: 13.5px;
       }
-      
+
       input[type="radio"] {
         width: 16px;
         height: 16px;
@@ -425,13 +530,11 @@ body.modal-open {
     }
   }
 
-  // SELECT
   .form-select {
     padding: 12px;
     font-size: 13px;
   }
 
-  // BUTTONS
   .download-btn,
   .proceed-btn,
   .submit-btn {
@@ -440,20 +543,19 @@ body.modal-open {
     margin: 16px 0;
   }
 
-  // AGREEMENT LIST
   .agreement-list {
     border-left: none;
-    border: 1px solid rgba(124, 214, 75, 0.3);
+    border: 1px solid #7cd64b;
     border-radius: 8px;
     padding: 16px;
-    
+
     p {
       font-size: 15px;
     }
-    
+
     ol {
       padding-left: 18px;
-      
+
       li {
         font-size: 13.5px;
         line-height: 1.5;
@@ -462,7 +564,6 @@ body.modal-open {
     }
   }
 
-  // CHECKBOXES
   .checkbox-group {
     padding: 12px;
     margin: 16px 0;
@@ -480,9 +581,34 @@ body.modal-open {
     margin-top: 2px;
   }
 
-  // VALIDATION MESSAGE
   .validation-msg {
     font-size: 12.5px;
+  }
+
+  .selected-plan-info {
+    padding: 10px 16px;
+
+    p {
+      font-size: 14px;
+    }
+
+    .plan-price {
+      font-size: 13px;
+      margin-left: 6px;
+    }
+  }
+
+  .select-label-wrapper {
+    margin-bottom: 6px;
+  }
+
+  .select-label {
+    font-size: 12.5px;
+  }
+
+  .asterisk {
+    font-size: 15px;
+    margin-top: -1px;
   }
 }
 
@@ -499,7 +625,7 @@ body.modal-open {
 
   .agreement-list {
     padding: 14px;
-    
+
     ol li {
       font-size: 13px;
     }
@@ -524,231 +650,9 @@ body.modal-open {
   .radio-options {
     gap: 15px;
     flex-direction: column;
-    
+
     label {
       margin-bottom: 5px;
     }
-  }
-}
-
-
-// Add these at the end of your ModalStyles.scss
-
-.selected-plan-info {
-  background: rgba(124, 214, 75, 0.1);
-  border: 1px solid #7cd64b;
-  border-radius: 8px;
-  padding: 12px 20px;
-  margin-bottom: 20px;
-  text-align: center;
-  
-  p {
-    color: #7cd64b;
-    font-family: "Inter", sans-serif;
-    font-size: 15px;
-    margin: 0;
-    
-    strong {
-      font-weight: 700;
-    }
-  }
-}
-
-.plan-note {
-  color: #7cd64b;
-  font-size: 12px;
-  margin-top: 5px;
-  font-style: italic;
-  text-align: center;
-}
-
-@media (max-width: 768px) {
-  .selected-plan-info {
-    padding: 10px 16px;
-    
-    p {
-      font-size: 14px;
-    }
-  }
-}
-
-
-
-// Loading spinner for submit button
-.spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: #fff;
-  animation: spin 1s ease-in-out infinite;
-  margin-right: 8px;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-// Disabled state for inputs
-.form-input:disabled,
-.radio-options input:disabled + span,
-.form-select:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.submit-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-
-
-
-.Toastify__toast-container {
-  z-index: 10000 !important; /* Higher than modal's 9999 */
-}
-
-/* Individual toast */
-.Toastify__toast {
-  z-index: 10001 !important;
-  position: relative;
-}
-
-// Add these at the end of your ModalStyles.scss
-
-.selected-plan-info {
-  background: rgba(124, 214, 75, 0.1);
-  border: 1px solid #7cd64b;
-  border-radius: 8px;
-  padding: 12px 20px;
-  margin-bottom: 20px;
-  text-align: center;
-  
-  p {
-    color: #7cd64b;
-    font-family: "Inter", sans-serif;
-    font-size: 15px;
-    margin: 0;
-    
-    strong {
-      font-weight: 700;
-    }
-  }
-  
-  .plan-price {
-    font-size: 14px;
-    opacity: 0.9;
-    margin-left: 8px;
-    font-weight: 500;
-  }
-}
-
-.plan-note {
-  color: #7cd64b;
-  font-size: 12px;
-  margin-top: 5px;
-  font-style: italic;
-  text-align: center;
-}
-
-// Select Plan Label with Asterisk
-.select-label-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-bottom: 8px;
-}
-
-.select-label {
-  color: #7cd64b;
-  font-weight: 600;
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-family: "Inter", sans-serif;
-}
-
-.asterisk {
-  color: #7cd64b;
-  font-size: 16px;
-  line-height: 1;
-  vertical-align: middle;
-  display: inline-block;
-  margin-top: -2px; // Minor adjustment for perfect centering
-}
-
-// Plan options in select dropdown
-.form-select option {
-  padding: 10px;
-  font-size: 14px;
-  font-family: "Inter", sans-serif;
-}
-
-// Loading spinner for submit button
-.spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: #fff;
-  animation: spin 1s ease-in-out infinite;
-  margin-right: 8px;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-// Disabled state for inputs
-.form-input:disabled,
-.radio-options input:disabled + span,
-.form-select:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.submit-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.Toastify__toast-container {
-  z-index: 10000 !important; /* Higher than modal's 9999 */
-}
-
-/* Individual toast */
-.Toastify__toast {
-  z-index: 10001 !important;
-  position: relative;
-}
-
-@media (max-width: 768px) {
-  .selected-plan-info {
-    padding: 10px 16px;
-    
-    p {
-      font-size: 14px;
-    }
-    
-    .plan-price {
-      font-size: 13px;
-      margin-left: 6px;
-    }
-  }
-  
-  .select-label-wrapper {
-    margin-bottom: 6px;
-  }
-  
-  .select-label {
-    font-size: 12.5px;
-  }
-  
-  .asterisk {
-    font-size: 15px;
-    margin-top: -1px;
   }
 }

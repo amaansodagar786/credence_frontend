@@ -17,9 +17,8 @@
 
 // ===== FAQ SECTION =====
 .credence-faq-section {
-  
-  background: #000;
-  color: #fff;
+  background: #f5f5f5;; // Changed from black to white
+  color: #1a1a1a; // Changed from white to dark gray
   padding: 40px 20px;
   display: flex;
   flex-direction: column;
@@ -40,10 +39,10 @@
   margin-bottom: 60px;
   margin-top: 0px;
   position: relative;
-  color: #fff;
+  color: #1a1a1a; // Changed from white to dark gray
 
   @media (max-width: 768px) {
-    font-size: 30px; // ✅ Always 30px on mobile
+    font-size: 30px;
     margin-bottom: 40px;
   }
 }
@@ -52,7 +51,7 @@
   display: block;
   width: 60px;
   height: 3px;
-  background: #7cd64b; // Using your green color
+  background: #7cd64b; // Keeping same green
   margin: 12px auto 0;
 }
 
@@ -64,18 +63,18 @@
 
 // ===== FAQ ITEM =====
 .cf-item {
-  border-bottom: 1px solid #7cd64b;
-  padding: 22px 0;
+  border-bottom: 1px solid #e0e0e0; // Changed from green to light gray border
+  padding: 22px 20px;
   cursor: pointer;
   transition: all 0.3s ease;
 
   &:hover {
-    background: rgba(124, 214, 75, 0.05);
+    background: rgba(124, 214, 75, 0.03); // Even more subtle hover
   }
 }
 
 .cf-active {
-  background: rgba(124, 214, 75, 0.08);
+  background: rgba(124, 214, 75, 0.05); // Very subtle active state
 }
 
 // ===== QUESTION =====
@@ -86,7 +85,7 @@
   font-family: "Arimo", sans-serif;
   font-size: 18px;
   font-weight: 600;
-  color: #fff;
+  color: #1a1a1a; // Changed from white to dark gray
 
   @media (max-width: 768px) {
     font-size: 16px;
@@ -94,12 +93,12 @@
 }
 
 .cf-active .cf-question {
-  color: #7cd64b;
+  color: #7cd64b; // Green only when active - keeps it clean
 }
 
 // ===== ARROW =====
 .cf-arrow {
-  color: #7cd64b;
+  color: #7cd64b; // Keeping green arrow
   font-size: 18px;
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
@@ -120,7 +119,7 @@
 .cf-answer p {
   margin-top: 14px;
   font-family: "Inter", sans-serif;
-  color: #ccc;
+  color: #666666; // Changed from #ccc to medium gray for better contrast on white
   line-height: 1.8;
   font-size: 16px;
   padding-right: 40px;
@@ -132,7 +131,7 @@
 }
 
 .cf-active .cf-answer {
-  max-height: 300px; // ✅ Smooth opening
+  max-height: 300px;
 }
 
 // ===== RESPONSIVE =====
