@@ -54,15 +54,29 @@
   margin-bottom: 20px;
   line-height: 1.2;
 
-  @media (max-width: 768px) {
-   font-size: 31px;
-    line-height: 1.3;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+  // --- NEW: line parts & mobile break ---
+  .line-part {
+    display: inline;      // keep parts on same line on desktop
+    white-space: nowrap;  // prevent wrapping inside each part
   }
 
- 
+  .mobile-break {
+    display: none;        // hide <br> on desktop
+  }
+
+  @media (max-width: 768px) {
+    font-size: 31px;
+    line-height: 0.7;
+
+    .line-part {
+      display: block;     // each part on its own line on mobile
+      white-space: normal;
+    }
+
+    .mobile-break {
+      display: block;     // show <br> (optional, but safe)
+    }
+  }
 }
 
 .cc-black {
@@ -129,7 +143,6 @@
   display: block;
   margin: 0 auto;
   
-  // Ripple effect
   &::after {
     content: '';
     position: absolute;
@@ -206,7 +219,7 @@
   }
 }
 
-// ===== ANIMATION KEYFRAMES (Optional) =====
+// ===== ANIMATION KEYFRAMES =====
 @keyframes floatShape {
   0%, 100% {
     transform: translateY(0);
@@ -225,7 +238,6 @@
   }
 }
 
-// Optional: Add floating animation to shapes
 .cc-left {
   animation: pulseShape 4s ease-in-out infinite;
 }

@@ -1,4 +1,4 @@
-import React from 'react'
+import React from 'react';
 import { motion } from 'framer-motion';
 import "./CTASection.scss";
 import { useModal } from "../Model/ModalProvider";
@@ -10,7 +10,11 @@ const CTASection = () => {
     openAgreementModal();
   };
 
-  // Animation variants
+  // ----- Splitted heading parts -----
+  const part1 = "Finance.Freedom.";
+  const part2 = "Fellows.";
+
+  // ----- Animation variants -----
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -116,36 +120,30 @@ const CTASection = () => {
     }
   };
 
-  // Individual letter animation for the heading
+  // ----- Letter animation with custom delay -----
   const letterVariants = {
     hidden: { y: -20, opacity: 0 },
-    visible: (i) => ({
+    visible: (custom) => ({
       y: 0,
       opacity: 1,
       transition: {
-        delay: i * 0.03,
+        delay: custom * 0.03,   // delay increases per letter
         duration: 0.5,
         ease: "easeOut"
       }
     })
   };
 
-  // Split the heading into letters for animation
-  const renderAnimatedHeading = () => {
-    const text = "Finance.Freedom.Fellows.";
-    const letters = text.split('');
-    
-    return letters.map((letter, index) => {
-      // Check if letter should be green
-      const isGreenLetter = letter === 'F';
-      const className = isGreenLetter ? 'cc-green' : 'cc-black';
-      
+  // Helper to render animated text with a starting delay offset
+  const renderAnimatedText = (text, startDelay = 0) => {
+    return text.split('').map((letter, index) => {
+      const isGreen = letter === 'F';
       return (
         <motion.span
           key={index}
-          className={className}
+          className={isGreen ? 'cc-green' : 'cc-black'}
           variants={letterVariants}
-          custom={index}
+          custom={startDelay + index}   // offset each letter's delay
           whileHover={{
             y: -5,
             transition: { type: "spring", stiffness: 300 }
@@ -164,7 +162,7 @@ const CTASection = () => {
       whileInView="visible"
       viewport={{ once: true, amount: 0.2 }}
     >
-      {/* Decorative shapes with animation */}
+      {/* Decorative shapes */}
       <motion.span 
         className="cc-shape cc-left"
         variants={leftShapeVariants}
@@ -187,15 +185,21 @@ const CTASection = () => {
         className="cc-container"
         variants={containerVariants}
       >
-        {/* Animated heading with letter-by-letter animation */}
+        {/* ---------- ANIMATED HEADING (SPLIT) ---------- */}
         <motion.h2 
           className="cc-heading"
           variants={headingVariants}
         >
-          {renderAnimatedHeading()}
+          <span className="line-part line-part-1">
+            {renderAnimatedText(part1, 0)}
+          </span>
+          <br className="mobile-break" />
+          <span className="line-part line-part-2">
+            {renderAnimatedText(part2, part1.length)}
+          </span>
         </motion.h2>
 
-        {/* Text with animation */}
+        {/* Text */}
         <motion.p 
           className="cc-text"
           variants={textVariants}
@@ -206,10 +210,10 @@ const CTASection = () => {
         >
           Stop worrying about bookkeeping errors and financial confusion.
           <br />
-          Partner with Credence and experience stress-free financial management.
+          Partner with Credence and experience stress‑free financial management.
         </motion.p>
 
-        {/* Button with animation */}
+        {/* Button */}
         <motion.button 
           className="cc-button" 
           onClick={handleGetStartedClick}
