@@ -62,8 +62,9 @@ const Footer = () => {
                 href="https://www.google.com/maps/search/?api=1&query=Uomarinne+I+B+20+Vantaa+01600+Finland"
                 target="_blank"
                 rel="noopener noreferrer"
+                className="mobileaddress"
               >
-                Uomarinne I B 20 Vantaa 01600 Uusimaa Finland.
+                Uomarinne I B 20 Vantaa 01600 <span><br className="mobilebreak"/></span>Uusimaa Finland.
               </a>
             </p>
           </div>
