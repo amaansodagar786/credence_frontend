@@ -40,6 +40,12 @@ const AdminNotesPanel = () => {
         statistics: {}
     });
 
+    // Add new state for docs summary data (for the card)
+    const [docsSummary, setDocsSummary] = useState({
+        count: 0,
+        monthsCount: 0
+    });
+
     // Time filter for Docs Details modal
     const [timeFilter, setTimeFilter] = useState("this_month");
     const [customStartDate, setCustomStartDate] = useState("");
@@ -75,7 +81,34 @@ const AdminNotesPanel = () => {
     // Fetch unread count on component mount
     useEffect(() => {
         fetchUnreadCount();
+        fetchDocsSummary(); // Also fetch docs summary on mount
     }, []);
+
+    const fetchDocsSummary = async () => {
+        try {
+            const params = { timeFilter: "this_month" };
+            const response = await axios.get(
+                `${import.meta.env.VITE_API_URL}/admin/dashboard/uploaded-but-locked`,
+                {
+                    params,
+                    withCredentials: true
+                }
+            );
+
+            console.log(" FULL API RESPONSE:", response);
+            console.log(" RESPONSE DATA:", response.data);
+            console.log(" RESPONSE DATA TOTALCLIENTS:", response.data?.totalClients); // Check this
+
+            if (response.data.success) {
+                setDocsSummary({
+                    count: response.data.totalClients || 0, // CHANGE THIS LINE - use totalClients instead of count
+                    monthsCount: response.data.monthsData?.length || 0
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching docs summary:', error);
+        }
+    };
 
     // Auto-apply filters when they change for Notes
     useEffect(() => {
@@ -151,7 +184,7 @@ const AdminNotesPanel = () => {
         if (activeModal === 'uploadedLocked') {
             fetchDocsDetailsData();
         }
-    }, [timeFilter, customStartDate, customEndDate]); // Add this useEffect
+    }, [timeFilter, customStartDate, customEndDate]);
 
     const handleTimeFilterChange = (newFilter) => {
         setTimeFilter(newFilter);
@@ -944,28 +977,27 @@ const AdminNotesPanel = () => {
                         </div>
                     </div>
 
-                    {/* Card 2: Docs Details (transferred from AdminDashboard) */}
+                    {/* Card 2: Docs Details - Updated with badge and client count only */}
                     <div
                         className="summary-card clickable"
                         onClick={fetchDocsDetailsData}
                         style={{ borderTopColor: "#8B5CF6" }}
                     >
-                        <div className="card-icon" style={{ background: "#8B5CF615" }}>
+                        <div className="card-icon" style={{ background: "#8B5CF615", position: "relative" }}>
                             <FiLock size={32} style={{ color: "#8B5CF6" }} />
+                            {docsSummary.count > 0 && (
+                                <span className="docs-badge">{docsSummary.count}</span>
+                            )}
                         </div>
                         <div className="card-content">
-                            <h3>CLient Documnets Update</h3>
+                            <h3>Client Documents Update</h3>
                             <div className="stats-row">
-                                {/* <div className="stat-item">
-                                    <div className="stat-value">
-                                        {timeFilter === 'custom' ? 'Custom' : getFilterDisplayText()}
-                                    </div>
-                                    <div className="stat-label">Time Period</div>
-                                </div>
                                 <div className="stat-item">
-                                    <div className="stat-value">View</div>
-                                    <div className="stat-label">Uploaded Docs</div>
-                                </div> */}
+                                    <div className="stat-value" style={{ color: "#8B5CF6" }}>
+                                        {docsSummary.count}
+                                    </div>
+                                    <div className="stat-label">Clients with Updates</div>
+                                </div>
                             </div>
                             <p className="card-subtitle">
                                 Clients with uploaded documents for this month

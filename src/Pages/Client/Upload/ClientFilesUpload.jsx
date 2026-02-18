@@ -50,6 +50,9 @@ const ClientFilesUpload = () => {
     // ✅ NEW: State to track if month is too old for updates
     const [isMonthTooOld, setIsMonthTooOld] = useState(false);
 
+    // ✅ NEW: State to track if month is active for this client
+    const [isMonthActive, setIsMonthActive] = useState(true);
+
     // State for existing month data
     const [monthData, setMonthData] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -170,6 +173,12 @@ const ClientFilesUpload = () => {
             return;
         }
 
+        // ✅ NEW: Check if month is active
+        if (!isMonthActive) {
+            setErrorMessage("Cannot delete files - Client was inactive during this period.");
+            return;
+        }
+
         setDeleteModal({
             isOpen: true,
             fileName,
@@ -193,6 +202,13 @@ const ClientFilesUpload = () => {
         // ✅ NEW: Check if month is too old before deleting
         if (isMonthTooOld) {
             setErrorMessage("This month is too old for file deletions. Only viewing is allowed.");
+            closeDeleteModal();
+            return;
+        }
+
+        // ✅ NEW: Check if month is active
+        if (!isMonthActive) {
+            setErrorMessage("Cannot delete files - Client was inactive during this period.");
             closeDeleteModal();
             return;
         }
@@ -318,6 +334,9 @@ const ClientFilesUpload = () => {
             const data = monthResponse.data || {};
             setMonthData(data);
 
+            // ✅ NEW: Set month active status from response
+            setIsMonthActive(data.monthActiveStatus !== 'inactive');
+
             const existingOtherCategories = data.other || [];
             setOtherCategories(existingOtherCategories.map(cat => ({
                 ...cat,
@@ -361,6 +380,7 @@ const ClientFilesUpload = () => {
             setOtherCategories([]);
             setEmployeeAssignment(null);
             setIsMonthTooOld(false); // Reset on error
+            setIsMonthActive(true); // Reset on error
         } finally {
             setLoading(false);
         }
@@ -394,6 +414,11 @@ const ClientFilesUpload = () => {
 
     /* ================= CHECK IF CATEGORY CAN BE UPDATED ================= */
     const canUpdateCategory = (categoryType, categoryName = null) => {
+        // ✅ NEW: Check if month is active FIRST
+        if (!isMonthActive) {
+            return false; // Month is inactive, no updates allowed
+        }
+
         // ✅ NEW: Check if month is too old FIRST
         if (isMonthTooOld) {
             return false; // Month is 2+ months old, no updates allowed
@@ -444,6 +469,12 @@ const ClientFilesUpload = () => {
 
     /* ================= HANDLE FILES CHANGE ================= */
     const handleFilesChange = (type, files, categoryName = null) => {
+        // ✅ NEW: Check if month is active before allowing file selection
+        if (!isMonthActive) {
+            setErrorMessage("Cannot upload files - Client was inactive during this period.");
+            return;
+        }
+
         // ✅ NEW: Check if month is too old before allowing file selection
         if (isMonthTooOld) {
             setErrorMessage("This month is too old for file uploads. Only viewing is allowed.");
@@ -473,6 +504,12 @@ const ClientFilesUpload = () => {
 
     /* ================= REMOVE FILE FROM SELECTION ================= */
     const removeNewFile = (type, index, categoryName = null) => {
+        // ✅ NEW: Check if month is active
+        if (!isMonthActive) {
+            setErrorMessage("Cannot modify files - Client was inactive during this period.");
+            return;
+        }
+
         // ✅ NEW: Check if month is too old
         if (isMonthTooOld) {
             setErrorMessage("This month is too old for file modifications. Only viewing is allowed.");
@@ -498,6 +535,12 @@ const ClientFilesUpload = () => {
 
     /* ================= ADD NEW OTHER CATEGORY ================= */
     const addOtherCategory = () => {
+        // ✅ NEW: Check if month is active
+        if (!isMonthActive) {
+            setErrorMessage("Cannot add categories - Client was inactive during this period.");
+            return;
+        }
+
         // ✅ NEW: Check if month is too old
         if (isMonthTooOld) {
             setErrorMessage("This month is too old for adding new categories. Only viewing is allowed.");
@@ -519,6 +562,12 @@ const ClientFilesUpload = () => {
 
     /* ================= UPLOAD FILES ================= */
     const uploadFiles = async (type, files, categoryName = null, isReplacement = false, replacedFileName = null, lockAfterUpload = false) => {
+        // ✅ NEW: Check if month is active before uploading
+        if (!isMonthActive) {
+            setErrorMessage("Cannot upload files - Client was inactive during this period.");
+            return;
+        }
+
         // ✅ NEW: Check if month is too old before uploading
         if (isMonthTooOld) {
             setErrorMessage("This month is too old for file uploads. Only viewing is allowed.");
@@ -565,7 +614,7 @@ const ClientFilesUpload = () => {
             const note = categoryName
                 ? otherCategories.find(c => c.categoryName === categoryName)?.note
                 : categoryNotes[type];
-            formData.append("note", note || "");  
+            formData.append("note", note || "");
             // formData.append("note", "");  
         }
 
@@ -618,6 +667,12 @@ const ClientFilesUpload = () => {
 
     /* ================= SAVE & LOCK MONTH ================= */
     const saveAndLock = async () => {
+        // ✅ NEW: Check if month is active before saving & locking
+        if (!isMonthActive) {
+            setErrorMessage("Cannot lock month - Client was inactive during this period.");
+            return;
+        }
+
         // ✅ NEW: Check if month is too old before saving & locking
         if (isMonthTooOld) {
             setErrorMessage("This month is too old for saving and locking. Only viewing is allowed.");
@@ -853,6 +908,12 @@ const ClientFilesUpload = () => {
                     <button
                         className="btn-clear-all"
                         onClick={() => {
+                            // ✅ NEW: Check if month is active
+                            if (!isMonthActive) {
+                                setErrorMessage("Cannot modify files - Client was inactive during this period.");
+                                return;
+                            }
+
                             // ✅ NEW: Check if month is too old
                             if (isMonthTooOld) {
                                 setErrorMessage("This month is too old for file modifications. Only viewing is allowed.");
@@ -992,6 +1053,9 @@ const ClientFilesUpload = () => {
             file.notes && file.notes.length > 0
         );
 
+        // ✅ NEW: Check if month is inactive
+        const monthInactive = !isMonthActive;
+
         return (
             <div className="file-upload-card" key={type}>
                 <div className="file-header">
@@ -1012,22 +1076,30 @@ const ClientFilesUpload = () => {
 
                 {category && renderExistingFilesInfo(category, type)}
 
+                {/* ✅ NEW: Show inactive month message */}
+                {monthInactive && (
+                    <div className="inactive-month-message">
+                        <FiAlertCircle size={16} />
+                        <span>Cannot modify files - Client was inactive during this period</span>
+                    </div>
+                )}
+
                 <div className="file-upload-area">
                     <label className="file-input-label">
                         <input
                             type="file"
                             className="file-input"
-                            disabled={!canUpload || loading || isMonthTooOld} // ✅ ADDED: isMonthTooOld
+                            disabled={!canUpload || loading || isMonthTooOld || monthInactive} // ✅ ADDED: monthInactive
                             multiple
                             onChange={(e) => handleFilesChange(type, e.target.files)}
                         />
-                        <span className={`file-input-button ${!canUpload || loading || isMonthTooOld ? 'disabled' : ''}`}> {/* ✅ ADDED: isMonthTooOld */}
+                        <span className={`file-input-button ${!canUpload || loading || isMonthTooOld || monthInactive ? 'disabled' : ''}`}> {/* ✅ ADDED: monthInactive */}
                             <FiUpload size={18} /> Choose Files
                         </span>
                         <span className="file-input-hint">(Multiple files allowed)</span>
                     </label>
 
-                    {!canUpload && (
+                    {!canUpload && !monthInactive && (
                         <small className="disabled-hint">
                             {isMonthTooOld
                                 ? "This month is too old for file uploads. Only viewing is allowed."
@@ -1052,7 +1124,7 @@ const ClientFilesUpload = () => {
                                 setCategoryNotes(prev => ({ ...prev, [type]: e.target.value }))
                             }
                             required
-                            disabled={loading || isMonthTooOld} // ✅ ADDED: isMonthTooOld
+                            disabled={loading || isMonthTooOld || monthInactive} // ✅ ADDED: monthInactive
                         />
                         <small className="note-hint">
                             Required when updating files after month has been unlocked
@@ -1060,13 +1132,13 @@ const ClientFilesUpload = () => {
                     </div>
                 )}
 
-                {hasNewFiles && canUpload && (
+                {hasNewFiles && canUpload && !monthInactive && ( // ✅ ADDED: !monthInactive
                     <div className="upload-buttons">
                         {!updateMode ? (
                             <button
                                 className="btn-upload"
                                 onClick={() => uploadFiles(type, newFiles[type])}
-                                disabled={loading || isMonthTooOld} // ✅ ADDED: isMonthTooOld
+                                disabled={loading || isMonthTooOld || monthInactive} // ✅ ADDED: monthInactive
                             >
                                 {loading ? (
                                     <>
@@ -1084,7 +1156,7 @@ const ClientFilesUpload = () => {
                             <button
                                 className="btn-upload-lock"
                                 onClick={() => uploadFiles(type, newFiles[type], null, false, null, true)}
-                                disabled={loading || isMonthTooOld} // ✅ ADDED: isMonthTooOld
+                                disabled={loading || isMonthTooOld || monthInactive} // ✅ ADDED: monthInactive
                                 title="Upload and lock this category"
                             >
                                 <FiLock size={16} /> Upload & Lock File
@@ -1109,6 +1181,9 @@ const ClientFilesUpload = () => {
             file.notes && file.notes.length > 0
         );
 
+        // ✅ NEW: Check if month is inactive
+        const monthInactive = !isMonthActive;
+
         return (
             <div className="file-upload-card other-category" key={index}>
                 <div className="category-header">
@@ -1129,22 +1204,30 @@ const ClientFilesUpload = () => {
 
                 {category && renderExistingFilesInfo(category, "other", cat.categoryName)}
 
+                {/* ✅ NEW: Show inactive month message */}
+                {monthInactive && (
+                    <div className="inactive-month-message">
+                        <FiAlertCircle size={16} />
+                        <span>Cannot modify files - Client was inactive during this period</span>
+                    </div>
+                )}
+
                 <div className="file-upload-area">
                     <label className="file-input-label">
                         <input
                             type="file"
                             className="file-input"
-                            disabled={!canUploadCat || loading || isMonthTooOld} // ✅ ADDED: isMonthTooOld
+                            disabled={!canUploadCat || loading || isMonthTooOld || monthInactive} // ✅ ADDED: monthInactive
                             multiple
                             onChange={(e) => handleFilesChange("other", e.target.files, cat.categoryName)}
                         />
-                        <span className={`file-input-button ${!canUploadCat || loading || isMonthTooOld ? 'disabled' : ''}`}> {/* ✅ ADDED: isMonthTooOld */}
+                        <span className={`file-input-button ${!canUploadCat || loading || isMonthTooOld || monthInactive ? 'disabled' : ''}`}> {/* ✅ ADDED: monthInactive */}
                             <FiUpload size={18} /> Choose Files
                         </span>
                         <span className="file-input-hint">(Multiple files allowed)</span>
                     </label>
 
-                    {!canUploadCat && category && (
+                    {!canUploadCat && category && !monthInactive && (
                         <small className="disabled-hint">
                             {isMonthTooOld
                                 ? "This month is too old for file uploads. Only viewing is allowed."
@@ -1166,6 +1249,12 @@ const ClientFilesUpload = () => {
                             placeholder="Explain why you're updating files in this category..."
                             value={cat.note || ""}
                             onChange={(e) => {
+                                // ✅ NEW: Check if month is active
+                                if (!isMonthActive) {
+                                    setErrorMessage("Cannot modify files - Client was inactive during this period.");
+                                    return;
+                                }
+
                                 // ✅ NEW: Check if month is too old
                                 if (isMonthTooOld) {
                                     setErrorMessage("This month is too old for file modifications. Only viewing is allowed.");
@@ -1177,7 +1266,7 @@ const ClientFilesUpload = () => {
                                 setOtherCategories(updatedCategories);
                             }}
                             required
-                            disabled={loading || isMonthTooOld} // ✅ ADDED: isMonthTooOld
+                            disabled={loading || isMonthTooOld || monthInactive} // ✅ ADDED: monthInactive
                         />
                         <small className="note-hint">
                             Required when updating files after month has been unlocked
@@ -1185,13 +1274,13 @@ const ClientFilesUpload = () => {
                     </div>
                 )}
 
-                {hasNewFiles && canUploadCat && (
+                {hasNewFiles && canUploadCat && !monthInactive && ( // ✅ ADDED: !monthInactive
                     <div className="upload-buttons">
                         {!updateMode ? (
                             <button
                                 className="btn-upload"
                                 onClick={() => uploadFiles("other", cat.newFiles, cat.categoryName)}
-                                disabled={loading || isMonthTooOld} // ✅ ADDED: isMonthTooOld
+                                disabled={loading || isMonthTooOld || monthInactive} // ✅ ADDED: monthInactive
                             >
                                 {loading ? (
                                     <>
@@ -1209,7 +1298,7 @@ const ClientFilesUpload = () => {
                             <button
                                 className="btn-upload-lock"
                                 onClick={() => uploadFiles("other", cat.newFiles, cat.categoryName, false, null, true)}
-                                disabled={loading || isMonthTooOld} // ✅ ADDED: isMonthTooOld
+                                disabled={loading || isMonthTooOld || monthInactive} // ✅ ADDED: monthInactive
                                 title="Upload and lock this category"
                             >
                                 <FiLock size={16} /> Upload & Lock File
@@ -1614,24 +1703,35 @@ const ClientFilesUpload = () => {
                                                     </span>
                                                 </div>
                                             )}
+
+                                            {/* ✅ NEW: Show client active status */}
+                                            <div className="info-item">
+                                                <span className="label">Client Status:</span>
+                                                <span className={`value ${isMonthActive ? 'active' : 'inactive'}`}>
+                                                    {isMonthActive ? (
+                                                        <>✅ Active</>
+                                                    ) : (
+                                                        <>❌ Inactive - No modifications allowed</>
+                                                    )}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* Employee Assignment */}
-                        {/* Employee Assignment - UPDATED FOR MULTIPLE EMPLOYEES */}
+                        {/* Employee Assignment - SIMPLIFIED VERSION */}
                         {employeeAssignments.length > 0 && (
                             <div className="employee-info-panel">
                                 <div className="info-section">
                                     <div className="info-header">
                                         <h4>
-                                            <FiUser size={18} /> Assigned Employees
+                                            <FiUser size={18} /> Assigned Tasks
                                         </h4>
                                     </div>
 
-                                    {/* Task Selection Dropdown - NEW */}
+                                    {/* Task Selection Dropdown */}
                                     <div className="task-selection-dropdown">
                                         <label className="dropdown-label">
                                             <FiList size={14} /> Select Task
@@ -1653,10 +1753,10 @@ const ClientFilesUpload = () => {
                                         </select>
                                     </div>
 
-                                    {/* Filtered Employees List - UPDATED */}
+                                    {/* Simplified Tasks List - NO EMPLOYEE DETAILS */}
                                     <div className="employee-list-section">
                                         {(() => {
-                                            // Filter employees by selected task
+                                            // Filter tasks by selected option
                                             const filteredAssignments = selectedTask
                                                 ? employeeAssignments.filter(a => a.task === selectedTask)
                                                 : employeeAssignments;
@@ -1665,7 +1765,7 @@ const ClientFilesUpload = () => {
                                                 return (
                                                     <div className="no-employee-message">
                                                         <FiInfo size={14} />
-                                                        No employees assigned for this task
+                                                        No tasks assigned
                                                     </div>
                                                 );
                                             }
@@ -1676,7 +1776,7 @@ const ClientFilesUpload = () => {
                                                         <div key={index} className="employee-assignment-card">
                                                             <div className="employee-header">
                                                                 <div className="employee-name">
-                                                                    <FiUser size={14} /> {assignment.employeeName}
+                                                                    <FiUser size={14} /> Assigned
                                                                 </div>
                                                                 <span className={`task-badge task-${assignment.task?.toLowerCase().replace(/\s+/g, '-')}`}>
                                                                     {assignment.task || "No Task"}
@@ -1684,15 +1784,7 @@ const ClientFilesUpload = () => {
                                                             </div>
 
                                                             <div className="employee-details">
-                                                                <div className="detail-row">
-                                                                    <span className="detail-label">
-                                                                        <FiPhone size={12} /> Phone:
-                                                                    </span>
-                                                                    <span className="detail-value phone-number">
-                                                                        {assignment.employeePhone || "N/A"}
-                                                                    </span>
-                                                                </div>
-
+                                                                {/* ONLY STATUS - NO PHONE OR OTHER DETAILS */}
                                                                 <div className="detail-row">
                                                                     <span className="detail-label">
                                                                         <FiClock size={12} /> Status:
@@ -1710,6 +1802,7 @@ const ClientFilesUpload = () => {
                                                                     </span>
                                                                 </div>
 
+                                                                {/* Optional: Show completion date if needed */}
                                                                 {assignment.accountingDoneAt && (
                                                                     <div className="detail-row">
                                                                         <span className="detail-label">
@@ -1778,6 +1871,12 @@ const ClientFilesUpload = () => {
                                                     placeholder="New category name"
                                                     value={newOtherCategory}
                                                     onChange={(e) => {
+                                                        // ✅ NEW: Check if month is active
+                                                        if (!isMonthActive) {
+                                                            setErrorMessage("Cannot add categories - Client was inactive during this period.");
+                                                            return;
+                                                        }
+
                                                         // ✅ NEW: Check if month is too old
                                                         if (isMonthTooOld) {
                                                             setErrorMessage("This month is too old for adding new categories. Only viewing is allowed.");
@@ -1785,12 +1884,12 @@ const ClientFilesUpload = () => {
                                                         }
                                                         setNewOtherCategory(e.target.value);
                                                     }}
-                                                    disabled={monthData?.isLocked || loading || isMonthTooOld} // ✅ ADDED: isMonthTooOld
+                                                    disabled={monthData?.isLocked || loading || isMonthTooOld || !isMonthActive} // ✅ ADDED: !isMonthActive
                                                 />
                                                 <button
                                                     className="filter-btn"
                                                     onClick={addOtherCategory}
-                                                    disabled={monthData?.isLocked || loading || isMonthTooOld} // ✅ ADDED: isMonthTooOld
+                                                    disabled={monthData?.isLocked || loading || isMonthTooOld || !isMonthActive} // ✅ ADDED: !isMonthActive
                                                 >
                                                     <FiPlus size={16} /> Add
                                                 </button>
@@ -1830,6 +1929,12 @@ const ClientFilesUpload = () => {
                                                     placeholder="Provide an overall note explaining the changes made this month..."
                                                     value={monthNote}
                                                     onChange={(e) => {
+                                                        // ✅ NEW: Check if month is active
+                                                        if (!isMonthActive) {
+                                                            setErrorMessage("Cannot modify files - Client was inactive during this period.");
+                                                            return;
+                                                        }
+
                                                         // ✅ NEW: Check if month is too old
                                                         if (isMonthTooOld) {
                                                             setErrorMessage("This month is too old for file modifications. Only viewing is allowed.");
@@ -1838,7 +1943,7 @@ const ClientFilesUpload = () => {
                                                         setMonthNote(e.target.value);
                                                     }}
                                                     required
-                                                    disabled={loading || isMonthTooOld} // ✅ ADDED: isMonthTooOld
+                                                    disabled={loading || isMonthTooOld || !isMonthActive} // ✅ ADDED: !isMonthActive
                                                     rows={4}
                                                 />
                                                 <small className="note-hint">
@@ -1854,7 +1959,7 @@ const ClientFilesUpload = () => {
                                         <button
                                             className="action-btn lock-btn"
                                             onClick={saveAndLock}
-                                            disabled={!year || !month || monthData?.isLocked || loading || isMonthTooOld} // ✅ ADDED: isMonthTooOld
+                                            disabled={!year || !month || monthData?.isLocked || loading || isMonthTooOld || !isMonthActive} // ✅ ADDED: !isMonthActive
                                         >
                                             {loading ? (
                                                 <>
@@ -1867,6 +1972,10 @@ const ClientFilesUpload = () => {
                                             ) : isMonthTooOld ? (
                                                 <>
                                                     <FiLock size={16} /> Month Too Old for Locking
+                                                </>
+                                            ) : !isMonthActive ? (
+                                                <>
+                                                    <FiLock size={16} /> Month Inactive
                                                 </>
                                             ) : (
                                                 <>
@@ -1885,6 +1994,13 @@ const ClientFilesUpload = () => {
                                     {monthData?.isLocked && (
                                         <small className="form-hint">
                                             Month is already locked. Contact admin to unlock.
+                                        </small>
+                                    )}
+
+                                    {/* ✅ NEW: Show inactive message */}
+                                    {!isMonthActive && (
+                                        <small className="form-hint inactive-hint">
+                                            <FiAlertCircle size={12} /> Month is inactive - No modifications allowed
                                         </small>
                                     )}
                                 </div>

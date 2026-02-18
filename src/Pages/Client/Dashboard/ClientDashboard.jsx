@@ -710,22 +710,14 @@ const ClientDashboard = () => {
               <div className="task-details">
                 {task.status === 'assigned' ? (
                   <>
-                    <div className="assigned-info">
-                      <span className="assigned-to">
-                        <FiUser size={12} /> {task.employeeName || "Not assigned"}
-                      </span>
-                      {task.employeeEmail && (
-                        <span className="employee-contact">
-                          <FiMail size={12} /> {task.employeeEmail}
-                        </span>
-                      )}
-                    </div>
+                    {/* REMOVED: assigned-info div with employee name and email */}
+
                     <div className="task-progress">
                       <span className={`progress-status ${task.accountingDone ? 'completed' : 'pending'}`}>
                         {task.accountingDone ? (
                           <>✅ Completed on {formatDate(task.accountingDoneAt)}</>
                         ) : (
-                          <>⏳ In Progress</>
+                          <>⏳ In Progress (Assigned to Employee)</>
                         )}
                       </span>
                     </div>
@@ -935,7 +927,7 @@ const ClientDashboard = () => {
               </div>
             </div>
 
-            {/* Tasks Section */}
+            {/* Tasks Section - UPDATED */}
             <div className="modal-section">
               <h4><FiCheckCircle size={20} /> Tasks</h4>
               <div className="tasks-grid">
@@ -950,21 +942,7 @@ const ClientDashboard = () => {
 
                     {task.status === 'assigned' && (
                       <div className="task-card-details">
-                        <div className="employee-info">
-                          <div className="employee-name">
-                            <FiUser size={14} /> {task.employeeName}
-                          </div>
-                          {task.employeeEmail && (
-                            <div className="employee-contact">
-                              <FiMail size={14} /> {task.employeeEmail}
-                            </div>
-                          )}
-                          {task.employeePhone && (
-                            <div className="employee-contact">
-                              <FiPhone size={14} /> {task.employeePhone}
-                            </div>
-                          )}
-                        </div>
+                        {/* REMOVED: employee-info div with name, email, phone */}
 
                         <div className="task-progress-info">
                           {task.accountingDone ? (
@@ -973,7 +951,8 @@ const ClientDashboard = () => {
                                 ✅ Completed on {formatDate(task.accountingDoneAt)}
                               </span>
                               <span className="completed-by">
-                                By: {task.accountingDoneBy || "Employee"}
+                                {/* CHANGED: removed employee name, just show "Employee" */}
+                                By: Employee
                               </span>
                             </div>
                           ) : (
@@ -982,7 +961,8 @@ const ClientDashboard = () => {
                                 ⏳ In Progress - Assigned on {formatDate(task.assignedAt)}
                               </span>
                               <span className="assigned-by">
-                                Assigned by: {task.assignedBy || "Admin"}
+                                {/* CHANGED: removed admin name, just show generic text */}
+                                Assigned by: Admin
                               </span>
                             </div>
                           )}
@@ -994,7 +974,7 @@ const ClientDashboard = () => {
               </div>
             </div>
 
-            {/* Notes Section */}
+            {/* Notes Section - UPDATED */}
             <div className="modal-section">
               <h4><FiMessageSquare size={20} /> All Notes ({selectedMonthDetails.notes.total})</h4>
               {selectedMonthDetails.notes.unviewedCount > 0 && (
@@ -1020,7 +1000,7 @@ const ClientDashboard = () => {
                       <span className={`note-card-type ${note.source}`}>
                         {note.source === 'client' ?
                           (note.type === 'month_note' ? '📝 Your General Note' : '🗑️ File Deletion Reason')
-                          : '👨‍💼 Employee Feedback'
+                          : '👨‍💼 Employee Feedback'  // CHANGED: removed dynamic name, just shows "Employee Feedback"
                         }
                       </span>
                       {note.isUnviewedByClient && (
@@ -1036,10 +1016,12 @@ const ClientDashboard = () => {
                     <div className="note-card-content">
                       <p>{note.note}</p>
                     </div>
-                    {note.source === 'employee' && note.addedBy && note.addedBy !== "Employee" && (
+                    {/* REMOVED OR MODIFIED: note-card-footer with added-by information */}
+                    {note.source === 'employee' && (
                       <div className="note-card-footer">
                         <span className="note-added-by">
-                          Added by: {note.addedBy}
+                          {/* CHANGED: removed dynamic name, just show "Employee" */}
+                          Added by: Employee
                         </span>
                       </div>
                     )}

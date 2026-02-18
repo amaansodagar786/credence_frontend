@@ -236,12 +236,12 @@ const ClientSidebar = ({ children }) => {
         <div className="client-sidebar-footer">
           <span>Designed & Developed By</span>
           <a
-            href="https://techorses.com"
-            target="_blank"
+            // href="https://techorses.com"
+            // target="_blank"
             rel="noopener noreferrer"
             className="client-footer-link"
           >
-            Techorses
+            Vapautus Media Private Limited
           </a>
         </div>
       </div>

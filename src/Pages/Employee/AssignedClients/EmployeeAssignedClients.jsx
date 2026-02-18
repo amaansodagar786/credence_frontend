@@ -134,6 +134,7 @@ const EmployeeAssignedClients = () => {
       });
 
       const clientsArray = Object.values(clientMap);
+
       setClientList(clientsArray);
 
       if (clientsArray.length > 0) {
@@ -1843,29 +1844,41 @@ const EmployeeAssignedClients = () => {
                 </div>
               ) : (
                 <div className="clients-list">
-                  {clientList.map((client) => (
-                    <div
-                      key={client.clientId}
-                      className={`client-card ${activeClient?.clientId === client.clientId ? 'active' : ''}`}
-                      onClick={() => handleClientSelect(client)}
-                    >
-                      <div className="client-avatar">
-                        {client.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="client-info">
-                        <h4>{client.name}</h4>
-                        <div className="client-meta">
-                          <span className="assignments-count">
-                            <FiCalendar />
-                            {client.assignmentCount} task{client.assignmentCount !== 1 ? 's' : ''}
-                          </span>
+                  {clientList.map((client) => {
+                    // CONSOLE LOG - See the ENTIRE client object
+                    
+
+                  
+                    return (
+                      <div
+                        key={client.clientId}
+                        className={`client-card ${activeClient?.clientId === client.clientId ? 'active' : ''}`}
+                        onClick={() => handleClientSelect(client)}
+                      >
+                        <div className="client-avatar">
+                          {client.name.charAt(0).toUpperCase()}
                         </div>
+                        <div className="client-info">
+                          <h4>{client.name}</h4>
+                          <div className="client-meta">
+                            <span className="assignments-count">
+                              <FiCalendar />
+                              {client.assignmentCount} task{client.assignmentCount !== 1 ? 's' : ''}
+                            </span>
+
+                            {/* ADD THIS LINE - Show plan with a briefcase icon */}
+                            <span className="client-plan-badge">
+                              <FiBriefcase />
+                              {client.currentPlan || client.planSelected || client.nextMonthPlan || 'No Plan'}
+                            </span>
+                          </div>
+                        </div>
+                        {activeClient?.clientId === client.clientId && (
+                          <FiChevronRight className="active-indicator" />
+                        )}
                       </div>
-                      {activeClient?.clientId === client.clientId && (
-                        <FiChevronRight className="active-indicator" />
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

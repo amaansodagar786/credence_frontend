@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"; // ADD useEffect
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import {
     FiFileMinus,
@@ -10,7 +10,8 @@ import {
     FiMail,
     FiUser,
     FiAlertCircle,
-    FiChevronRight // ADD THIS IMPORT
+    FiChevronRight,
+    FiList
 } from "react-icons/fi";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -24,44 +25,57 @@ const FinancialStatementModal = ({
 }) => {
     const [loading, setLoading] = useState(false);
     const [step, setStep] = useState(1);
-    const [selectedMonth, setSelectedMonth] = useState("");
-    const [selectedYear, setSelectedYear] = useState("");
+    const [fromDate, setFromDate] = useState("");
+    const [toDate, setToDate] = useState("");
+    const [dateError, setDateError] = useState("");
     const [additionalNotes, setAdditionalNotes] = useState("");
-    const [debugInfo, setDebugInfo] = useState({}); // ADD FOR DEBUG
+    const [recentRequests, setRecentRequests] = useState([]);
+    const [loadingRequests, setLoadingRequests] = useState(false);
+    const [debugInfo, setDebugInfo] = useState({});
 
-    // Generate month options
-    const months = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-    ];
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
 
-    // Generate year options - Past 3 years + current year
-    const currentYear = new Date().getFullYear();
-    const years = Array.from(
-        { length: 4 }, // Changed from 5 to 4 (3 past + 1 current = 4 total)
-        (_, i) => currentYear - 3 + i  // Changed from -2 to -3
-    );
+    // Fetch recent requests
+    const fetchRecentRequests = useCallback(async () => {
+        if (!isOpen) return;
 
-    // ADD THIS useEffect FOR DEBUGGING
+        setLoadingRequests(true);
+        try {
+            const response = await axios.get(
+                `${import.meta.env.VITE_API_URL}/client/financial-statement/my-requests`,
+                {
+                    withCredentials: true,
+                    headers: { 'Content-Type': 'application/json' }
+                }
+            );
+
+            if (response.data.success) {
+                const requests = response.data.data.slice(0, 5);
+                setRecentRequests(requests);
+            }
+        } catch (error) {
+            console.error("Error fetching recent requests:", error);
+        } finally {
+            setLoadingRequests(false);
+        }
+    }, [isOpen]);
+
+    // Load data when modal opens
     useEffect(() => {
         if (isOpen) {
-            console.log("=== FINANCIAL STATEMENT MODAL DEBUG ===");
-            console.log("1. Modal isOpen:", isOpen);
-            console.log("2. clientInfo prop:", clientInfo);
-            console.log("3. Cookies:", document.cookie);
+            fetchRecentRequests();
 
-            // Get token from cookies
+            // Debug info
             const cookies = document.cookie.split(';');
             const clientTokenCookie = cookies.find(cookie =>
                 cookie.trim().startsWith('clientToken=')
             );
 
             if (clientTokenCookie) {
-                console.log("4. Found clientToken cookie");
                 try {
                     const token = clientTokenCookie.split('=')[1];
                     const payload = JSON.parse(atob(token.split('.')[1]));
-                    console.log("5. Decoded JWT payload:", payload);
                     setDebugInfo({
                         tokenFound: true,
                         clientId: payload.clientId,
@@ -69,26 +83,72 @@ const FinancialStatementModal = ({
                         role: payload.role
                     });
                 } catch (e) {
-                    console.log("6. Failed to decode token:", e);
                     setDebugInfo({ tokenFound: false, error: e.message });
                 }
             } else {
-                console.log("4. NO clientToken cookie found!");
                 setDebugInfo({ tokenFound: false });
             }
         }
-    }, [isOpen, clientInfo]);
+    }, [isOpen, fetchRecentRequests]);
 
-    // Handle month selection
-    const handleMonthChange = (e) => {
-        console.log("Selected month:", e.target.value);
-        setSelectedMonth(e.target.value);
+    // Format date for display
+    const formatDate = (dateString) => {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-IN', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
     };
 
-    // Handle year selection
-    const handleYearChange = (e) => {
-        console.log("Selected year:", e.target.value);
-        setSelectedYear(e.target.value);
+    // FIXED: Pure validation function - NO STATE UPDATES
+    const getDateValidationError = () => {
+        if (!fromDate || !toDate) {
+            return "Please select both from and to dates";
+        }
+
+        const from = new Date(fromDate);
+        const to = new Date(toDate);
+        const today_date = new Date(today);
+        today_date.setHours(23, 59, 59, 999);
+
+        if (from > today_date) {
+            return "From date cannot be in the future";
+        }
+        if (to > today_date) {
+            return "To date cannot be in the future";
+        }
+        if (to < from) {
+            return "To date must be after or equal to from date";
+        }
+
+        return null; // No error
+    };
+
+    // Handle from date change
+    const handleFromDateChange = (e) => {
+        const newFromDate = e.target.value;
+        setFromDate(newFromDate);
+
+        // Clear to date if it's less than new from date
+        if (toDate && newFromDate > toDate) {
+            setToDate("");
+        }
+
+        // Update error based on new dates
+        const error = getDateValidationError();
+        setDateError(error || "");
+    };
+
+    // Handle to date change
+    const handleToDateChange = (e) => {
+        const newToDate = e.target.value;
+        setToDate(newToDate);
+
+        // Update error based on new dates
+        const error = getDateValidationError();
+        setDateError(error || "");
     };
 
     // Handle notes change
@@ -96,17 +156,19 @@ const FinancialStatementModal = ({
         setAdditionalNotes(e.target.value);
     };
 
-    // Check if form is valid
+    // FIXED: Check if form is valid without updating state
     const isFormValid = () => {
-        const valid = selectedMonth && selectedYear;
-        console.log("Form valid check:", { selectedMonth, selectedYear, valid });
-        return valid;
+        return fromDate && toDate && getDateValidationError() === null;
     };
 
     // Handle next step
     const handleNext = () => {
-        console.log("Next clicked, current step:", step);
-        if (step === 1 && isFormValid()) {
+        if (step === 1) {
+            const error = getDateValidationError();
+            if (error) {
+                setDateError(error);
+                return;
+            }
             setStep(2);
         } else if (step === 2) {
             handleSubmit();
@@ -115,119 +177,82 @@ const FinancialStatementModal = ({
 
     // Handle back
     const handleBack = () => {
-        console.log("Back clicked, current step:", step);
         if (step === 2) {
             setStep(1);
         }
     };
 
-    // Handle submit - SIMPLIFIED VERSION
+    // Handle submit
     const handleSubmit = async () => {
-        console.log("=== SUBMIT STARTED ===");
-        console.log("Form data:", {
-            month: selectedMonth,
-            year: selectedYear,
-            notes: additionalNotes,
-            clientInfo: clientInfo
-        });
-
-        if (!isFormValid()) {
-            toast.error("Please select month and year");
+        const error = getDateValidationError();
+        if (error) {
+            setDateError(error);
+            toast.error(error);
             return;
         }
 
         setLoading(true);
         try {
-            console.log("1. Making API request...");
-            console.log("URL:", `${import.meta.env.VITE_API_URL}/client/financial-statement/request`);
-
             const response = await axios.post(
                 `${import.meta.env.VITE_API_URL}/client/financial-statement/request`,
                 {
-                    month: selectedMonth,
-                    year: parseInt(selectedYear),
+                    fromDate,
+                    toDate,
                     additionalNotes: additionalNotes.trim()
-                    // NO client info - backend gets it from token
                 },
                 {
                     withCredentials: true,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Content-Type': 'application/json' }
                 }
             );
 
-            console.log("2. API Response:", response.data);
-
             if (response.data.success) {
-                console.log("3. Request successful!");
                 setStep(3);
                 if (onSuccess) {
                     onSuccess(response.data.data);
                 }
-
-                toast.success("Request submitted successfully!", {
-                    position: "top-right",
-                    autoClose: 5000,
-                    theme: "dark"
-                });
+                toast.success("Request submitted successfully!");
             } else {
-                console.log("3. Request failed:", response.data.message);
                 throw new Error(response.data.message || "Request failed");
             }
         } catch (error) {
-            console.log("=== SUBMIT ERROR ===");
-            console.log("Error name:", error.name);
-            console.log("Error message:", error.message);
-            console.log("Error response:", error.response);
-            console.log("Error request:", error.request);
-
             let errorMessage = "Failed to submit request. Please try again.";
-
             if (error.response) {
-                console.log("Server error response:", error.response.status, error.response.data);
-                errorMessage = error.response.data.message ||
-                    error.response.data.error ||
-                    errorMessage;
-            } else if (error.request) {
-                console.log("No response received:", error.request);
-                errorMessage = "No response from server. Please check your connection.";
-            } else if (error.message.includes("Network")) {
-                console.log("Network error");
-                errorMessage = "Network error. Please check your internet connection.";
+                errorMessage = error.response.data.message || errorMessage;
             }
-
-            console.log("Displaying error:", errorMessage);
-            toast.error(errorMessage, {
-                position: "top-right",
-                autoClose: 5000,
-                theme: "dark"
-            });
-
-            // Stay on step 2 if error
+            toast.error(errorMessage);
             setStep(2);
         } finally {
-            console.log("=== SUBMIT FINISHED ===");
             setLoading(false);
+        }
+    };
+
+    // Get status badge color
+    const getStatusBadge = (status) => {
+        switch (status) {
+            case 'pending': return 'status-pending';
+            case 'in_progress': return 'status-progress';
+            case 'completed': return 'status-completed';
+            case 'approved': return 'status-approved';
+            case 'sent': return 'status-sent';
+            case 'cancelled': return 'status-cancelled';
+            default: return '';
         }
     };
 
     // Handle close
     const handleClose = () => {
         if (loading) return;
-
-        console.log("Closing modal, resetting form");
-        setSelectedMonth("");
-        setSelectedYear("");
+        setFromDate("");
+        setToDate("");
+        setDateError("");
         setAdditionalNotes("");
         setStep(1);
+        setRecentRequests([]);
         onClose();
     };
 
-    // If modal is not open, don't render
     if (!isOpen) return null;
-
-    console.log("Rendering modal, step:", step);
 
     return (
         <>
@@ -240,93 +265,81 @@ const FinancialStatementModal = ({
                             <FiFileMinus size={24} />
                             <h3>Request Financial Statements</h3>
                         </div>
-                        <button
-                            className="close-modal"
-                            onClick={handleClose}
-                            disabled={loading}
-                        >
+                        <button className="close-modal" onClick={handleClose} disabled={loading}>
                             <FiX size={24} />
                         </button>
                     </div>
 
                     {/* Modal Body */}
                     <div className="modal-body">
-                        {/* DEBUG INFO - SHOW IN MODAL */}
-                        <div className="debug-info" style={{
-                            background: '#f0f0f0',
-                            padding: '10px',
-                            marginBottom: '15px',
-                            borderRadius: '5px',
-                            fontSize: '12px',
-                            display: 'none' // Change to 'block' to see debug info
-                        }}>
-                            <strong>Debug Info:</strong><br />
-                            Client Info: {JSON.stringify(clientInfo)}<br />
-                            Token Found: {debugInfo.tokenFound ? 'Yes' : 'No'}<br />
-                            Step: {step}<br />
-                            Selected: {selectedMonth} {selectedYear}
-                        </div>
-
-                        {/* Step 1: Select Period */}
+                        {/* Step 1: Select Date Range */}
                         {step === 1 && (
                             <div className="step-content step-1">
                                 <div className="step-description">
                                     <p>
-                                        Select the month and year for which you need financial statements.
-                                        Our admin team will prepare and send them to you.
+                                        Select the date range for which you need financial statements.
+                                        You can select any past dates (single day or multiple years).
                                     </p>
                                 </div>
 
                                 <div className="form-section">
-                                    {/* Month Selection */}
+                                    {/* From Date */}
                                     <div className="form-group">
                                         <label className="form-label">
                                             <FiCalendar size={16} />
-                                            Select Month
+                                            From Date
                                         </label>
-                                        <div className="select-wrapper">
-                                            <select
-                                                value={selectedMonth}
-                                                onChange={handleMonthChange}
-                                                className="form-select"
-                                                disabled={loading}
-                                            >
-                                                <option value="">Choose a month</option>
-                                                {months.map(month => (
-                                                    <option key={month} value={month}>
-                                                        {month}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
+                                        <input
+                                            type="date"
+                                            value={fromDate}
+                                            onChange={handleFromDateChange}
+                                            max={today}
+                                            className="form-input"
+                                            disabled={loading}
+                                        />
                                     </div>
 
-                                    {/* Year Selection */}
+                                    {/* To Date */}
                                     <div className="form-group">
                                         <label className="form-label">
                                             <FiCalendar size={16} />
-                                            Select Year
+                                            To Date
                                         </label>
-                                        <div className="select-wrapper">
-                                            <select
-                                                value={selectedYear}
-                                                onChange={handleYearChange}
-                                                className="form-select"
-                                                disabled={loading}
-                                            >
-                                                <option value="">Choose a year</option>
-                                                {years.map(year => (
-                                                    <option key={year} value={year}>
-                                                        {year}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
+                                        <input
+                                            type="date"
+                                            value={toDate}
+                                            onChange={handleToDateChange}
+                                            min={fromDate}
+                                            max={today}
+                                            className="form-input"
+                                            disabled={loading || !fromDate}
+                                        />
                                     </div>
 
+                                    {/* Error Message */}
+                                    {dateError && (
+                                        <div className="error-message">
+                                            <FiAlertCircle size={14} />
+                                            <span>{dateError}</span>
+                                        </div>
+                                    )}
 
+                                    {/* Notes */}
+                                    <div className="form-group">
+                                        <label className="form-label">
+                                            Additional Notes (Optional)
+                                        </label>
+                                        <textarea
+                                            value={additionalNotes}
+                                            onChange={handleNotesChange}
+                                            placeholder="Any specific requirements..."
+                                            rows="3"
+                                            className="form-textarea"
+                                            disabled={loading}
+                                        />
+                                    </div>
 
-                                    {/* Client Info Preview - UPDATED WITH DEBUG */}
+                                    {/* Client Info */}
                                     <div className="client-info-preview">
                                         <h4>Your Information</h4>
                                         <div className="info-grid">
@@ -341,14 +354,57 @@ const FinancialStatementModal = ({
                                                 <FiMail size={14} />
                                                 <span className="info-label">Email:</span>
                                                 <span className="info-value">
-                                                    {clientInfo?.email || "Will be fetched from your account"}
+                                                    {clientInfo?.email || "Will be fetched"}
                                                 </span>
                                             </div>
-
                                         </div>
-                                        <p className="info-note">
-                                            Confirmation will be sent to your registered email.
-                                        </p>
+                                    </div>
+
+                                    {/* Recent Requests */}
+                                    <div className="recent-requests-section">
+                                        <div className="recent-header">
+                                            <FiList size={18} />
+                                            <h4>Your Recent Requests</h4>
+                                        </div>
+
+                                        {loadingRequests ? (
+                                            <div className="loading-spinner">
+                                                <span className="spinner-small"></span>
+                                                Loading...
+                                            </div>
+                                        ) : recentRequests.length > 0 ? (
+                                            <div className="requests-table">
+                                                <table>
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Requested On</th>
+                                                            <th>Period</th>
+                                                            <th>Status</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {recentRequests.map((request) => (
+                                                            <tr key={request.requestId}>
+                                                                <td>{formatDate(request.requestedAt)}</td>
+                                                                <td>
+                                                                    {request.dateRangeDisplay ||
+                                                                        `${formatDate(request.fromDate)} - ${formatDate(request.toDate)}`}
+                                                                </td>
+                                                                <td>
+                                                                    <span className={`status-badge ${getStatusBadge(request.status)}`}>
+                                                                        {request.status.replace('_', ' ')}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        ) : (
+                                            <div className="no-requests">
+                                                <p>No previous requests found</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -367,23 +423,20 @@ const FinancialStatementModal = ({
 
                                 <div className="confirmation-details">
                                     <div className="detail-card">
-                                        <div className="detail-header">
-                                            <h5>Request Summary</h5>
-                                        </div>
+                                        <h5>Request Summary</h5>
                                         <div className="detail-content">
                                             <div className="detail-item">
                                                 <span className="detail-label">Period:</span>
                                                 <span className="detail-value highlight">
-                                                    {selectedMonth} {selectedYear}
+                                                    {formatDate(fromDate)} - {formatDate(toDate)}
                                                 </span>
                                             </div>
                                             <div className="detail-item">
-                                                <span className="detail-label">Client Name:</span>
+                                                <span className="detail-label">Client:</span>
                                                 <span className="detail-value">
                                                     {clientInfo?.name || debugInfo.name || "Your Account"}
                                                 </span>
                                             </div>
-
                                             {additionalNotes && (
                                                 <div className="detail-item">
                                                     <span className="detail-label">Notes:</span>
@@ -396,26 +449,14 @@ const FinancialStatementModal = ({
                                     <div className="process-info">
                                         <h5>What happens next?</h5>
                                         <ol className="process-steps">
-                                            <li>
-                                                <FiClock size={14} />
-                                                <span>Your request will be sent to our admin team</span>
-                                            </li>
-                                            <li>
-                                                <FiMail size={14} />
-                                                <span>You'll receive a confirmation email</span>
-                                            </li>
-                                            <li>
-                                                <FiFileMinus size={14} />
-                                                <span>Admin will prepare your financial statements</span>
-                                            </li>
-                                            <li>
-                                                <FiCheck size={14} />
-                                                <span>You'll be notified when statements are ready</span>
-                                            </li>
+                                            <li><FiClock size={14} /> Request sent to admin team</li>
+                                            <li><FiMail size={14} /> Confirmation email sent</li>
+                                            <li><FiFileMinus size={14} /> Admin prepares statements</li>
+                                            <li><FiCheck size={14} /> Notification when ready</li>
                                         </ol>
                                         <p className="process-note">
                                             <FiAlertCircle size={14} />
-                                            Please allow 2-3 business days for processing.
+                                            Please allow <strong>minimum 7 days</strong> for processing.
                                         </p>
                                     </div>
                                 </div>
@@ -437,111 +478,58 @@ const FinancialStatementModal = ({
                                     <div className="success-card">
                                         <h5>Request Details</h5>
                                         <div className="success-item">
-                                            <span className="success-label">Requested Period:</span>
-                                            <span className="success-value">{selectedMonth} {selectedYear}</span>
+                                            <span>Period:</span>
+                                            <span>{formatDate(fromDate)} - {formatDate(toDate)}</span>
                                         </div>
                                         <div className="success-item">
-                                            <span className="success-label">Status:</span>
+                                            <span>Status:</span>
                                             <span className="status-badge pending">Pending Review</span>
-                                        </div>
-                                        <div className="success-item">
-                                            <span className="success-label">Submitted:</span>
-                                            <span className="success-value">
-                                                {new Date().toLocaleString('en-IN')}
-                                            </span>
                                         </div>
                                     </div>
 
                                     <div className="success-message">
-                                        <p>
-                                            ✅ A confirmation email has been sent to your registered email.
-                                        </p>
-                                        <p>
-                                            📧 Our admin team has been notified and will process your request.
-                                        </p>
-                                        <p>
-                                            🔔 You'll receive another email when your financial statements are ready.
-                                        </p>
+                                        <p>✅ Confirmation email sent</p>
+                                        <p>⏰ <strong>Processing time: Minimum 7 days</strong></p>
+                                        <p>🔔 You'll be notified when ready</p>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* Action Buttons */}
+                        {/* Buttons */}
                         <div className="modal-actions">
                             {step === 1 && (
                                 <>
-                                    <button
-                                        className="modal-btn secondary"
-                                        onClick={handleClose}
-                                        disabled={loading}
-                                    >
+                                    <button className="modal-btn secondary" onClick={handleClose} disabled={loading}>
                                         Cancel
                                     </button>
-                                    <button
-                                        className="modal-btn primary"
-                                        onClick={handleNext}
-                                        disabled={!isFormValid() || loading}
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <span className="spinner-small"></span>
-                                                Processing...
-                                            </>
-                                        ) : (
-                                            <>
-                                                Next <FiChevronRight size={16} />
-                                            </>
-                                        )}
+                                    <button className="modal-btn primary" onClick={handleNext} disabled={!isFormValid() || loading}>
+                                        Next <FiChevronRight size={16} />
                                     </button>
                                 </>
                             )}
-
                             {step === 2 && (
                                 <>
-                                    <button
-                                        className="modal-btn secondary"
-                                        onClick={handleBack}
-                                        disabled={loading}
-                                    >
-                                        <FiChevronRight size={16} style={{ transform: 'rotate(180deg)' }} />
-                                        Back
+                                    <button className="modal-btn secondary" onClick={handleBack} disabled={loading}>
+                                        <FiChevronRight size={16} style={{ transform: 'rotate(180deg)' }} /> Back
                                     </button>
-                                    <button
-                                        className="modal-btn primary"
-                                        onClick={handleSubmit}
-                                        disabled={loading}
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <span className="spinner-small"></span>
-                                                Submitting...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <FiCheck size={16} />
-                                                Submit Request
-                                            </>
-                                        )}
+                                    <button className="modal-btn primary" onClick={handleSubmit} disabled={loading}>
+                                        {loading ? <span className="spinner-small"></span> : <><FiCheck size={16} /> Submit</>}
                                     </button>
                                 </>
                             )}
-
                             {step === 3 && (
-                                <button
-                                    className="modal-btn primary"
-                                    onClick={handleClose}
-                                >
+                                <button className="modal-btn primary" onClick={handleClose}>
                                     Done
                                 </button>
                             )}
                         </div>
 
-                        {/* Progress Indicator */}
+                        {/* Progress */}
                         <div className="progress-indicator">
                             <div className={`progress-step ${step >= 1 ? 'active' : ''}`}>
                                 <span className="step-number">1</span>
-                                <span className="step-label">Select Period</span>
+                                <span className="step-label">Select</span>
                             </div>
                             <div className={`progress-line ${step >= 2 ? 'active' : ''}`}></div>
                             <div className={`progress-step ${step >= 2 ? 'active' : ''}`}>

@@ -86,28 +86,28 @@ const Footer = () => {
         <div className="fgf-copyright-row">
           <div className="fgf-copyright-text">
             <p className="desktop-view">
-              Copyrights © 2026 - Credence Developed & Designed by
+              Copyrights © 2026 - Credence Developed by
               <span>
                 <a
-                  href="https://techorses.com"
-                  target="_blank"
+                  // href="https://techorses.com"
+                  // target="_blank"
                   rel="noopener noreferrer"
                 >
-                  TECHORSES
+                   Vapautus Media Private Limited
                 </a>
               </span>
             </p>
 
             <p className="mobile-view">
               Copyrights © 2026 - Credence <br />
-              Developed & Designed by{" "}
+              Developed by{" "}
               <span>
                 <a
-                  href="https://techorses.com"
-                  target="_blank"
+                  // href="https://techorses.com"
+                  // target="_blank"
                   rel="noopener noreferrer"
                 >
-                  TECHORSES
+                  Vapautus Media Private Limited
                 </a>
               </span>
             </p>

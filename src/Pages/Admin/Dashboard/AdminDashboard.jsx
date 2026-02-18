@@ -13,7 +13,6 @@ import {
   FiEye,
   FiCalendar,
   FiCheck,
-  FiCheckCircle,
   FiX,
   FiAlertCircle,
   FiChevronRight,
@@ -25,7 +24,6 @@ import {
   FiBriefcase
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
-
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AdminLayout from "../Layout/AdminLayout";
@@ -33,8 +31,8 @@ import "./AdminDashboard.scss";
 import AdminNotesPanel from "./Notes/AdminNotesPanel";
 
 const AdminDashboard = () => {
-
   const navigate = useNavigate();
+
   // State for dashboard data
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -52,9 +50,6 @@ const AdminDashboard = () => {
   const [unviewedNotesSummary, setUnviewedNotesSummary] = useState(null);
   const [selectedClientNotes, setSelectedClientNotes] = useState(null);
   const [notesLoading, setNotesLoading] = useState(false);
-
-
-
 
   // Time filter options
   const timeFilterOptions = [
@@ -168,7 +163,6 @@ const AdminDashboard = () => {
       );
 
       if (response.data.success) {
-        // Update local state - remove the marked note
         if (selectedClientNotes) {
           const updatedNotesByMonth = selectedClientNotes.notesByMonth.map(monthData => ({
             ...monthData,
@@ -183,7 +177,6 @@ const AdminDashboard = () => {
             notesByMonth: updatedNotesByMonth
           }));
 
-          // Update summary if we're in client view
           if (unviewedNotesSummary) {
             const updatedClients = unviewedNotesSummary.clients.map(client => {
               if (client.clientId === clientId) {
@@ -208,7 +201,6 @@ const AdminDashboard = () => {
               clients: updatedClients
             }));
 
-            // Update dashboard metrics
             if (dashboardData) {
               setDashboardData(prev => ({
                 ...prev,
@@ -244,7 +236,6 @@ const AdminDashboard = () => {
       );
 
       if (response.data.success) {
-        // Update summary
         const updatedClients = unviewedNotesSummary.clients.filter(client => client.clientId !== clientId);
         const newTotalNotes = updatedClients.reduce((sum, client) => sum + client.totalUnviewedNotes, 0);
 
@@ -258,10 +249,8 @@ const AdminDashboard = () => {
           clients: updatedClients
         }));
 
-        // Clear selected client notes
         setSelectedClientNotes(null);
 
-        // Update dashboard metrics
         if (dashboardData) {
           setDashboardData(prev => ({
             ...prev,
@@ -297,12 +286,10 @@ const AdminDashboard = () => {
       );
 
       if (response.data.success) {
-        // Clear all notes data
         setUnviewedNotesSummary(null);
         setSelectedClientNotes(null);
         setActiveModal(null);
 
-        // Update dashboard metrics
         if (dashboardData) {
           setDashboardData(prev => ({
             ...prev,
@@ -358,6 +345,9 @@ const AdminDashboard = () => {
         case 'uploadedLocked':
           endpoint = "/admin/dashboard/uploaded-but-locked";
           break;
+        case 'pendingFinance':
+          navigate("/admin/enrollments");
+          return;
         default:
           return;
       }
@@ -424,6 +414,11 @@ const AdminDashboard = () => {
       month: 'short',
       year: 'numeric'
     });
+  };
+
+  const formatMonthYear = (year, month) => {
+    const date = new Date(year, month - 1, 1);
+    return date.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
   };
 
   const getFilterDisplayText = () => {
@@ -502,7 +497,7 @@ const AdminDashboard = () => {
       {
         title: "Unassigned Clients",
         value: dashboardData.metrics.unassignedClients,
-        subtitle: "Clients without task assignments",
+        subtitle: "Clients with missing tasks",
         icon: <FiUserX />,
         color: "#ff6b6b",
         onClick: () => fetchModalData('unassignedClients')
@@ -523,14 +518,30 @@ const AdminDashboard = () => {
         color: "#ff4b4b",
         onClick: () => fetchModalData('incompleteTasks')
       },
+      // {
+      //   title: "Recent Notes",
+      //   value: dashboardData.metrics.recentNotes,
+      //   subtitle: "Notes added in selected period",
+      //   icon: <FiMessageSquare />,
+      //   color: "#9b59b6",
+      //   onClick: () => fetchModalData('recentNotes')
+      // },
       {
         title: "Pending Finance Requests",
         value: dashboardData.metrics.pendingFinancialRequests || 0,
-        subtitle: "Financial statement requests pending",
-        icon: <FiDollarSign />, // or use FiFileText for document icon
-        color: "#3498db", // Blue color for finance
-        onClick: () => navigate("/admin/enrollments")
-      }
+        subtitle: "Financial statement requests",
+        icon: <FiDollarSign />,
+        color: "#3498db",
+        onClick: () => fetchModalData('pendingFinance')
+      },
+      // {
+      //   title: "Uploaded & Locked",
+      //   value: "View Details",
+      //   subtitle: "Clients with uploaded docs in locked months",
+      //   icon: <FiLock />,
+      //   color: "#8B5CF6",
+      //   onClick: () => fetchModalData('uploadedLocked')
+      // }
     ];
 
     return (
@@ -565,64 +576,9 @@ const AdminDashboard = () => {
     );
   };
 
-  const renderAlertSection = () => {
-    if (!dashboardData) return null;
-
-    const alerts = [
-      {
-        title: "Clients with Uploaded Documents FOr This Month",
-        value: "Docs Details",
-        // subtitle: "Clients needing month unlock",
-        icon: <FiLock />,
-        color: "#8B5CF6",
-        onClick: () => fetchModalData('uploadedLocked')
-      }
-    ];
-
-    return (
-      <div className="alert-section">
-        <div className="alert-header">
-          <h3>
-            <FiAlertCircle size={24} /> Alerts & Notifications
-          </h3>
-          <p>Important items requiring your attention</p>
-        </div>
-        <div className="alert-grid">
-          {alerts.map((alert, index) => (
-            <div
-              key={index}
-              className={`alert-card ${alert.onClick ? 'clickable' : ''}`}
-              style={{ borderTopColor: alert.color }}
-              onClick={alert.onClick}
-            >
-              <div className="alert-header">
-                <div className="alert-icon" style={{ background: `${alert.color}15` }}>
-                  {alert.icon}
-                </div>
-                <div className="alert-content">
-                  <h3>{alert.value}</h3>
-                  <p className="alert-title">{alert.title}</p>
-                  {/* <p className="alert-subtitle" style={{ color: alert.color }}>
-                    {alert.subtitle}
-                  </p> */}
-                </div>
-              </div>
-              {alert.onClick && (
-                <div className="alert-action">
-                  View <FiChevronRight size={16} />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   const renderUnviewedNotesModal = () => {
     if (activeModal !== 'unviewedNotes' || !modalData) return null;
 
-    // If we're viewing a specific client's notes
     if (selectedClientNotes) {
       return (
         <div className="modal-overlay">
@@ -734,7 +690,6 @@ const AdminDashboard = () => {
       );
     }
 
-    // Client list view
     return (
       <div className="modal-overlay">
         <div className="modal unviewed-notes-modal">
@@ -749,13 +704,6 @@ const AdminDashboard = () => {
               </h3>
             </div>
             <div className="modal-actions">
-              {/* <button
-                className="mark-all-read-btn"
-                onClick={markAllNotesAsRead}
-                disabled={notesLoading || modalData.summary.totalUnviewedNotes === 0}
-              >
-                <FiCheck size={16} /> Mark All as Read
-              </button> */}
               <button className="close-modal" onClick={closeModal}>
                 <FiX size={24} />
               </button>
@@ -765,7 +713,7 @@ const AdminDashboard = () => {
           <div className="modal-body">
             <div className="filter-info">
               <p>
-                <strong>Time Period:</strong> {getFilterDisplayText()}
+                <strong>Time Period:</strong> {getFilterDisplayText()} {modalData.monthsInRange ? `(${modalData.monthsInRange} months)` : ''}
               </p>
             </div>
 
@@ -854,7 +802,6 @@ const AdminDashboard = () => {
   const renderModal = () => {
     if (!activeModal || !modalData) return null;
 
-    // Handle unviewed notes modal separately
     if (activeModal === 'unviewedNotes') {
       return renderUnviewedNotesModal();
     }
@@ -888,7 +835,7 @@ const AdminDashboard = () => {
         icon = <FiMessageSquare />;
         break;
       case 'uploadedLocked':
-        modalTitle = "Clients with Uploaded Documents For This Month";
+        modalTitle = "Clients with Uploaded Documents in Locked Months";
         icon = <FiLock />;
         break;
       default:
@@ -911,13 +858,18 @@ const AdminDashboard = () => {
           </div>
 
           <div className="modal-body">
+            <div className="filter-info">
+              <p>
+                <strong>Time Period:</strong> {getFilterDisplayText()} {modalData.monthsInRange ? `(${modalData.monthsInRange} months)` : ''}
+              </p>
+            </div>
+
             {modalLoading ? (
               <div className="loading-state">
                 <div className="spinner"></div>
                 <p>Loading data...</p>
               </div>
             ) : activeModal === 'uploadedLocked' ? (
-              // Special handling for uploaded locked modal
               modalData.monthsData && modalData.monthsData.length > 0 ? (
                 <div className="uploaded-locked-modal-content">
                   <div className="modal-summary">
@@ -962,9 +914,6 @@ const AdminDashboard = () => {
                                   <tr key={clientIndex}>
                                     <td>
                                       <div className="client-cell">
-                                        {/* <div className="client-avatar-small">
-                                          {getInitials(client.name)} 
-                                        </div> */}
                                         <span>{client.name}</span>
                                       </div>
                                     </td>
@@ -1030,24 +979,21 @@ const AdminDashboard = () => {
                         <>
                           <th>Client Name</th>
                           <th>Contact</th>
-                          <th>Plan</th>
-                          <th>Missing Tasks</th>
-                          <th>Total Missing</th>
+                          <th>Missing Tasks by Month</th>
                         </>
                       )}
                       {activeModal === 'idleEmployees' && (
                         <>
                           <th>Employee Name</th>
                           <th>Contact</th>
-                          <th>Status</th>
+                          <th>Idle Months</th>
                         </>
                       )}
                       {activeModal === 'incompleteTasks' && (
                         <>
                           <th>Client Name</th>
                           <th>Contact</th>
-                          <th>Incomplete Tasks</th>
-                          <th>Total Pending</th>
+                          <th>Pending Tasks by Month</th>
                         </>
                       )}
                       {activeModal === 'recentNotes' && (
@@ -1056,212 +1002,205 @@ const AdminDashboard = () => {
                           <th>Contact</th>
                           <th>Notes Summary</th>
                           <th>Latest Note</th>
-                          <th>Actions</th>
                         </>
                       )}
                     </tr>
                   </thead>
                   <tbody>
-                    {(activeModal === 'activeClients' ? modalData.clients :
-                      activeModal === 'activeEmployees' ? modalData.employees :
-                        activeModal === 'unassignedClients' ? modalData.clients :
-                          activeModal === 'idleEmployees' ? modalData.employees :
-                            activeModal === 'incompleteTasks' ? modalData.clients :
-                              activeModal === 'recentNotes' ? modalData.notesByClient : []).map((item, index) => (
-                                <tr key={index}>
-                                  {activeModal === 'activeClients' && (
-                                    <>
-                                      <td>
-                                        <div className="client-cell">
-                                          <div className="client-avatar-small">
-                                            {getInitials(item.name)}
-                                          </div>
-                                          <span>{item.name}</span>
-                                        </div>
-                                      </td>
-                                      <td>
-                                        <div className="contact-info">
-                                          <div>{item.email}</div>
-                                          {item.phone && item.phone !== "N/A" && (
-                                            <small>{item.phone}</small>
-                                          )}
-                                        </div>
-                                      </td>
-                                      <td>
-                                        <span className="plan-badge">{item.plan}</span>
-                                      </td>
-                                      <td>{item.joined}</td>
-                                    </>
-                                  )}
-                                  {activeModal === 'activeEmployees' && (
-                                    <>
-                                      <td>
-                                        <div className="client-cell">
-                                          <div className="client-avatar-small">
-                                            {getInitials(item.name)}
-                                          </div>
-                                          <span>{item.name}</span>
-                                        </div>
-                                      </td>
-                                      <td>
-                                        <div className="contact-info">
-                                          <div>{item.email}</div>
-                                          {item.phone && item.phone !== "N/A" && (
-                                            <small>{item.phone}</small>
-                                          )}
-                                        </div>
-                                      </td>
-                                      <td>{item.joined}</td>
-                                    </>
-                                  )}
-                                  {activeModal === 'unassignedClients' && (
-                                    <>
-                                      <td>
-                                        <div className="client-cell">
-                                          <div className="client-avatar-small">
-                                            {getInitials(item.name)}
-                                          </div>
-                                          <span>{item.name}</span>
-                                        </div>
-                                      </td>
-                                      <td>
-                                        <div className="contact-info">
-                                          <div>{item.email}</div>
-                                          {item.phone && item.phone !== "N/A" && (
-                                            <small>{item.phone}</small>
-                                          )}
-                                        </div>
-                                      </td>
-                                      <td>
-                                        <span className="plan-badge">{item.plan}</span>
-                                      </td>
-                                      <td>
-                                        <div className="missing-tasks">
-                                          {item.missingTasks && item.missingTasks.map((task, taskIndex) => (
-                                            <span key={taskIndex} className="task-chip">
-                                              {task}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      </td>
-                                      <td>
-                                        <span className="missing-count">{item.totalMissing}</span>
-                                      </td>
-                                    </>
-                                  )}
-                                  {activeModal === 'idleEmployees' && (
-                                    <>
-                                      <td>
-                                        <div className="client-cell">
-                                          <div className="client-avatar-small">
-                                            {getInitials(item.name)}
-                                          </div>
-                                          <span>{item.name}</span>
-                                        </div>
-                                      </td>
-                                      <td>
-                                        <div className="contact-info">
-                                          <div>{item.email}</div>
-                                          {item.phone && item.phone !== "N/A" && (
-                                            <small>{item.phone}</small>
-                                          )}
-                                        </div>
-                                      </td>
-                                      <td>
-                                        <span className="status-badge inactive">Idle</span>
-                                      </td>
-                                    </>
-                                  )}
-                                  {activeModal === 'incompleteTasks' && (
-                                    <>
-                                      <td>
-                                        <div className="client-cell">
-                                          <div className="client-avatar-small">
-                                            {getInitials(item.name)}
-                                          </div>
-                                          <span>{item.name}</span>
-                                        </div>
-                                      </td>
-                                      <td>
-                                        <div className="contact-info">
-                                          <div>{item.email}</div>
-                                          {item.phone && item.phone !== "N/A" && (
-                                            <small>{item.phone}</small>
-                                          )}
-                                        </div>
-                                      </td>
-                                      <td>
-                                        <div className="incomplete-tasks-list">
-                                          {item.incompleteTasks && item.incompleteTasks.map((task, taskIndex) => (
-                                            <div key={taskIndex} className="incomplete-task-item">
-                                              <span className="task-name">{task.task}</span>
-                                              <span className="task-assigned">Assigned to: {task.assignedTo}</span>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </td>
-                                      <td>
-                                        <span className="incomplete-count">{item.totalIncomplete}</span>
-                                      </td>
-                                    </>
-                                  )}
-                                  {activeModal === 'recentNotes' && (
-                                    <>
-                                      <td>
-                                        <div className="client-cell">
-                                          <div className="client-avatar-small">
-                                            {getInitials(item.clientName)}
-                                          </div>
-                                          <span>{item.clientName}</span>
-                                        </div>
-                                      </td>
-                                      <td>
-                                        <div className="contact-info">
-                                          <div>{item.clientEmail}</div>
-                                        </div>
-                                      </td>
-                                      <td>
-                                        <div className="notes-summary">
-                                          <div className="notes-count">
-                                            Total: <strong>{item.totalNotes}</strong> notes
-                                          </div>
-                                          <div className="notes-breakdown">
-                                            {item.fileNotesCount} file notes • {item.categoryNotesCount} category notes
-                                          </div>
-                                        </div>
-                                      </td>
-                                      <td>
-                                        {item.latestNote && (
-                                          <div className="latest-note">
-                                            {item.latestNote.note.substring(0, 60)}...
-                                          </div>
-                                        )}
-                                      </td>
-                                      <td>
-                                        <button
-                                          className="view-notes-btn"
-                                          onClick={() => {
-                                            // You can implement view client notes here if needed
-                                            showToast("View notes functionality coming soon", "info");
-                                          }}
-                                        >
-                                          <FiEye size={14} /> View Notes
-                                        </button>
-                                      </td>
-                                    </>
-                                  )}
-                                </tr>
-                              ))}
+                    {activeModal === 'activeClients' && modalData.clients?.map((item, index) => (
+                      <tr key={index}>
+                        <td>
+                          <div className="client-cell">
+                            <div className="client-avatar-small">
+                              {getInitials(item.name)}
+                            </div>
+                            <span>{item.name}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="contact-info">
+                            <div>{item.email}</div>
+                            {item.phone && item.phone !== "N/A" && (
+                              <small>{item.phone}</small>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <span className="plan-badge">{item.plan}</span>
+                        </td>
+                        <td>{item.joined}</td>
+                      </tr>
+                    ))}
+
+                    {activeModal === 'activeEmployees' && modalData.employees?.map((item, index) => (
+                      <tr key={index}>
+                        <td>
+                          <div className="client-cell">
+                            <div className="client-avatar-small">
+                              {getInitials(item.name)}
+                            </div>
+                            <span>{item.name}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="contact-info">
+                            <div>{item.email}</div>
+                            {item.phone && item.phone !== "N/A" && (
+                              <small>{item.phone}</small>
+                            )}
+                          </div>
+                        </td>
+                        <td>{item.joined}</td>
+                      </tr>
+                    ))}
+
+                    {activeModal === 'unassignedClients' && modalData.clients?.map((item, index) => (
+                      <tr key={index}>
+                        <td>
+                          <div className="client-cell">
+                            <div className="client-avatar-small">
+                              {getInitials(item.name)}
+                            </div>
+                            <span>{item.name}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="contact-info">
+                            <div>{item.email}</div>
+                            {item.phone && item.phone !== "N/A" && (
+                              <small>{item.phone}</small>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="missing-tasks-by-month">
+                            {item.missingTasksByMonth?.map((monthData, monthIndex) => (
+                              <div key={monthIndex} className="month-missing-tasks">
+                                <strong className="month-name">{monthData.monthName}:</strong>
+                                <div className="task-chips">
+                                  {monthData.missingTasks.map((task, taskIndex) => (
+                                    <span key={taskIndex} className="task-chip warning">
+                                      {task}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+
+                    {activeModal === 'idleEmployees' && modalData.employees?.map((item, index) => (
+                      <tr key={index}>
+                        <td>
+                          <div className="client-cell">
+                            <div className="client-avatar-small">
+                              {getInitials(item.name)}
+                            </div>
+                            <span>{item.name}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="contact-info">
+                            <div>{item.email}</div>
+                            {item.phone && item.phone !== "N/A" && (
+                              <small>{item.phone}</small>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="idle-months-list">
+                            {item.idleMonths?.map((month, monthIndex) => (
+                              <span key={monthIndex} className="month-chip warning">
+                                {formatMonthYear(month.year, month.month)}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+
+                    {activeModal === 'incompleteTasks' && modalData.clients?.map((item, index) => (
+                      <tr key={index}>
+                        <td>
+                          <div className="client-cell">
+                            <div className="client-avatar-small">
+                              {getInitials(item.name)}
+                            </div>
+                            <span>{item.name}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="contact-info">
+                            <div>{item.email}</div>
+                            {item.phone && item.phone !== "N/A" && (
+                              <small>{item.phone}</small>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="incomplete-tasks-by-month">
+                            {item.incompleteByMonth?.map((monthData, monthIndex) => (
+                              <div key={monthIndex} className="month-incomplete-tasks">
+                                <strong className="month-name">{monthData.monthName}:</strong>
+                                <div className="task-items">
+                                  {monthData.incompleteTasks.map((task, taskIndex) => (
+                                    <div key={taskIndex} className="incomplete-task-item">
+                                      <span className="task-name">{task.task}</span>
+                                      <span className="task-assigned">→ {task.assignedTo}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+
+                    {activeModal === 'recentNotes' && modalData.notesByClient?.map((item, index) => (
+                      <tr key={index}>
+                        <td>
+                          <div className="client-cell">
+                            <div className="client-avatar-small">
+                              {getInitials(item.clientName)}
+                            </div>
+                            <span>{item.clientName}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="contact-info">
+                            <div>{item.clientEmail}</div>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="notes-summary">
+                            <div className="notes-count">
+                              Total: <strong>{item.totalNotes}</strong> notes
+                            </div>
+                            <div className="notes-breakdown">
+                              {item.fileNotesCount} file notes • {item.categoryNotesCount} category notes
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          {item.latestNote && (
+                            <div className="latest-note">
+                              {item.latestNote.note.substring(0, 60)}...
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
             ) : (
               <div className="empty-state">
-                <div className="empty-table">
-                  <div className="empty-icon">📊</div>
-                  <h4>No data found</h4>
-                  <p>No records available for the selected time period</p>
-                </div>
+                <div className="empty-icon">📊</div>
+                <h4>No data found</h4>
+                <p>No records available for the selected time period</p>
               </div>
             )}
           </div>
@@ -1286,9 +1225,7 @@ const AdminDashboard = () => {
               <strong>Time Period:</strong> {getFilterDisplayText()}
             </p>
             <p>
-              <strong>Current Month:</strong> {dashboardData.currentMonth ?
-                `${dashboardData.currentMonth.month}/${dashboardData.currentMonth.year}` :
-                "Loading..."}
+              <strong>Months in Range:</strong> {dashboardData.dateRange?.monthsCount || 1}
             </p>
             <p>
               <strong>Active Clients:</strong> {dashboardData.metrics.activeClients}
@@ -1328,6 +1265,8 @@ const AdminDashboard = () => {
             </button>
           </div>
         </div>
+
+        <AdminNotesPanel />
 
         {/* Time Filter */}
         <div className="filter-section">
@@ -1394,8 +1333,6 @@ const AdminDashboard = () => {
           )}
         </div>
 
-        <AdminNotesPanel />
-
         {/* Loading State */}
         {loading ? (
           <div className="loading-state">
@@ -1406,9 +1343,6 @@ const AdminDashboard = () => {
           <>
             {/* Metrics Grid */}
             {renderMetricsGrid()}
-
-            {/* Alert Section */}
-            {/* {renderAlertSection()}  */}
 
             {/* Dashboard Summary */}
             {renderDashboardSummary()}

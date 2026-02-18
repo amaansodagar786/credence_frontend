@@ -71,8 +71,31 @@ const AdminClientEnrollments = () => {
   const [financeConfirmData, setFinanceConfirmData] = useState({
     requestId: null,
     clientName: "",
-    monthYear: ""
+    monthYear: "",
+    fromDate: null,  // ✅ add this
+    toDate: null
   });
+
+
+
+  // ADD THIS HELPER FUNCTION after your other state declarations:
+  const formatDateRange = (fromDate, toDate) => {
+    if (!fromDate || !toDate) return 'Invalid date';
+
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
+
+    // Format: DD MMM YYYY - DD MMM YYYY
+    return `${from.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    })} - ${to.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    })}`;
+  };
 
   // Fetch enrollments
   const fetchEnrollments = async () => {
@@ -140,7 +163,7 @@ const AdminClientEnrollments = () => {
     }
   };
 
-  
+
   // Toggle client active status
   const toggleClientStatus = async (clientId, currentStatus) => {
     try {
@@ -238,12 +261,13 @@ const AdminClientEnrollments = () => {
     }
   };
 
-  // NEW: Open finance confirmation modal
-  const openFinanceConfirmation = (requestId, clientName, monthYear) => {
+  const openFinanceConfirmation = (requestId, clientName, fromDate, toDate) => {
     setFinanceConfirmData({
       requestId,
       clientName,
-      monthYear
+      fromDate,    // ✅ Now defined
+      toDate,      // ✅ Now defined
+      monthYear: `${new Date(fromDate).toLocaleDateString('en-GB', { month: 'short' })} ${new Date(fromDate).getFullYear()}` // Keep for backward compatibility
     });
     setShowFinanceConfirmModal(true);
   };
@@ -922,7 +946,23 @@ const AdminClientEnrollments = () => {
                     <td className="period-cell">
                       <div className="period-info">
                         <FiCalendar className="period-icon" />
-                        <span className="period-text">{request.month} {request.year}</span>
+                        <span className="period-text">
+                          {request.fromDate && request.toDate ? (
+                            <>
+                              {new Date(request.fromDate).toLocaleDateString('en-GB', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric'
+                              })} - {new Date(request.toDate).toLocaleDateString('en-GB', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric'
+                              })}
+                            </>
+                          ) : (
+                            'Invalid date range'
+                          )}
+                        </span>
                       </div>
                     </td>
                     <td className="date-cell">
@@ -951,7 +991,8 @@ const AdminClientEnrollments = () => {
                             onClick={() => openFinanceConfirmation(
                               request.requestId,
                               request.clientName,
-                              `${request.month} ${request.year}`
+                              request.fromDate,  // ✅ pass fromDate
+                              request.toDate
                             )}
                             disabled={approvingRequest && approvingRequestId === request.requestId}
                           >
@@ -1045,7 +1086,22 @@ const AdminClientEnrollments = () => {
                     <div className="detail-item">
                       <span className="detail-label">Period</span>
                       <span className="detail-value highlight">
-                        <FiCalendar size={14} /> {financeModalData.month} {financeModalData.year}
+                        <FiCalendar size={14} />
+                        {financeModalData.fromDate && financeModalData.toDate ? (
+                          <>
+                            {new Date(financeModalData.fromDate).toLocaleDateString('en-GB', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric'
+                            })} - {new Date(financeModalData.toDate).toLocaleDateString('en-GB', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric'
+                            })}
+                          </>
+                        ) : (
+                          'N/A'
+                        )}
                       </span>
                     </div>
                     <div className="detail-item">
@@ -1179,7 +1235,22 @@ const AdminClientEnrollments = () => {
               <strong> "{financeConfirmData.clientName}"</strong>?
             </p>
             <p className="modal-details">
-              <FiCalendar size={16} /> <strong>Period:</strong> {financeConfirmData.monthYear}
+              <FiCalendar size={16} /> <strong>Period:</strong>
+              {financeConfirmData.fromDate && financeConfirmData.toDate ? (
+                <>
+                  {new Date(financeConfirmData.fromDate).toLocaleDateString('en-GB', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                  })} - {new Date(financeConfirmData.toDate).toLocaleDateString('en-GB', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                  })}
+                </>
+              ) : (
+                'N/A'
+              )}
             </p>
             <p className="modal-warning">
               <FiAlertCircle size={16} /> This will send an email to the client and mark the request as approved.
