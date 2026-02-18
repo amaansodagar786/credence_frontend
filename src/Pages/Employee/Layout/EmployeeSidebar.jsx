@@ -120,12 +120,12 @@ const EmployeeSidebar = ({ children }) => {
         <div className="employee-sidebar-footer">
           <span>Designed & Developed By</span>
           <a
-            href="https://techorses.com"
-            target="_blank"
+            // href="https://techorses.com"
+            // target="_blank"
             rel="noopener noreferrer"
             className="employee-footer-link"
           >
-            Techorses
+            Vapautus Media Private Limited
           </a>
         </div>
 

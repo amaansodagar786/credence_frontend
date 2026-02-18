@@ -289,12 +289,12 @@ const AdminSidebar = ({ children }) => {
         <div className="admin-sidebar-footer">
           <span>Designed & Developed By</span>
           <a
-            href="https://techorses.com"
-            target="_blank"
+            // href="https://techorses.com"
+            // target="_blank"
             rel="noopener noreferrer"
             className="admin-footer-link"
           >
-            Techorses
+            Vapautus Media Private Limited
           </a>
         </div>
       </div>
