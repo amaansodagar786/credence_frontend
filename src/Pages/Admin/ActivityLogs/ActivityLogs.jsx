@@ -452,7 +452,8 @@ const ActivityLogs = () => {
                 year: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit',
-                hour12: true
+                hour12: true,
+                timeZone: 'Europe/Helsinki'   // 👈 add this line
             });
         } catch (e) {
             return dateString;

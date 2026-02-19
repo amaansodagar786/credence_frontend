@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 
-// Icons - Add FiSend for payment reminder and FiRefreshCw for plan change
+// Icons
 import { BiLogOut, BiLogIn } from "react-icons/bi";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { RxCross1 } from "react-icons/rx";
@@ -16,8 +16,9 @@ import {
   FiUserPlus,
   FiSend,
   FiRefreshCw,
-  FiActivity, // For Activity Logs
-  FiBriefcase
+  FiActivity,
+  FiBriefcase,
+  FiUpload,
 } from "react-icons/fi";
 import { MdOutlineDashboard } from "react-icons/md";
 import { TbUsers, TbReportAnalytics } from "react-icons/tb";
@@ -29,8 +30,17 @@ const AdminSidebar = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSendingReminders, setIsSendingReminders] = useState(false);
   const [isTriggeringPlanChange, setIsTriggeringPlanChange] = useState(false);
-  const [reminderResult, setReminderResult] = useState(null);
-  const [planChangeResult, setPlanChangeResult] = useState(null);
+  const [isSendingUploadReminders, setIsSendingUploadReminders] = useState(false);
+
+  // Modal states
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmMessage, setConfirmMessage] = useState("");
+
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [resultTitle, setResultTitle] = useState("");
+  const [resultMessage, setResultMessage] = useState("");
+  const [resultType, setResultType] = useState("success");
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -40,6 +50,18 @@ const AdminSidebar = ({ children }) => {
     const token = localStorage.getItem("adminToken") || document.cookie.includes("adminToken");
     setIsLoggedIn(!!token);
   }, []);
+
+  // --- DATE VALIDATION FOR UPLOAD REMINDER (Finland time) ---
+  const getFinlandDay = () => {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      day: 'numeric',
+      timeZone: 'Europe/Helsinki'
+    });
+    return parseInt(formatter.format(new Date()), 10);
+  };
+
+  const currentDay = getFinlandDay();
+  const isUploadReminderEnabled = currentDay >= 1 && currentDay <= 25;
 
   const handleLogin = () => navigate("/admin/login");
 
@@ -51,37 +73,25 @@ const AdminSidebar = ({ children }) => {
         `${import.meta.env.VITE_API_URL}/admin/logout`,
         {
           method: "POST",
-          credentials: "include"
+          credentials: "include",
         }
       );
 
       console.log("🔥 LOGOUT API RESPONSE:", res.status);
 
       if (res.ok) {
-        // Clear local storage
         localStorage.removeItem("adminToken");
         localStorage.removeItem("adminData");
-
-        // Clear cookies if any
         document.cookie = "adminToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-
-        // Update login state
         setIsLoggedIn(false);
-
-        // Redirect to login page
         navigate("/admin/login");
-
-        // Optional: Show success message
         console.log("✅ Logout successful, redirecting to login...");
       } else {
         console.error("❌ Logout failed with status:", res.status);
-        // Optional: Show error message to user
         alert("Logout failed. Please try again.");
       }
-
     } catch (err) {
       console.error("❌ LOGOUT FETCH ERROR:", err);
-      // Even if API fails, still try to redirect
       localStorage.removeItem("adminToken");
       localStorage.removeItem("adminData");
       setIsLoggedIn(false);
@@ -89,16 +99,31 @@ const AdminSidebar = ({ children }) => {
     }
   };
 
-  // Payment Reminder Function
-  const handleSendPaymentReminders = async () => {
-    if (isSendingReminders) return;
+  // --- MODAL HELPERS ---
+  const openConfirmModal = (message, onConfirm) => {
+    setConfirmMessage(message);
+    setConfirmAction(() => onConfirm);
+    setShowConfirmModal(true);
+  };
 
-    if (!window.confirm("Send payment reminders to all active clients?")) {
-      return;
+  const handleConfirm = () => {
+    if (confirmAction) {
+      confirmAction();
     }
+    setShowConfirmModal(false);
+    setConfirmAction(null);
+  };
 
+  const showResult = (title, message, type = "success") => {
+    setResultTitle(title);
+    setResultMessage(message);
+    setResultType(type);
+    setShowResultModal(true);
+  };
+
+  // --- PAYMENT REMINDER HANDLER ---
+  const handleSendPaymentRemindersConfirmed = async () => {
     setIsSendingReminders(true);
-
     try {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/payment-reminders/send-test-reminder`,
@@ -106,37 +131,31 @@ const AdminSidebar = ({ children }) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("adminToken")}`
+            Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
           },
-          credentials: "include"
+          credentials: "include",
         }
       );
-
       const data = await response.json();
-
       if (data.success) {
-        alert(`✅ Success! Sent ${data.details?.sent || 0} payment reminders. Failed: ${data.details?.failed || 0}`);
+        showResult(
+          "✅ Success",
+          `Sent ${data.details?.sent || 0} payment reminders. Failed: ${data.details?.failed || 0}`,
+          "success"
+        );
       } else {
-        alert(`❌ Failed: ${data.message}`);
+        showResult("❌ Failed", data.message, "error");
       }
-
     } catch (error) {
-      alert(`❌ Network error: ${error.message}`);
+      showResult("❌ Network Error", error.message, "error");
     } finally {
       setIsSendingReminders(false);
     }
   };
 
-  // Plan Change Trigger Function
-  const handleTriggerPlanChange = async () => {
-    if (isTriggeringPlanChange) return;
-
-    if (!window.confirm("Are you sure you want to manually trigger plan change cron job? This will process all scheduled plan changes.")) {
-      return;
-    }
-
+  // --- PLAN CHANGE HANDLER ---
+  const handleTriggerPlanChangeConfirmed = async () => {
     setIsTriggeringPlanChange(true);
-
     try {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/admin/trigger-plan-change`,
@@ -144,64 +163,94 @@ const AdminSidebar = ({ children }) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("adminToken")}`
+            Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
           },
-          credentials: "include"
+          credentials: "include",
         }
       );
-
       const data = await response.json();
-
       if (data.success) {
-        alert(`✅ Plan change cron job triggered successfully!\n\nTriggered by: ${data.triggeredBy}\nTime: ${data.timestamp}\nMessage: ${data.message}`);
+        showResult(
+          "✅ Plan Change Triggered",
+          `Triggered by: ${data.triggeredBy}\nTime: ${data.timestamp}\nMessage: ${data.message}`,
+          "success"
+        );
       } else {
-        alert(`❌ Failed to trigger plan change: ${data.message}`);
+        showResult("❌ Failed", data.message, "error");
       }
-
     } catch (error) {
-      alert(`❌ Network error: ${error.message}`);
+      showResult("❌ Network Error", error.message, "error");
     } finally {
       setIsTriggeringPlanChange(false);
     }
   };
 
-  // Auto-collapse sidebar on route change (mobile only)
+  // --- DOCUMENT UPLOAD REMINDER HANDLER ---
+  const handleSendUploadRemindersConfirmed = async () => {
+    setIsSendingUploadReminders(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/document-upload-reminders/send-test-upload-reminder`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
+          },
+          credentials: "include",
+        }
+      );
+      const data = await response.json();
+      if (data.success) {
+        showResult(
+          "✅ Success",
+          `Sent ${data.details?.sent || 0} upload reminders. Failed: ${data.details?.failed || 0}`,
+          "success"
+        );
+      } else {
+        showResult("❌ Failed", data.message, "error");
+      }
+    } catch (error) {
+      showResult("❌ Network Error", error.message, "error");
+    } finally {
+      setIsSendingUploadReminders(false);
+    }
+  };
+
+  // Auto-collapse sidebar on route change (mobile)
   useEffect(() => {
     if (window.innerWidth < 768) {
       setToggle(true);
     }
   }, [location.pathname]);
 
-  // Toggle sidebar
-  const handleToggle = () => {
-    setToggle(!toggle);
-  };
+  const handleToggle = () => setToggle(!toggle);
 
   const menuData = [
     {
       icon: <MdOutlineDashboard />,
       title: "Dashboard",
-      path: "/admin/dashboard"
+      path: "/admin/dashboard",
     },
     {
       icon: <FiFileText />,
       title: "Client Manage",
-      path: "/admin/enrollments"
+      path: "/admin/enrollments",
     },
     {
       icon: <FiUsers />,
       title: "Employees",
-      path: "/admin/employees"
+      path: "/admin/employees",
     },
     {
-      icon: <FiBriefcase />, // Changed from TbUsers
+      icon: <FiBriefcase />,
       title: "Clients Info",
-      path: "/admin/clients"
+      path: "/admin/clients",
     },
     {
-      icon: <FiActivity />, // Changed from TbUsers
+      icon: <FiActivity />,
       title: "Activity Logs",
-      path: "/admin/logs"
+      path: "/admin/logs",
     },
   ];
 
@@ -212,20 +261,14 @@ const AdminSidebar = ({ children }) => {
         <div className="admin-logo">
           <div className="admin-logoBox">
             {toggle ? (
-              <GiHamburgerMenu
-                className="admin-menuIconHidden"
-                onClick={handleToggle}
-              />
+              <GiHamburgerMenu className="admin-menuIconHidden" onClick={handleToggle} />
             ) : (
               <>
                 <div className="admin-sidebar-logo">
                   <FiShield size={24} />
                   <span>Admin Panel</span>
                 </div>
-                <RxCross1
-                  className="admin-menuIconHidden"
-                  onClick={handleToggle}
-                />
+                <RxCross1 className="admin-menuIconHidden" onClick={handleToggle} />
               </>
             )}
           </div>
@@ -249,15 +292,17 @@ const AdminSidebar = ({ children }) => {
           <li>
             <button
               className="admin-payment-reminder-btn"
-              onClick={handleSendPaymentReminders}
+              onClick={() =>
+                openConfirmModal(
+                  "Send payment reminders to all active clients?",
+                  handleSendPaymentRemindersConfirmed
+                )
+              }
               disabled={isSendingReminders}
+              data-tooltip="Payment Reminders"
             >
               <span className="admin-menu-icon">
-                {isSendingReminders ? (
-                  <span className="reminder-spinner"></span>
-                ) : (
-                  <FiSend />
-                )}
+                {isSendingReminders ? <span className="reminder-spinner"></span> : <FiSend />}
               </span>
               <span className="admin-menu-title">
                 {isSendingReminders ? "Sending..." : "Payment Reminders"}
@@ -269,18 +314,46 @@ const AdminSidebar = ({ children }) => {
           <li>
             <button
               className="admin-plan-change-btn"
-              onClick={handleTriggerPlanChange}
+              onClick={() =>
+                openConfirmModal(
+                  "Are you sure you want to manually trigger plan change cron job? This will process all scheduled plan changes.",
+                  handleTriggerPlanChangeConfirmed
+                )
+              }
               disabled={isTriggeringPlanChange}
+              data-tooltip="Trigger Plan Change"
             >
               <span className="admin-menu-icon">
-                {isTriggeringPlanChange ? (
-                  <span className="reminder-spinner"></span>
-                ) : (
-                  <FiRefreshCw />
-                )}
+                {isTriggeringPlanChange ? <span className="reminder-spinner"></span> : <FiRefreshCw />}
               </span>
               <span className="admin-menu-title">
                 {isTriggeringPlanChange ? "Processing..." : "Trigger Plan Change"}
+              </span>
+            </button>
+          </li>
+
+          {/* Document Upload Reminder Button with date validation */}
+          <li>
+            <button
+              className="admin-upload-reminder-btn"
+              onClick={() =>
+                openConfirmModal(
+                  "Send document upload reminders to all active clients?",
+                  handleSendUploadRemindersConfirmed
+                )
+              }
+              disabled={isSendingUploadReminders || !isUploadReminderEnabled}
+              // data-tooltip={
+              //   isUploadReminderEnabled
+              //     ? "Document Upload Reminder"
+              //     : "Available only from 1st to 25th of each month"
+              // }
+            >
+              <span className="admin-menu-icon">
+                {isSendingUploadReminders ? <span className="reminder-spinner"></span> : <FiUpload />}
+              </span>
+              <span className="admin-menu-title">
+                {isSendingUploadReminders ? "Sending..." : "Doc Upload Reminder"}
               </span>
             </button>
           </li>
@@ -288,12 +361,7 @@ const AdminSidebar = ({ children }) => {
 
         <div className="admin-sidebar-footer">
           <span>Designed & Developed By</span>
-          <a
-            // href="https://techorses.com"
-            // target="_blank"
-            rel="noopener noreferrer"
-            className="admin-footer-link"
-          >
+          <a rel="noopener noreferrer" className="admin-footer-link">
             Vapautus Media Private Limited
           </a>
         </div>
@@ -301,13 +369,9 @@ const AdminSidebar = ({ children }) => {
 
       {/* MAIN CONTENT AREA */}
       <div id="admin-main-content" className={toggle ? "expanded" : ""}>
-        {/* TOP NAVBAR */}
         <nav className="admin-top-nav">
           <div className="admin-nav-left">
-            <GiHamburgerMenu
-              className="admin-menuIcon"
-              onClick={handleToggle}
-            />
+            <GiHamburgerMenu className="admin-menuIcon" onClick={handleToggle} />
             <div className="admin-page-title">
               {(() => {
                 const path = location.pathname;
@@ -341,11 +405,41 @@ const AdminSidebar = ({ children }) => {
           </div>
         </nav>
 
-        {/* PAGE CONTENT (passed from AdminLayout) */}
-        <div className="admin-page-content">
-          {children}
-        </div>
+        <div className="admin-page-content">{children}</div>
       </div>
+
+      {/* CONFIRM MODAL */}
+      {showConfirmModal && (
+        <div className="admin-modal-overlay" onClick={() => setShowConfirmModal(false)}>
+          <div className="admin-modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Confirm Action</h3>
+            <p>{confirmMessage}</p>
+            <div className="admin-modal-actions">
+              <button className="admin-modal-btn cancel" onClick={() => setShowConfirmModal(false)}>
+                Cancel
+              </button>
+              <button className="admin-modal-btn confirm" onClick={handleConfirm}>
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RESULT MODAL */}
+      {showResultModal && (
+        <div className="admin-modal-overlay" onClick={() => setShowResultModal(false)}>
+          <div className={`admin-modal-content ${resultType}`} onClick={(e) => e.stopPropagation()}>
+            <h3>{resultTitle}</h3>
+            <p style={{ whiteSpace: "pre-line" }}>{resultMessage}</p>
+            <div className="admin-modal-actions">
+              <button className="admin-modal-btn close" onClick={() => setShowResultModal(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
