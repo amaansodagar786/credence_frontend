@@ -31,11 +31,10 @@ import {
     FiBell,
     FiList,
     FiPhone,
+    FiGrid,
+    FiImage,
+    FiEyeOff,
 } from "react-icons/fi";
-
-// Add these icons for file types
-import { FiImage } from "react-icons/fi";
-import { FiGrid } from "react-icons/fi";
 
 const ClientFilesUpload = () => {
     // Default to current month/year
@@ -116,6 +115,15 @@ const ClientFilesUpload = () => {
     const [employeeAssignments, setEmployeeAssignments] = useState([]); // WAS: employeeAssignment
     const [selectedTask, setSelectedTask] = useState(null); // NEW: For dropdown
 
+    // ===== NEW: State for View All Files Modal =====
+    const [viewAllModal, setViewAllModal] = useState({
+        isOpen: false,
+        categoryType: null,
+        categoryName: null,
+        categoryLabel: "",
+        files: []
+    });
+
     // Ref for protection
     const previewRef = useRef(null);
 
@@ -124,7 +132,7 @@ const ClientFilesUpload = () => {
         "July", "August", "September", "October", "November", "December"
     ];
 
-    // ===== NEW: Helper function to get file type =====
+    // ===== Helper function to get file type =====
     const getFileType = (fileName) => {
         if (!fileName) return 'other';
         const ext = fileName.split('.').pop().toLowerCase();
@@ -165,6 +173,7 @@ const ClientFilesUpload = () => {
         const monthsDiff = (currentYear - selectedYearNum) * 12 + (currentMonth - selectedMonthNum);
         return monthsDiff >= 2;
     };
+
     /* ================= DELETE MODAL FUNCTIONS ================= */
     const openDeleteModal = (type, fileName, categoryName = null) => {
         // ✅ NEW: Check if month is too old before opening delete modal
@@ -309,6 +318,45 @@ const ClientFilesUpload = () => {
         cleanupProtection();
         setIsPreviewOpen(false);
         setPreviewDoc(null);
+    };
+
+    /* ================= OPEN VIEW ALL MODAL ================= */
+    const openViewAllModal = (categoryType, categoryName = null, categoryLabel) => {
+        if (!monthData) return;
+
+        let files = [];
+        if (categoryName) {
+            // Other category
+            const otherCat = monthData.other?.find(cat => cat.categoryName === categoryName);
+            files = otherCat?.document?.files || [];
+        } else {
+            // Main category
+            files = monthData[categoryType]?.files || [];
+        }
+
+        // Sort files by upload date (newest first)
+        const sortedFiles = [...files].sort((a, b) => {
+            return new Date(b.uploadedAt) - new Date(a.uploadedAt);
+        });
+
+        setViewAllModal({
+            isOpen: true,
+            categoryType,
+            categoryName,
+            categoryLabel,
+            files: sortedFiles
+        });
+    };
+
+    /* ================= CLOSE VIEW ALL MODAL ================= */
+    const closeViewAllModal = () => {
+        setViewAllModal({
+            isOpen: false,
+            categoryType: null,
+            categoryName: null,
+            categoryLabel: "",
+            files: []
+        });
     };
 
     /* ================= FETCH MONTH DATA ================= */
@@ -753,6 +801,22 @@ const ClientFilesUpload = () => {
                             <FiFolder size={14} /> {category.files.length} file(s)
                         </span>
                         {getStatusBadge(category.isLocked)}
+                        {/* ===== NEW: View All Button ===== */}
+                        {category.files.length > 0 && (
+                            <button
+                                className="view-all-btn"
+                                onClick={() => openViewAllModal(
+                                    categoryType,
+                                    categoryName,
+                                    categoryName || (categoryType === 'sales' ? 'Sales Files' :
+                                        categoryType === 'purchase' ? 'Purchase Files' :
+                                            categoryType === 'bank' ? 'Bank Statements' : categoryType)
+                                )}
+                                title="View all files"
+                            >
+                                <FiEye size={14} /> View All
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -1033,6 +1097,98 @@ const ClientFilesUpload = () => {
                                     <FiTrash2 size={16} /> Delete File
                                 </>
                             )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    /* ================= RENDER VIEW ALL MODAL ================= */
+    const renderViewAllModal = () => {
+        if (!viewAllModal.isOpen) return null;
+
+        const handleOverlayClick = (e) => {
+            if (e.target === e.currentTarget) {
+                closeViewAllModal();
+            }
+        };
+
+        return (
+            <div className="view-all-modal">
+                <div className="modal-overlay" onClick={handleOverlayClick}></div>
+                <div className="modal-content">
+                    <div className="modal-header">
+                        <h3>
+                            <FiFolder size={20} /> {viewAllModal.categoryLabel}
+                            <span className="file-count-badge">{viewAllModal.files.length} files</span>
+                        </h3>
+                        <button className="close-modal-btn" onClick={closeViewAllModal}>
+                            <FiX size={20} />
+                        </button>
+                    </div>
+
+                    <div className="modal-body">
+                        {viewAllModal.files.length === 0 ? (
+                            <div className="no-files-message">
+                                <FiFile size={32} />
+                                <p>No files in this category</p>
+                            </div>
+                        ) : (
+                            <div className="files-list-full">
+                                {viewAllModal.files.map((file, index) => (
+                                    <div key={index} className="file-list-item">
+                                        <div className="file-info">
+                                            <div className="file-icon">
+                                                {getFileIcon(viewAllModal.categoryType)}
+                                                {file.notes && file.notes.length > 0 && (
+                                                    <span className="file-icon-badge-small">
+                                                        <FiBell size={8} />
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="file-details-full">
+                                                <div className="file-name-row">
+                                                    <span className="file-name-text" title={file.fileName}>
+                                                        {file.fileName}
+                                                    </span>
+                                                    {file.notes && file.notes.length > 0 && (
+                                                        <span className="notes-indicator">
+                                                            <FiMessageSquare size={12} /> {file.notes.length}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="file-meta-small">
+                                                    <span className="file-size">
+                                                        <FiFile size={10} /> {(file.fileSize / 1024).toFixed(1)} KB
+                                                    </span>
+                                                    <span className="upload-date">
+                                                        <FiClock size={10} /> {new Date(file.uploadedAt).toLocaleDateString()}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="file-actions-full">
+                                            <button
+                                                className="btn-view-file"
+                                                onClick={() => {
+                                                    openDocumentPreview(file);
+                                                    closeViewAllModal();
+                                                }}
+                                                title="Preview file"
+                                            >
+                                                <FiEye size={16} /> View
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="modal-footer">
+                        <button className="btn-close" onClick={closeViewAllModal}>
+                            Close
                         </button>
                     </div>
                 </div>
@@ -1453,19 +1609,6 @@ const ClientFilesUpload = () => {
                                     position: 'relative'
                                 }}
                             >
-                                {/* <div className="protection-note" style={{
-                                    backgroundColor: '#2196F3',
-                                    color: 'white',
-                                    padding: '10px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '10px'
-                                }}>
-                                    <FiLock size={16} />
-                                    <span>Microsoft Excel Online Viewer - Read Only</span> 
-                                </div> */}
-
-                                {/* Microsoft Office Online Viewer with ALL permissions */}
                                 <iframe
                                     src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewDoc.url)}&wdStartOn=1`}
                                     width="100%"
@@ -1482,22 +1625,8 @@ const ClientFilesUpload = () => {
                                         e.stopPropagation();
                                         return false;
                                     }}
-                                    // ✅ FIX: Add ALL necessary sandbox permissions
                                     sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
-                                // OR try without sandbox if above doesn't work:
-                                // sandbox=""
                                 />
-
-                                {/* Alternative: Use Google Viewer if Microsoft fails */}
-                                <div className="viewer-fallback" style={{ display: 'none' }}>
-                                    <iframe
-                                        src={`https://docs.google.com/gview?url=${encodeURIComponent(previewDoc.url)}&embedded=true`}
-                                        width="100%"
-                                        height="100%"
-                                        frameBorder="0"
-                                        title="Google Docs Viewer Fallback"
-                                    />
-                                </div>
 
                                 <div className="viewer-info" style={{
                                     padding: '10px',
@@ -1912,47 +2041,6 @@ const ClientFilesUpload = () => {
                                     )}
                                 </div>
 
-                                {/* Month Note Section */}
-                                {/* {monthData?.wasLockedOnce &&
-                                    (Object.values(newFiles).some(f => f.length > 0) ||
-                                        otherCategories.some(c => c.newFiles.length > 0)) && (
-                                        <div className="month-note-section">
-                                            <div className="section-header">
-                                                <h3>
-                                                    <FiInfo size={20} /> Month Overview Note
-                                                </h3>
-                                                <span className="required-badge">Required</span>
-                                            </div>
-                                            <div className="note-section">
-                                                <textarea
-                                                    className="note-textarea month-note"
-                                                    placeholder="Provide an overall note explaining the changes made this month..."
-                                                    value={monthNote}
-                                                    onChange={(e) => {
-                                                        // ✅ NEW: Check if month is active
-                                                        if (!isMonthActive) {
-                                                            setErrorMessage("Cannot modify files - Client was inactive during this period.");
-                                                            return;
-                                                        }
-
-                                                        // ✅ NEW: Check if month is too old
-                                                        if (isMonthTooOld) {
-                                                            setErrorMessage("This month is too old for file modifications. Only viewing is allowed.");
-                                                            return;
-                                                        }
-                                                        setMonthNote(e.target.value);
-                                                    }}
-                                                    required
-                                                    disabled={loading || isMonthTooOld || !isMonthActive} // ✅ ADDED: !isMonthActive
-                                                    rows={4}
-                                                />
-                                                <small className="note-hint">
-                                                    This note will be recorded in the audit trail
-                                                </small>
-                                            </div>
-                                        </div>
-                                    )} */}
-
                                 {/* Save & Lock Button */}
                                 <div className="month-actions-section">
                                     <div className="action-buttons">
@@ -2014,6 +2102,9 @@ const ClientFilesUpload = () => {
 
                 {/* Document Preview Modal */}
                 {renderDocumentPreview()}
+
+                {/* ===== NEW: View All Files Modal ===== */}
+                {renderViewAllModal()}
             </div>
         </ClientLayout>
     );
