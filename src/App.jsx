@@ -26,6 +26,7 @@ import ActivityLogs from './Pages/Admin/ActivityLogs/ActivityLogs';
 // import CustomDesignStable from './Pages/Employee/Testing/CustomDesignStable';
 import AdminNotesPanel from './Pages/Admin/Dashboard/Notes/AdminNotesPanel';
 import EmployeeNotesPanel from './Pages/Employee/Dashboard/EmpNotes/EmployeeNotesPanel';
+import TestPage from './Pages/Client/Testing/Test/TestPage';
 
 function App() {
   return (
@@ -53,6 +54,7 @@ function App() {
           <Route path="/client/dashboard" element={<ClientDashboard />} />
           <Route path="/client/upload" element={<ClientFilesUpload />} />
           <Route path="/client/profile" element={<ClientProfile />} />
+          <Route path="/client/test" element={<TestPage />} />
 
           {/* EMPLOYEE ROUTES  */}
           {/* <Route path="/employee/login" element={<EmployeeLogin />} /> */}

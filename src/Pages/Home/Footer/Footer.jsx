@@ -46,13 +46,13 @@ const Footer = () => {
           <div className="fgf-col fgf-contact-col">
             <p className="fgf-hover-item">
               <FaPhoneAlt />
-              <a href="tel:+358415737082">+358 415737082</a>
+              <a href="tel:+358413250081">+358 413250081</a>
             </p>
 
             <p className="fgf-hover-item">
               <FaEnvelope />
-              <a href="mailto:credence@jladgroup.fi">
-                credence@jladgroup.fi
+              <a href="mailto:support@jladgroup.fi">
+                support@jladgroup.fi
               </a>
             </p>
 
