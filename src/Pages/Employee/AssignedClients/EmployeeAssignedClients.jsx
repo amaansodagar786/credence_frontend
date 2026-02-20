@@ -98,7 +98,7 @@ const EmployeeAssignedClients = () => {
     return 'other';
   };
 
-  /* ================= LOAD DATA ================= */
+  // Inside loadAssignedClients function, after setting clientList
   const loadAssignedClients = async () => {
     try {
       setRefreshing(true);
@@ -107,10 +107,19 @@ const EmployeeAssignedClients = () => {
         { withCredentials: true }
       );
 
-      const data = res.data.filter(assignment => !assignment.isRemoved);
+      const data = res.data; // Don't filter here! 
+
+
+
+
       setAssignments(data);
 
+
+      // CONSOLE LOG: All assignments data
+     
+
       const grouped = groupAssignmentsByMonthYear(data);
+     
       setGroupedAssignments(grouped);
 
       const clientMap = {};
@@ -130,16 +139,31 @@ const EmployeeAssignedClients = () => {
         if (!clientMap[row.client.clientId].tasksByMonth[monthKey]) {
           clientMap[row.client.clientId].tasksByMonth[monthKey] = [];
         }
-        clientMap[row.client.clientId].tasksByMonth[monthKey].push(row.task || 'Bookkeeping');
+        clientMap[row.client.clientId].tasksByMonth[monthKey].push({
+          task: row.task || 'Bookkeeping',
+          accountingDone: row.accountingDone,
+          assignedAt: row.assignedAt,
+          year: row.year,
+          month: row.month
+        });
       });
 
       const clientsArray = Object.values(clientMap);
+
+     
+
+      // Log each client's details
+      clientsArray.forEach((client, index) => {
+        
+      });
 
       setClientList(clientsArray);
 
       if (clientsArray.length > 0) {
         const defaultClient = clientsArray[0];
         setActiveClient(defaultClient);
+
+        
 
         const clientAssignments = getAssignmentsForClient(defaultClient.clientId);
         if (clientAssignments.length > 0) {
@@ -149,6 +173,8 @@ const EmployeeAssignedClients = () => {
             const monthAssignments = grouped[defaultClient.clientId][firstMonthYear];
             if (monthAssignments && monthAssignments.length > 0) {
               setActiveAssignment(monthAssignments[0]);
+
+              
             }
           }
         } else {
@@ -360,13 +386,7 @@ const EmployeeAssignedClients = () => {
       const { year, month, task } = activeAssignment;
       const { categoryType, categoryName, fileName, url } = fileData;
 
-      console.log("Toggling file viewed:", {
-        clientId, // Now this should be defined
-        year,
-        month,
-        categoryType,
-        fileName
-      });
+      
 
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/employee/toggle-file-viewed`,
@@ -1846,9 +1866,9 @@ const EmployeeAssignedClients = () => {
                 <div className="clients-list">
                   {clientList.map((client) => {
                     // CONSOLE LOG - See the ENTIRE client object
-                    
 
-                  
+
+
                     return (
                       <div
                         key={client.clientId}
