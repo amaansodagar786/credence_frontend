@@ -20,13 +20,15 @@ import ClientFilesUpload from './Pages/Client/Upload/ClientFilesUpload';
 import ClientEmpLogin from './Pages/Authentication/Client&EmployeeLogin/ClientEmpLogin';
 import AdminAuth from './Pages/Admin/Authentication/AdminAuth';
 import Home from './Pages/Home/Home';
+import TermsAndCondition from './Pages/TermsAndCondition/TermsConditions';
 import ClientProfile from './Pages/Client/Profile/ClientProfile';
 import ActivityLogs from './Pages/Admin/ActivityLogs/ActivityLogs';
 // import CustomDesign from './Pages/Employee/Testing/CustomDesign';
 // import CustomDesignStable from './Pages/Employee/Testing/CustomDesignStable';
 import AdminNotesPanel from './Pages/Admin/Dashboard/Notes/AdminNotesPanel';
 import EmployeeNotesPanel from './Pages/Employee/Dashboard/EmpNotes/EmployeeNotesPanel';
-import TestUploadPage from './Pages/Client/Testing/Test/TestUploadPage';
+import PrivacyPolicy from './Pages/PrivacyPolicy/PrivacyPolicy';
+import NotFound from './Pages/NotFound/NotFound';
 
 function App() {
   return (
@@ -35,6 +37,9 @@ function App() {
         <Routes>
 
           <Route path="/" element={<Home />} />
+          <Route path="/terms" element={<TermsAndCondition />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="*" element={<NotFound />} />
 
           {/* ADMIN ROUTES  */}
 
@@ -54,7 +59,7 @@ function App() {
           <Route path="/client/dashboard" element={<ClientDashboard />} />
           <Route path="/client/upload" element={<ClientFilesUpload />} />
           <Route path="/client/profile" element={<ClientProfile />} />
-          <Route path="/test" element={<TestUploadPage />} />
+          
 
           {/* EMPLOYEE ROUTES  */}
           {/* <Route path="/employee/login" element={<EmployeeLogin />} /> */}
