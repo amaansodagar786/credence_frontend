@@ -54,7 +54,7 @@ function App() {
           <Route path="/client/dashboard" element={<ClientDashboard />} />
           <Route path="/client/upload" element={<ClientFilesUpload />} />
           <Route path="/client/profile" element={<ClientProfile />} />
-          <Route path="/client/test" element={<TestUploadPage />} />
+          <Route path="/test" element={<TestUploadPage />} />
 
           {/* EMPLOYEE ROUTES  */}
           {/* <Route path="/employee/login" element={<EmployeeLogin />} /> */}

@@ -10,8 +10,7 @@ import Faq from './Faq/Faq'
 import ScheduleCall from './ScheduleCall/ScheduleCall'
 import Footer from './Footer/Footer'
 import ModalProvider from './Model/ModalProvider'
-import Testimonials from './Testimonial/Testimonials'
-// import Testimonials from './Testimonial/Testimonials'
+
 
 const Home = () => {
   return (
@@ -25,7 +24,7 @@ const Home = () => {
       <CTASection/>
       <Faq/>
       <ScheduleCall/>
-      {/* <Testimonials/>    */}
+      
       <Footer/> 
     </ModalProvider>
   )

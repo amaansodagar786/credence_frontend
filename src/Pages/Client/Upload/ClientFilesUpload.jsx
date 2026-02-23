@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import ClientLayout from "../Layout/ClientLayout";
 import "./ClientFilesUpload.scss";
 import axios from "axios";
+import { FaGoogleDrive } from "react-icons/fa";
 
 // Icons
 import {
@@ -124,6 +125,19 @@ const ClientFilesUpload = () => {
         files: []
     });
 
+    // ===== NEW: Google Drive State =====
+    const [driveAccessToken, setDriveAccessToken] = useState(null);
+    const [driveUser, setDriveUser] = useState(null);
+    const [isDriveAuthenticated, setIsDriveAuthenticated] = useState(false);
+    const [driveModalOpen, setDriveModalOpen] = useState(false);
+    const [activeDriveCategory, setActiveDriveCategory] = useState(null); // { type, categoryName }
+    const [driveItems, setDriveItems] = useState([]);
+    const [driveCurrentFolderId, setDriveCurrentFolderId] = useState("root");
+    const [driveFolderHistory, setDriveFolderHistory] = useState([]);
+    const [driveSelectedIds, setDriveSelectedIds] = useState([]);
+    const [driveLoading, setDriveLoading] = useState(false);
+    const [driveDownloading, setDriveDownloading] = useState(false);
+
     // Ref for protection
     const previewRef = useRef(null);
 
@@ -131,6 +145,15 @@ const ClientFilesUpload = () => {
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
     ];
+
+    // ===== Load Google Identity Services Script =====
+    useEffect(() => {
+        const script = document.createElement("script");
+        script.src = "https://accounts.google.com/gsi/client";
+        script.async = true;
+        script.onload = () => console.log("Google Identity Services loaded");
+        document.body.appendChild(script);
+    }, []);
 
     // ===== Helper function to get file type =====
     const getFileType = (fileName) => {
@@ -789,6 +812,206 @@ const ClientFilesUpload = () => {
         </span>
     );
 
+    // ================= GOOGLE DRIVE FUNCTIONS =================
+    const authenticateDrive = (categoryInfo) => {
+        if (!window.google || !window.google.accounts) {
+            setErrorMessage("Google Identity Services not loaded. Please refresh.");
+            return;
+        }
+
+        const tokenClient = window.google.accounts.oauth2.initTokenClient({
+            client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+            scope: "https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/userinfo.email",
+            prompt: "select_account consent",
+            callback: async (response) => {
+                if (response.error) {
+                    setErrorMessage("Google Drive authentication failed: " + response.error);
+                    return;
+                }
+
+                setDriveAccessToken(response.access_token);
+                setIsDriveAuthenticated(true);
+
+                // Fetch user info
+                try {
+                    const userRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+                        headers: { Authorization: `Bearer ${response.access_token}` },
+                    });
+                    const userData = await userRes.json();
+                    setDriveUser(userData);
+                } catch (err) {
+                    console.error("Failed to fetch Drive user info", err);
+                }
+
+                // Open modal for the category
+                openDriveModalAfterAuth(categoryInfo, response.access_token);
+            },
+        });
+
+        tokenClient.requestAccessToken();
+    };
+
+    const openDriveModalAfterAuth = async (categoryInfo, token) => {
+        setActiveDriveCategory(categoryInfo);
+        setDriveModalOpen(true);
+        // Reset folder navigation
+        setDriveCurrentFolderId("root");
+        setDriveFolderHistory([]);
+        setDriveSelectedIds([]);
+        // Fetch root contents
+        await fetchDriveFolderContents("root", token);
+    };
+
+    const openDriveModal = (categoryInfo) => {
+        // If already authenticated, open modal directly
+        if (isDriveAuthenticated && driveAccessToken) {
+            setActiveDriveCategory(categoryInfo);
+            setDriveModalOpen(true);
+            setDriveCurrentFolderId("root");
+            setDriveFolderHistory([]);
+            setDriveSelectedIds([]);
+            fetchDriveFolderContents("root", driveAccessToken);
+        } else {
+            // Trigger authentication
+            authenticateDrive(categoryInfo);
+        }
+    };
+
+    const closeDriveModal = () => {
+        setDriveModalOpen(false);
+        setActiveDriveCategory(null);
+        setDriveItems([]);
+        setDriveCurrentFolderId("root");
+        setDriveFolderHistory([]);
+        setDriveSelectedIds([]);
+    };
+
+    const fetchDriveFolderContents = async (folderId, token) => {
+        if (!token) return;
+
+        setDriveLoading(true);
+        try {
+            const query = folderId === "root"
+                ? "'root' in parents and trashed = false"
+                : `'${folderId}' in parents and trashed = false`;
+
+            const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&pageSize=100&fields=files(id,name,mimeType,size,thumbnailLink)`;
+
+            const response = await fetch(url, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            const files = data.files || [];
+            const folders = files.filter(f => f.mimeType === 'application/vnd.google-apps.folder');
+            const nonFolders = files.filter(f => f.mimeType !== 'application/vnd.google-apps.folder');
+            setDriveItems([...folders, ...nonFolders]);
+        } catch (err) {
+            console.error("Drive fetch error:", err);
+            setErrorMessage("Failed to fetch Google Drive contents");
+        }
+        setDriveLoading(false);
+    };
+
+    const openDriveFolder = (folderId) => {
+        setDriveFolderHistory([...driveFolderHistory, driveCurrentFolderId]);
+        setDriveCurrentFolderId(folderId);
+        fetchDriveFolderContents(folderId, driveAccessToken);
+        setDriveSelectedIds([]);
+    };
+
+    const goBackDrive = () => {
+        if (driveFolderHistory.length === 0) return;
+        const prevFolder = driveFolderHistory[driveFolderHistory.length - 1];
+        setDriveFolderHistory(driveFolderHistory.slice(0, -1));
+        setDriveCurrentFolderId(prevFolder);
+        fetchDriveFolderContents(prevFolder, driveAccessToken);
+        setDriveSelectedIds([]);
+    };
+
+    const toggleDriveSelect = (id) => {
+        setDriveSelectedIds((prev) =>
+            prev.includes(id) ? prev.filter((fileId) => fileId !== id) : [...prev, id]
+        );
+    };
+
+    const downloadDriveFiles = async () => {
+        if (!driveAccessToken || driveSelectedIds.length === 0 || !activeDriveCategory) return;
+
+        setDriveDownloading(true);
+        const downloadedFiles = [];
+
+        try {
+            for (const id of driveSelectedIds) {
+                const item = driveItems.find((i) => i.id === id);
+                if (item.mimeType === 'application/vnd.google-apps.folder') continue;
+
+                try {
+                    const response = await fetch(
+                        `${import.meta.env.VITE_API_URL}/api/google-drive-proxy`,
+                        {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                fileId: item.id,
+                                accessToken: driveAccessToken,
+                            }),
+                        }
+                    );
+
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const blob = await response.blob();
+                    const file = new File([blob], item.name, {
+                        type: blob.type || item.mimeType,
+                    });
+                    downloadedFiles.push(file);
+                } catch (err) {
+                    console.error("Download failed for", item.name, err);
+                    setErrorMessage(`Failed to download ${item.name}`);
+                }
+            }
+
+            if (downloadedFiles.length > 0) {
+                // Add files to the appropriate category
+                const { type, categoryName } = activeDriveCategory;
+                if (categoryName) {
+                    // Other category
+                    const updatedCategories = [...otherCategories];
+                    const catIndex = updatedCategories.findIndex(cat => cat.categoryName === categoryName);
+                    if (catIndex !== -1) {
+                        updatedCategories[catIndex].newFiles = [
+                            ...(updatedCategories[catIndex].newFiles || []),
+                            ...downloadedFiles
+                        ];
+                        setOtherCategories(updatedCategories);
+                    }
+                } else {
+                    // Main category
+                    setNewFiles(prev => ({
+                        ...prev,
+                        [type]: [...(prev[type] || []), ...downloadedFiles]
+                    }));
+                }
+                setSuccessMessage(`${downloadedFiles.length} file(s) added from Google Drive`);
+                setTimeout(() => setSuccessMessage(""), 3000);
+            }
+
+            closeDriveModal();
+        } catch (error) {
+            console.error("Drive download error:", error);
+            setErrorMessage("Failed to download selected files");
+        } finally {
+            setDriveDownloading(false);
+        }
+    };
+
     /* ================= RENDER EXISTING FILES INFO WITH EMPLOYEE NOTES ================= */
     const renderExistingFilesInfo = (category, categoryType, categoryName = null) => {
         if (!category || !category.files || category.files.length === 0) return null;
@@ -1196,6 +1419,111 @@ const ClientFilesUpload = () => {
         );
     };
 
+    /* ================= RENDER GOOGLE DRIVE MODAL ================= */
+    const renderDriveModal = () => {
+        if (!driveModalOpen) return null;
+
+        const handleOverlayClick = (e) => {
+            if (e.target === e.currentTarget) {
+                closeDriveModal();
+            }
+        };
+
+        return (
+            <div className="drive-modal">
+                <div className="modal-overlay" onClick={handleOverlayClick}></div>
+                <div className="modal-content drive-modal-content">
+                    <div className="modal-header">
+                        <h3>
+                            <FaGoogleDrive size={20} /> Select Files from Google Drive
+                            {driveUser && <span className="drive-user"> ({driveUser.email})</span>}
+                        </h3>
+                        <button className="close-modal-btn" onClick={closeDriveModal}>
+                            <FiX size={20} />
+                        </button>
+                    </div>
+
+                    <div className="modal-body">
+                        <div className="drive-toolbar">
+                            {driveFolderHistory.length > 0 && (
+                                <button className="drive-back-btn" onClick={goBackDrive}>
+                                    ⬅ Back
+                                </button>
+                            )}
+                        </div>
+
+                        {driveLoading && (
+                            <div className="drive-loading">
+                                <div className="spinner"></div>
+                                <p>Loading folder contents...</p>
+                            </div>
+                        )}
+
+                        {!driveLoading && driveItems.length === 0 && (
+                            <div className="drive-empty">This folder is empty.</div>
+                        )}
+
+                        {!driveLoading && driveItems.length > 0 && (
+                            <div className="drive-items-list">
+                                {driveItems.map((item) => {
+                                    const isFolder = item.mimeType === 'application/vnd.google-apps.folder';
+                                    return (
+                                        <div key={item.id} className={`drive-item ${isFolder ? 'folder' : 'file'}`}>
+                                            <input
+                                                type="checkbox"
+                                                checked={driveSelectedIds.includes(item.id)}
+                                                onChange={() => toggleDriveSelect(item.id)}
+                                                disabled={isFolder}
+                                            />
+                                            <div
+                                                className="drive-item-info"
+                                                onClick={() => isFolder && openDriveFolder(item.id)}
+                                            >
+                                                <span className="drive-item-icon">
+                                                    {isFolder ? '📁' : '📄'}
+                                                </span>
+                                                <span className="drive-item-name">{item.name}</span>
+                                                {!isFolder && item.size && (
+                                                    <span className="drive-item-size">
+                                                        {(item.size / 1024).toFixed(0)} KB
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="modal-footer">
+                        <div className="selected-count">
+                            {driveSelectedIds.length} file(s) selected
+                        </div>
+                        <div className="footer-actions">
+                            <button className="btn-cancel" onClick={closeDriveModal}>
+                                Cancel
+                            </button>
+                            <button
+                                className="btn-add-selected"
+                                onClick={downloadDriveFiles}
+                                disabled={driveSelectedIds.length === 0 || driveDownloading}
+                            >
+                                {driveDownloading ? (
+                                    <>
+                                        <span className="spinner"></span> Downloading...
+                                    </>
+                                ) : (
+                                    `Add ${driveSelectedIds.length} File(s)`
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     /* ================= RENDER FILE UPLOAD SECTION ================= */
     const renderFileSection = (type, label) => {
         const category = monthData?.[type];
@@ -1241,19 +1569,31 @@ const ClientFilesUpload = () => {
                 )}
 
                 <div className="file-upload-area">
-                    <label className="file-input-label">
-                        <input
-                            type="file"
-                            className="file-input"
-                            disabled={!canUpload || loading || isMonthTooOld || monthInactive} // ✅ ADDED: monthInactive
-                            multiple
-                            onChange={(e) => handleFilesChange(type, e.target.files)}
-                        />
-                        <span className={`file-input-button ${!canUpload || loading || isMonthTooOld || monthInactive ? 'disabled' : ''}`}> {/* ✅ ADDED: monthInactive */}
-                            <FiUpload size={18} /> Choose Files
-                        </span>
-                        <span className="file-input-hint">(Multiple files allowed)</span>
-                    </label>
+                    <div className="upload-controls">
+                        <label className="file-input-label">
+                            <input
+                                type="file"
+                                className="file-input"
+                                disabled={!canUpload || loading || isMonthTooOld || monthInactive}
+                                multiple
+                                onChange={(e) => handleFilesChange(type, e.target.files)}
+                            />
+                            <span className={`file-input-button ${!canUpload || loading || isMonthTooOld || monthInactive ? 'disabled' : ''}`}>
+                                <FiUpload size={18} /> Choose Files
+                            </span>
+                        </label>
+
+                        {/* Google Drive Button */}
+                        <button
+                            className="drive-icon-btn"
+                            onClick={() => openDriveModal({ type, categoryName: null })}
+                            disabled={loading || isMonthTooOld || monthInactive}
+                            title="Add files from Google Drive"
+                        >
+                            <FaGoogleDrive size={20} />
+                        </button>
+                    </div>
+                    <span className="file-input-hint">(Multiple files allowed)</span>
 
                     {!canUpload && !monthInactive && (
                         <small className="disabled-hint">
@@ -1280,7 +1620,7 @@ const ClientFilesUpload = () => {
                                 setCategoryNotes(prev => ({ ...prev, [type]: e.target.value }))
                             }
                             required
-                            disabled={loading || isMonthTooOld || monthInactive} // ✅ ADDED: monthInactive
+                            disabled={loading || isMonthTooOld || monthInactive}
                         />
                         <small className="note-hint">
                             Required when updating files after month has been unlocked
@@ -1288,13 +1628,13 @@ const ClientFilesUpload = () => {
                     </div>
                 )}
 
-                {hasNewFiles && canUpload && !monthInactive && ( // ✅ ADDED: !monthInactive
+                {hasNewFiles && canUpload && !monthInactive && (
                     <div className="upload-buttons">
                         {!updateMode ? (
                             <button
                                 className="btn-upload"
                                 onClick={() => uploadFiles(type, newFiles[type])}
-                                disabled={loading || isMonthTooOld || monthInactive} // ✅ ADDED: monthInactive
+                                disabled={loading || isMonthTooOld || monthInactive}
                             >
                                 {loading ? (
                                     <>
@@ -1312,7 +1652,7 @@ const ClientFilesUpload = () => {
                             <button
                                 className="btn-upload-lock"
                                 onClick={() => uploadFiles(type, newFiles[type], null, false, null, true)}
-                                disabled={loading || isMonthTooOld || monthInactive} // ✅ ADDED: monthInactive
+                                disabled={loading || isMonthTooOld || monthInactive}
                                 title="Upload and lock this category"
                             >
                                 <FiLock size={16} /> Upload & Lock File
@@ -1369,19 +1709,31 @@ const ClientFilesUpload = () => {
                 )}
 
                 <div className="file-upload-area">
-                    <label className="file-input-label">
-                        <input
-                            type="file"
-                            className="file-input"
-                            disabled={!canUploadCat || loading || isMonthTooOld || monthInactive} // ✅ ADDED: monthInactive
-                            multiple
-                            onChange={(e) => handleFilesChange("other", e.target.files, cat.categoryName)}
-                        />
-                        <span className={`file-input-button ${!canUploadCat || loading || isMonthTooOld || monthInactive ? 'disabled' : ''}`}> {/* ✅ ADDED: monthInactive */}
-                            <FiUpload size={18} /> Choose Files
-                        </span>
-                        <span className="file-input-hint">(Multiple files allowed)</span>
-                    </label>
+                    <div className="upload-controls">
+                        <label className="file-input-label">
+                            <input
+                                type="file"
+                                className="file-input"
+                                disabled={!canUploadCat || loading || isMonthTooOld || monthInactive}
+                                multiple
+                                onChange={(e) => handleFilesChange("other", e.target.files, cat.categoryName)}
+                            />
+                            <span className={`file-input-button ${!canUploadCat || loading || isMonthTooOld || monthInactive ? 'disabled' : ''}`}>
+                                <FiUpload size={18} /> Choose Files
+                            </span>
+                        </label>
+
+                        {/* Google Drive Button */}
+                        <button
+                            className="drive-icon-btn"
+                            onClick={() => openDriveModal({ type: "other", categoryName: cat.categoryName })}
+                            disabled={loading || isMonthTooOld || monthInactive}
+                            title="Add files from Google Drive"
+                        >
+                            <FaGoogleDrive size={20} />
+                        </button>
+                    </div>
+                    <span className="file-input-hint">(Multiple files allowed)</span>
 
                     {!canUploadCat && category && !monthInactive && (
                         <small className="disabled-hint">
@@ -1422,7 +1774,7 @@ const ClientFilesUpload = () => {
                                 setOtherCategories(updatedCategories);
                             }}
                             required
-                            disabled={loading || isMonthTooOld || monthInactive} // ✅ ADDED: monthInactive
+                            disabled={loading || isMonthTooOld || monthInactive}
                         />
                         <small className="note-hint">
                             Required when updating files after month has been unlocked
@@ -1430,13 +1782,13 @@ const ClientFilesUpload = () => {
                     </div>
                 )}
 
-                {hasNewFiles && canUploadCat && !monthInactive && ( // ✅ ADDED: !monthInactive
+                {hasNewFiles && canUploadCat && !monthInactive && (
                     <div className="upload-buttons">
                         {!updateMode ? (
                             <button
                                 className="btn-upload"
                                 onClick={() => uploadFiles("other", cat.newFiles, cat.categoryName)}
-                                disabled={loading || isMonthTooOld || monthInactive} // ✅ ADDED: monthInactive
+                                disabled={loading || isMonthTooOld || monthInactive}
                             >
                                 {loading ? (
                                     <>
@@ -1454,7 +1806,7 @@ const ClientFilesUpload = () => {
                             <button
                                 className="btn-upload-lock"
                                 onClick={() => uploadFiles("other", cat.newFiles, cat.categoryName, false, null, true)}
-                                disabled={loading || isMonthTooOld || monthInactive} // ✅ ADDED: monthInactive
+                                disabled={loading || isMonthTooOld || monthInactive}
                                 title="Upload and lock this category"
                             >
                                 <FiLock size={16} /> Upload & Lock File
@@ -2013,12 +2365,12 @@ const ClientFilesUpload = () => {
                                                         }
                                                         setNewOtherCategory(e.target.value);
                                                     }}
-                                                    disabled={monthData?.isLocked || loading || isMonthTooOld || !isMonthActive} // ✅ ADDED: !isMonthActive
+                                                    disabled={monthData?.isLocked || loading || isMonthTooOld || !isMonthActive}
                                                 />
                                                 <button
                                                     className="filter-btn"
                                                     onClick={addOtherCategory}
-                                                    disabled={monthData?.isLocked || loading || isMonthTooOld || !isMonthActive} // ✅ ADDED: !isMonthActive
+                                                    disabled={monthData?.isLocked || loading || isMonthTooOld || !isMonthActive}
                                                 >
                                                     <FiPlus size={16} /> Add
                                                 </button>
@@ -2047,7 +2399,7 @@ const ClientFilesUpload = () => {
                                         <button
                                             className="action-btn lock-btn"
                                             onClick={saveAndLock}
-                                            disabled={!year || !month || monthData?.isLocked || loading || isMonthTooOld || !isMonthActive} // ✅ ADDED: !isMonthActive
+                                            disabled={!year || !month || monthData?.isLocked || loading || isMonthTooOld || !isMonthActive}
                                         >
                                             {loading ? (
                                                 <>
@@ -2105,6 +2457,9 @@ const ClientFilesUpload = () => {
 
                 {/* ===== NEW: View All Files Modal ===== */}
                 {renderViewAllModal()}
+
+                {/* ===== NEW: Google Drive Modal ===== */}
+                {renderDriveModal()}
             </div>
         </ClientLayout>
     );

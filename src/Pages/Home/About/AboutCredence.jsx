@@ -164,25 +164,22 @@ const AboutCredence = () => {
           Your Trusted Partner in Bookkeeping & Financial Management
         </motion.h3>
 
-        {/* Paragraphs with staggered animations */}
+        {/* FIRST PARAGRAPH - NO underline effect, just plain text */}
         <motion.p 
+          className="no-underline-paragraph"
           variants={paragraphVariants}
           custom={2}
         >
-          Credence is a professional bookkeeping service provider dedicated to
-          helping businesses stay financially organized and compliant. We
-          support startups, small businesses, and growing enterprises with
-          structured bookkeeping, clear financial insights, and expert
-          guidance.
+          Launching or expanding a business in Finland requires local expertise, regulatory compliance, and reliable financial management. Our Finland-based specialists provide end-to-end business support tailored to both local and foreign entrepreneurs.
         </motion.p>
 
+        {/* SECOND PARAGRAPH - KEEP underline effect with bold words */}
         <motion.p 
+          className="underline-paragraph"
           variants={paragraphVariants}
           custom={3}
         >
-          From recording daily transactions to planning for future growth, we
-          ensure your finances are always clear, <b>updated</b>, and{" "}
-          <b>decision-ready</b>.
+          With deep knowledge of <b>Finnish laws</b>, <b>tax systems</b>, and reporting requirements, we ensure your company operates smoothly from day one.
         </motion.p>
 
         {/* Quote with special animation */}

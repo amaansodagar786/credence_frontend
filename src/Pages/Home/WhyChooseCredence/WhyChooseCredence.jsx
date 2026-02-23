@@ -186,12 +186,12 @@ const WhyChooseCredence = () => {
     };
 
     const listItems = [
-        "Experienced bookkeeping professionals",
-        "Simple, transparent processes",
-        "Timely & accurate financial records",
-        "Customized services as per your business size",
-        "Data confidentiality & compliance focused",
-        "Clear communication, no complex jargon"
+        "Local experts with strong knowledge of Finnish regulations",
+        "Complete business lifecycle support - from setup to closure",
+        "Tailored solutions for startups, SMEs, and international companies",
+        "Transparent pricing with no hidden costs",
+        "Digital tools for easy document and business management",
+        "Reliable, responsive, and client-focused service"
     ];
 
     return (

@@ -5,53 +5,33 @@ import "./Services.scss";
 const services = [
   {
     no: "01",
-    title: "General Bookkeeping",
-    desc: "Daily recording of income, expenses, and transactions with complete accuracy.",
+    title: "Company Formation in Finland",
+    desc: "Set up your Finnish company quickly and correctly. We take care of documentation, registrations, and government formalities so you can start operating without delays.",
   },
   {
     no: "02",
-    title: "AP & AR",
-    desc: "Track bills, manage vendor payments, and ensure timely customer collections.",
+    title: "Branch Registration",
+    desc: "Planning to expand your existing foreign company into Finland? We handle the full branch registration process, including legal and tax requirements.",
   },
   {
     no: "03",
-    title: "Bank Reconciliation",
-    desc: "Match bank statements with records to avoid errors and discrepancies.",
+    title: "Accounting & Bookkeeping",
+    desc: "Stay compliant with Finnish accounting standards. Our professional accountants manage bookkeeping, payroll, financial statements, and reporting with accuracy and transparency.",
   },
   {
     no: "04",
-    title: "Payroll Processing",
-    desc: "Accurate salary calculations, payslips, and payroll compliance.",
+    title: "Tax & VAT Registration",
+    desc: "Avoid costly mistakes and start your business legally from day one. We manage all required tax registrations with the Finnish authorities.",
   },
   {
     no: "05",
-    title: "Financial Reporting",
-    desc: "Clear monthly, quarterly, and yearly reports to understand business performance.",
+    title: "Virtual Office & Legal Address",
+    desc: "Get a prestigious Helsinki business address without high overhead costs. Our virtual office includes digital mail handling and a legally compliant registered address.",
   },
   {
     no: "06",
-    title: "Tax Preparation",
-    desc: "Organized financial data to support smooth and stress-free tax filing.",
-  },
-  {
-    no: "07",
-    title: "Financial Analysis",
-    desc: "Understand profits, costs, and trends with easy-to-read insights.",
-  },
-  {
-    no: "08",
-    title: "Financial Projections",
-    desc: "Plan future growth with realistic forecasts and budgets.",
-  },
-  {
-    no: "09",
-    title: "Tax Planning",
-    desc: "Reduce tax burden with smart, legal planning strategies.",
-  },
-  {
-    no: "10",
-    title: "Assistance in Business Account Opening",
-    desc: "Guidance and support for opening business bank accounts smoothly.",
+    title: "Company Closure & Deregistration",
+    desc: "If your business plans change, we ensure a smooth and fully compliant company liquidation process.",
   },
 ];
 
@@ -205,12 +185,11 @@ const Services = () => {
         />
 
         <motion.h4 variants={subtitleVariants}>
-          Complete Bookkeeping & Financial Services Under One Roof
+          Complete Business Setup & Financial Services in Finland
         </motion.h4>
 
         <motion.p variants={descriptionVariants}>
-          We offer end-to-end bookkeeping and financial support designed to meet
-          your business needs.
+          We offer end-to-end business support tailored for local and foreign entrepreneurs in Finland.
         </motion.p>
       </motion.div>
 
@@ -239,7 +218,7 @@ const Services = () => {
             </motion.div>
 
             <div className="content">
-              <h5>{item.title}</h5>
+              <h5>{item.title}</h5> 
               <p>{item.desc}</p>
             </div>
           </motion.div>

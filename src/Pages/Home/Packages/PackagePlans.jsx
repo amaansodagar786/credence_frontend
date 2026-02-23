@@ -361,12 +361,17 @@ const PackagePlans = () => {
             variants={headingVariants}
           >
             <span className="plans-heading-line">
-              <span className="plans-heading-light">Clarity in </span>
-              <span className="plans-heading-dark">Numbers.</span>
+              <span className="plans-heading-dark">Start</span>
+              <span className="plans-heading-light"> and </span>
+              <span className="plans-heading-dark">Manage</span>
             </span>
             <span className="plans-heading-line">
-              <span className="plans-heading-light">Confidence in </span>
-              <span className="plans-heading-dark">Decisions.</span>
+              <span className="plans-heading-light">Your Business in </span>
+              <span className="plans-heading-dark">Finland</span>
+            </span>
+            <span className="plans-heading-line">
+              <span className="plans-heading-light">with </span>
+              <span className="plans-heading-dark">Confidence</span>
             </span>
           </motion.h1>
 
@@ -376,7 +381,7 @@ const PackagePlans = () => {
             animate="visible"
             variants={subtitleVariants}
           >
-            Smart Bookkeeping & Financial Support for Growing Businesses!
+            We help entrepreneurs and international companies establish, run, and scale their operations in Finland. From company formation and tax registrations to accounting and virtual office solutions - our experts handle everything so you can focus on growth.
           </motion.p>
         </div>
       </section>
