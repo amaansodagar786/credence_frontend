@@ -311,3 +311,51 @@
 
   }
 }
+
+
+// ===== POLICIES COLUMN (NEW) =====
+.fgf-policies-col {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+
+  @media (max-width: 768px) {
+    align-items: center;
+  }
+
+  a {
+    font-family: "Inter", sans-serif;
+    color: #fff;
+    text-decoration: none;
+    font-size: 15px;
+    position: relative;
+    width: fit-content;
+    transition: color 0.3s ease;
+
+    &:hover {
+      color: #7cd64b;
+    }
+
+    &::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -7px;
+      width: 45px;
+      height: 2px;
+      background: #7cd64b;
+      transition: width 0.3s ease;
+    }
+
+    &:hover::after {
+      width: 100%;
+    }
+
+    /* MOBILE VIEW – ALWAYS SHOW UNDERLINE */
+    @media (max-width: 768px) {
+      &::after {
+        width: 100%;
+      }
+    }
+  }
+}

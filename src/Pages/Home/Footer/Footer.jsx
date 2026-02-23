@@ -24,17 +24,16 @@ const Footer = () => {
       <div className="fgf-wrapper">
         {/* TOP */}
         <div className="fgf-top-row">
-          {/* LEFT */}
+          {/* LEFT - BRAND */}
           <div className="fgf-col fgf-brand-col">
             <h2>CREDENCE</h2>
             <p className="fgf-hover-text">
               Bridging solutions,<br />
               Building trust.
             </p>
-           
           </div>
 
-          {/* MIDDLE */}
+          {/* MIDDLE LEFT - ENROLL/SIGN IN */}
           <div className="fgf-col fgf-links-col">
             <a href="#" onClick={handleEnrollClick}>
               Enroll now
@@ -42,7 +41,13 @@ const Footer = () => {
             <a href="/login">Sign In</a>
           </div>
 
-          {/* RIGHT */}
+          {/* NEW COLUMN - TERMS & POLICIES */}
+          <div className="fgf-col fgf-policies-col">
+            <a href="/terms">Terms and Conditions</a>
+            <a href="/privacy">Privacy Policy</a>
+          </div>
+
+          {/* RIGHT - CONTACT */}
           <div className="fgf-col fgf-contact-col">
             <p className="fgf-hover-item">
               <FaPhoneAlt />
@@ -64,7 +69,7 @@ const Footer = () => {
                 rel="noopener noreferrer"
                 className="mobileaddress"
               >
-                Uomarinne I B 20 Vantaa 01600 <span><br className="mobilebreak"/></span>Uusimaa Finland.
+                Uomarinne I B 20 Vantaa 01600 <span><br className="mobilebreak" /></span>Uusimaa Finland.
               </a>
             </p>
           </div>
@@ -89,11 +94,9 @@ const Footer = () => {
               Copyrights © 2026 - Credence Developed by
               <span>
                 <a
-                  // href="https://techorses.com"
-                  // target="_blank"
                   rel="noopener noreferrer"
                 >
-                   Vapautus Media Private Limited
+                  Vapautus Media Private Limited
                 </a>
               </span>
             </p>
@@ -103,8 +106,6 @@ const Footer = () => {
               Developed by{" "}
               <span>
                 <a
-                  // href="https://techorses.com"
-                  // target="_blank"
                   rel="noopener noreferrer"
                 >
                   Vapautus Media Private Limited
