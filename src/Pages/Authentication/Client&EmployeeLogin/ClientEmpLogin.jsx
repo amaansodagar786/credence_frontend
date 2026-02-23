@@ -367,15 +367,9 @@ const ClientEmpLogin = () => {
               )}
             </div>
 
-            {/* Forgot Password Link */}
-            <div className="forgot-password">
-              <button
-                type="button"
-                className="forgot-link"
-                onClick={() => setForgotPasswordModal(true)}
-                disabled={loading}
-              >
-                Forgot your password?
+            <div className={`forgot-password ${loginType === 'client' ? 'client-only' : 'employee-only'}`}>
+              <button className="forgot-link" onClick={() => setForgotPasswordModal(true)}>
+                Forgot Your Password?
               </button>
             </div>
 
