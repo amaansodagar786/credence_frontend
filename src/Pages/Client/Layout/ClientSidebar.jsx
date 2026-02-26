@@ -17,7 +17,7 @@ import { MdOutlineDashboard } from "react-icons/md";
 
 import "./ClientSidebar.scss";
 import FinancialStatementModal from "../FInancialStatements/FinancialStatementModal";
-import pdf from "../../../assets/pdf/newterms.pdf";
+import pdf from "../../../assets/pdf/termsandconditions.pdf";
 
 const ClientSidebar = ({ children }) => {
   const [toggle, setToggle] = useState(false);

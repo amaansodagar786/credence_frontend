@@ -95,7 +95,7 @@ body {
   min-height: 40vh;
   padding: 24px;
   display: flex;
-  flex-direction: column;
+  flex-direction: column; 
   position: relative;
   overflow: hidden;
   background: #ffffff;
@@ -118,6 +118,8 @@ body {
     pointer-events: none;
     z-index: 1;
     animation: smoothFlow 12s ease-in-out infinite;
+    // display: none !important;
+    // background: white !important;
   }
 
   &::after {
@@ -136,6 +138,8 @@ body {
     pointer-events: none;
     z-index: 1;
     animation: smoothFlowReverse 15s ease-in-out infinite;
+    // background: white !important;
+    // display: none !important;
   }
 
 
@@ -151,6 +155,7 @@ body {
     pointer-events: none;
     z-index: 1;
     animation: glowPulse 4s ease-in-out infinite;
+    // display: none !important;
   }
 
   // ===== FLOWING PARTICLES - MUCH MORE VISIBLE =====
@@ -168,6 +173,7 @@ body {
     pointer-events: none;
     z-index: 1;
     animation: smoothFlow 18s ease-in-out infinite;
+    // display: none !important;
 
     &:nth-child(1) {
       left: 5%;
@@ -241,9 +247,9 @@ body {
   }
 }
 
-.plans-header-bg {
-  display: none;
-}
+// .plans-header-bg {
+//   display: none;
+// }
 
 // NAVBAR
 .plans-navbar-wrapper {
@@ -304,7 +310,7 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
 
   h1 {
@@ -1105,3 +1111,44 @@ body {
 
   // Rest of your mobile styles remain exactly the same...
 }
+
+
+
+// ===== HERO IMAGE STYLES =====
+.plans-hero-image-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 30px auto 0;
+  text-align: center;
+  position: relative;
+  z-index: 3;
+  display: none;
+}
+
+.plans-hero-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  // box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); 
+}
+
+@media (max-width: 768px) {
+  .plans-hero-image-container {
+    margin: 20px auto 0;
+    max-width: 90%;
+  }
+}
+
+
+
+
+// .plans-heading-line
+// {
+//   display: none !important;
+// }
+
+
+// .plans-subtitle
+// {
+//   display: none !important;
+// }

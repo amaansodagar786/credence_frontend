@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 
 // Import logo image
 import logoImage from "../../../assets/Images/home/logo.png";
+import hero1 from "../../../assets/Images/home/hero2.png";
 
 const PackagePlans = () => {
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
@@ -383,6 +384,19 @@ const PackagePlans = () => {
           >
             We help entrepreneurs and international companies establish, run, and scale their operations in Finland. From company formation and tax registrations to accounting and virtual office solutions - our experts handle everything so you can focus on growth.
           </motion.p>
+
+          <motion.div
+            className="plans-hero-image-container"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8, duration: 0.8 }}
+          >
+            <img
+              src={hero1}
+              alt="Hero"
+              className="plans-hero-image"
+            />
+          </motion.div>
         </div>
       </section>
 

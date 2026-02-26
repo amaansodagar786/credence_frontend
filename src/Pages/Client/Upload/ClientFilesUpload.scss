@@ -31,6 +31,45 @@
         font-weight: 400;
       }
     }
+
+    .header-right {
+      .active-plan-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 30px;
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+
+        .plan-label {
+          font-size: 14px;
+          opacity: 0.9;
+        }
+
+        .plan-name {
+          font-size: 16px;
+          font-weight: 600;
+          background: rgba(255, 255, 255, 0.2);
+          padding: 2px 10px;
+          border-radius: 20px;
+        }
+
+        &.inactive {
+          background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+
+          .inactive-text {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+          }
+        }
+      }
+    }
   }
 
   // Messages
@@ -606,7 +645,7 @@
               border-radius: 8px;
               color: #7cd64b;
               flex-shrink: 0;
-              
+
 
               .file-icon-badge {
                 position: absolute;
@@ -2117,7 +2156,7 @@
       align-items: center;
       gap: 12px;
       color: #000;
-     font-family: "Poppins" ; 
+      font-family: "Poppins";
 
       .file-count-badge {
         background: rgba(0, 0, 0, 0.1);
@@ -2476,8 +2515,8 @@
   justify-content: center;
   width: 48px;
   height: 48px;
-  background: #7cd64b; // Your theme green
-  color: #000000; // Black
+  background: #7cd64b;
+  color: #000000;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -2489,488 +2528,281 @@
   &:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(124, 214, 75, 0.3);
-    background: #5a9e30; // Darker green from your theme
-  }
+    background: #5a9e30;
 
-  &:active:not(:disabled) {
-    transform: translateY(0);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    box-shadow: none;
-    background: #cccccc;
-  }
-
-  svg {
-    font-size: 24px;
-  }
-}
-
-.upload-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
-
-  .file-input-label {
-    flex: 1;
-  }
-}
-
-// Drive Modal
-.drive-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 2500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  .modal-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    z-index: 1;
-    backdrop-filter: blur(4px);
-  }
-
-  .modal-content {
-    position: relative;
-    background: white;
-    border-radius: 16px;
-    width: 90%;
-    max-width: 800px;
-    height: 80vh;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    animation: driveModalSlideIn 0.3s ease-out;
-    z-index: 2;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-
-    &.drive-modal-content {
-      .modal-header {
-        background: #7cd64b; // Your theme green
-        color: #FFF; // Black
-        padding: 16px 24px;
-        border-bottom: 2px solid rgba(0, 0, 0, 0.1);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-
-        h3 {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin: 0;
-          font-size: 18px;
-          font-weight: 600;
-          color: #000;
-
-          .drive-user {
-            font-size: 14px;
-            font-weight: 400;
-            opacity: 0.8;
-            margin-left: 8px;
-            padding-left: 12px;
-            border-left: 1px solid rgba(0, 0, 0, 0.2);
-          }
-        }
-
-        .close-modal-btn {
-          color: #000000; // Black
-          background: rgba(0, 0, 0, 0.1);
-          border: none;
-          cursor: pointer;
-          padding: 8px;
-          border-radius: 6px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s ease;
-
-          &:hover {
-            background: rgba(0, 0, 0, 0.2);
-          }
-        }
-      }
+    &:active:not(:disabled) {
+      transform: translateY(0);
     }
 
-    .modal-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-      position: relative;
-
-      &::-webkit-scrollbar {
-        width: 8px;
-      }
-
-      &::-webkit-scrollbar-track {
-        background: #f0f0f0;
-        border-radius: 4px;
-      }
-
-      &::-webkit-scrollbar-thumb {
-        background: #7cd64b; // Your theme green
-        border-radius: 4px;
-
-        &:hover {
-          background: #5a9e30; // Darker green
-        }
-      }
-
-      .drive-toolbar {
-        margin-bottom: 20px;
-        padding-bottom: 16px;
-        border-bottom: 1px solid #e5e7eb;
-        display: flex;
-        justify-content: flex-end; // Changed to right side
-
-        .drive-back-btn {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 8px 16px;
-          background: #f8f9fa;
-          color: #000000; // Black
-          border: 1px solid #e5e7eb;
-          border-radius: 6px;
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s ease;
-
-          &:hover {
-            background: #7cd64b; // Your theme green
-            border-color: #7cd64b;
-            color: #000000; // Black
-          }
-        }
-      }
-
-      .drive-loading {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 16px;
-        height: 300px;
-
-        .spinner {
-          width: 40px;
-          height: 40px;
-          border: 3px solid rgba(124, 214, 75, 0.2); // Your theme green with opacity
-          border-top: 3px solid #7cd64b; // Your theme green
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-
-        p {
-          color: #000000; // Black
-          font-size: 14px;
-          margin: 0;
-        }
-      }
-
-      .drive-empty {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 300px;
-        color: #000000; // Black
-        font-size: 16px;
-        background: #f8f9fa;
-        border-radius: 8px;
-        border: 2px dashed #e5e7eb;
-      }
-
-      .drive-items-list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-
-        .drive-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 12px 16px;
-          background: #f8f9fa;
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
-          transition: all 0.2s ease;
-
-          &:hover {
-            border-color: #7cd64b; // Your theme green
-            box-shadow: 0 2px 8px rgba(124, 214, 75, 0.1);
-          }
-
-          &.folder {
-            background: rgba(124, 214, 75, 0.05); // Your theme green with opacity
-            cursor: pointer;
-
-            &:hover {
-              background: rgba(124, 214, 75, 0.1);
-            }
-          }
-
-          input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-            accent-color: #7cd64b; // Your theme green
-
-            &:disabled {
-              opacity: 0.3;
-              cursor: not-allowed;
-            }
-          }
-
-          .drive-item-info {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            min-width: 0;
-
-            .drive-item-icon {
-              font-size: 20px;
-              flex-shrink: 0;
-            }
-
-            .drive-item-name {
-              flex: 1;
-              font-size: 14px;
-              font-weight: 500;
-              color: #000000; // Black
-              overflow: hidden;
-              text-overflow: ellipsis;
-              white-space: nowrap;
-            }
-
-            .drive-item-size {
-              font-size: 12px;
-              color: #000000; // Black
-              background: white;
-              padding: 4px 8px;
-              border-radius: 4px;
-              border: 1px solid #e5e7eb;
-              flex-shrink: 0;
-            }
-          }
-        }
-      }
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+      background: #cccccc;
     }
 
-    .modal-footer {
-      padding: 16px 24px;
-      background: #f8f9fa;
-      border-top: 1px solid #e5e7eb;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-
-      .selected-count {
-        font-size: 14px;
-        color: #000000; // Black
-        font-weight: 500;
-        background: white;
-        padding: 8px 16px;
-        border-radius: 20px;
-        border: 1px solid #e5e7eb;
-      }
-
-      .footer-actions {
-        display: flex;
-        gap: 12px;
-
-        .btn-cancel {
-          padding: 10px 24px;
-          background: #f8f9fa;
-          color: #000000; // Black
-          border: 1px solid #e5e7eb;
-          border-radius: 6px;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s ease;
-
-          &:hover {
-            background: #e9ecef;
-          }
-        }
-
-        .btn-add-selected {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 10px 24px;
-          background: #7cd64b; // Your theme green
-          color: #000000; // Black
-          border: none;
-          border-radius: 6px;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          box-shadow: 0 4px 12px rgba(124, 214, 75, 0.2);
-
-          &:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(124, 214, 75, 0.3);
-            background: #5a9e30; // Darker green
-          }
-
-          &:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            box-shadow: none;
-          }
-
-          .spinner {
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(0, 0, 0, 0.2); // Black with opacity
-            border-top: 2px solid #000000; // Black
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-          }
-        }
-      }
-    }
-  }
-}
-
-// Animation for Drive Modal
-@keyframes driveModalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-30px) scale(0.95);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-// Responsive styles for Drive Modal
-@media (max-width: 768px) {
-  .drive-modal {
-    .modal-content {
-      width: 95%;
-      height: 90vh;
-
-      .modal-body {
-        .drive-items-list {
-          .drive-item {
-            .drive-item-info {
-              .drive-item-name {
-                font-size: 13px;
-              }
-
-              .drive-item-size {
-                font-size: 11px;
-                padding: 3px 6px;
-              }
-            }
-          }
-        }
-      }
-
-      .modal-footer {
-        flex-direction: column;
-        gap: 12px;
-        align-items: stretch;
-
-        .selected-count {
-          text-align: center;
-        }
-
-        .footer-actions {
-          flex-direction: column;
-
-          button {
-            width: 100%;
-            justify-content: center;
-          }
-        }
-      }
+    svg {
+      font-size: 24px;
     }
   }
 
   .upload-controls {
-    flex-direction: column;
-    gap: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
 
     .file-input-label {
-      width: 100%;
-    }
-
-    .drive-icon-btn {
-      width: 100%;
+      flex: 1;
     }
   }
-}
 
-@media (max-width: 480px) {
+  // Drive Modal
   .drive-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 1;
+      backdrop-filter: blur(4px);
+    }
+
     .modal-content {
+      position: relative;
+      background: white;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 800px;
+      height: 80vh;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: driveModalSlideIn 0.3s ease-out;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+
       &.drive-modal-content {
         .modal-header {
-          padding: 12px 16px;
+          background: #7cd64b; // Your theme green
+          color: #FFF; // Black
+          padding: 16px 24px;
+          border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
 
           h3 {
-            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #000;
 
             .drive-user {
-              font-size: 12px;
-              margin-left: 4px;
-              padding-left: 8px;
+              font-size: 14px;
+              font-weight: 400;
+              opacity: 0.8;
+              margin-left: 8px;
+              padding-left: 12px;
+              border-left: 1px solid rgba(0, 0, 0, 0.2);
             }
           }
 
           .close-modal-btn {
-            padding: 6px;
+            color: #000000; // Black
+            background: rgba(0, 0, 0, 0.1);
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+
+            &:hover {
+              background: rgba(0, 0, 0, 0.2);
+            }
           }
         }
       }
 
       .modal-body {
-        padding: 16px;
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        position: relative;
+
+        &::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        &::-webkit-scrollbar-track {
+          background: #f0f0f0;
+          border-radius: 4px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background: #7cd64b; // Your theme green
+          border-radius: 4px;
+
+          &:hover {
+            background: #5a9e30; // Darker green
+          }
+        }
 
         .drive-toolbar {
-          margin-bottom: 16px;
-          padding-bottom: 12px;
+          margin-bottom: 20px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid #e5e7eb;
+          display: flex;
+          justify-content: flex-end; // Changed to right side
+
+          .drive-back-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: #f8f9fa;
+            color: #000000; // Black
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+
+            &:hover {
+              background: #7cd64b; // Your theme green
+              border-color: #7cd64b;
+              color: #000000; // Black
+            }
+          }
+        }
+
+        .drive-loading {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 16px;
+          height: 300px;
+
+          .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(124, 214, 75, 0.2); // Your theme green with opacity
+            border-top: 3px solid #7cd64b; // Your theme green
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+          }
+
+          p {
+            color: #000000; // Black
+            font-size: 14px;
+            margin: 0;
+          }
+        }
+
+        .drive-empty {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 300px;
+          color: #000000; // Black
+          font-size: 16px;
+          background: #f8f9fa;
+          border-radius: 8px;
+          border: 2px dashed #e5e7eb;
         }
 
         .drive-items-list {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+
           .drive-item {
-            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: #f8f9fa;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+
+            &:hover {
+              border-color: #7cd64b; // Your theme green
+              box-shadow: 0 2px 8px rgba(124, 214, 75, 0.1);
+            }
+
+            &.folder {
+              background: rgba(124, 214, 75, 0.05); // Your theme green with opacity
+              cursor: pointer;
+
+              &:hover {
+                background: rgba(124, 214, 75, 0.1);
+              }
+            }
+
+            input[type="checkbox"] {
+              width: 18px;
+              height: 18px;
+              cursor: pointer;
+              accent-color: #7cd64b; // Your theme green
+
+              &:disabled {
+                opacity: 0.3;
+                cursor: not-allowed;
+              }
+            }
 
             .drive-item-info {
-              gap: 8px;
+              flex: 1;
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              cursor: pointer;
+              min-width: 0;
 
               .drive-item-icon {
-                font-size: 18px;
+                font-size: 20px;
+                flex-shrink: 0;
               }
 
               .drive-item-name {
-                font-size: 12px;
+                flex: 1;
+                font-size: 14px;
+                font-weight: 500;
+                color: #000000; // Black
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
               }
 
               .drive-item-size {
-                font-size: 10px;
-                padding: 2px 5px;
+                font-size: 12px;
+                color: #000000; // Black
+                background: white;
+                padding: 4px 8px;
+                border-radius: 4px;
+                border: 1px solid #e5e7eb;
+                flex-shrink: 0;
               }
             }
           }
@@ -2978,54 +2810,261 @@
       }
 
       .modal-footer {
-        padding: 12px 16px;
+        padding: 16px 24px;
+        background: #f8f9fa;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
 
         .selected-count {
-          font-size: 13px;
-          padding: 6px 12px;
+          font-size: 14px;
+          color: #000000; // Black
+          font-weight: 500;
+          background: white;
+          padding: 8px 16px;
+          border-radius: 20px;
+          border: 1px solid #e5e7eb;
         }
 
         .footer-actions {
+          display: flex;
+          gap: 12px;
 
-          .btn-cancel,
+          .btn-cancel {
+            padding: 10px 24px;
+            background: #f8f9fa;
+            color: #000000; // Black
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+
+            &:hover {
+              background: #e9ecef;
+            }
+          }
+
           .btn-add-selected {
-            padding: 8px 16px;
-            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 24px;
+            background: #7cd64b; // Your theme green
+            color: #000000; // Black
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(124, 214, 75, 0.2);
+
+            &:hover:not(:disabled) {
+              transform: translateY(-2px);
+              box-shadow: 0 6px 20px rgba(124, 214, 75, 0.3);
+              background: #5a9e30; // Darker green
+            }
+
+            &:disabled {
+              opacity: 0.5;
+              cursor: not-allowed;
+              box-shadow: none;
+            }
+
+            .spinner {
+              width: 16px;
+              height: 16px;
+              border: 2px solid rgba(0, 0, 0, 0.2); // Black with opacity
+              border-top: 2px solid #000000; // Black
+              border-radius: 50%;
+              animation: spin 1s linear infinite;
+            }
           }
         }
       }
     }
   }
-}
 
-// Hover effect for Drive items
-.drive-item {
-  position: relative;
-  overflow: hidden;
+  // Animation for Drive Modal
+  @keyframes driveModalSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-30px) scale(0.95);
+    }
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(124, 214, 75, 0.1), transparent); // Your theme green with opacity
-    transition: left 0.5s ease;
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
   }
 
-  &:hover::before {
-    left: 100%;
-  }
-}
+  // Responsive styles for Drive Modal
+  @media (max-width: 768px) {
+    .drive-modal {
+      .modal-content {
+        width: 95%;
+        height: 90vh;
 
-// Loading spinner animation
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
+        .modal-body {
+          .drive-items-list {
+            .drive-item {
+              .drive-item-info {
+                .drive-item-name {
+                  font-size: 13px;
+                }
+
+                .drive-item-size {
+                  font-size: 11px;
+                  padding: 3px 6px;
+                }
+              }
+            }
+          }
+        }
+
+        .modal-footer {
+          flex-direction: column;
+          gap: 12px;
+          align-items: stretch;
+
+          .selected-count {
+            text-align: center;
+          }
+
+          .footer-actions {
+            flex-direction: column;
+
+            button {
+              width: 100%;
+              justify-content: center;
+            }
+          }
+        }
+      }
+    }
+
+    .upload-controls {
+      flex-direction: column;
+      gap: 8px;
+
+      .file-input-label {
+        width: 100%;
+      }
+
+      .drive-icon-btn {
+        width: 100%;
+      }
+    }
   }
 
-  100% {
-    transform: rotate(360deg);
+  @media (max-width: 480px) {
+    .drive-modal {
+      .modal-content {
+        &.drive-modal-content {
+          .modal-header {
+            padding: 12px 16px;
+
+            h3 {
+              font-size: 16px;
+
+              .drive-user {
+                font-size: 12px;
+                margin-left: 4px;
+                padding-left: 8px;
+              }
+            }
+
+            .close-modal-btn {
+              padding: 6px;
+            }
+          }
+        }
+
+        .modal-body {
+          padding: 16px;
+
+          .drive-toolbar {
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+          }
+
+          .drive-items-list {
+            .drive-item {
+              padding: 10px 12px;
+
+              .drive-item-info {
+                gap: 8px;
+
+                .drive-item-icon {
+                  font-size: 18px;
+                }
+
+                .drive-item-name {
+                  font-size: 12px;
+                }
+
+                .drive-item-size {
+                  font-size: 10px;
+                  padding: 2px 5px;
+                }
+              }
+            }
+          }
+        }
+
+        .modal-footer {
+          padding: 12px 16px;
+
+          .selected-count {
+            font-size: 13px;
+            padding: 6px 12px;
+          }
+
+          .footer-actions {
+
+            .btn-cancel,
+            .btn-add-selected {
+              padding: 8px 16px;
+              font-size: 13px;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Hover effect for Drive items
+  .drive-item {
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(124, 214, 75, 0.1), transparent); // Your theme green with opacity
+      transition: left 0.5s ease;
+    }
+
+    &:hover::before {
+      left: 100%;
+    }
+  }
+
+  // Loading spinner animation
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(360deg);
+    }
   }
 }

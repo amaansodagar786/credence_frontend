@@ -512,10 +512,50 @@ const AdminClients = () => {
         `${import.meta.env.VITE_API_URL}/admin/clients`,
         { withCredentials: true }
       );
-      setClients(res.data);
 
-      // Check for employee notes in each client
-      checkForEmployeeNotes(res.data);
+      const clientsList = res.data;
+      console.log("📋 CLIENTS FROM LIST API:", clientsList);
+
+      // NOW FETCH FULL DETAILS FOR EACH CLIENT TO GET PLAN
+      const clientsWithPlans = await Promise.all(
+        clientsList.map(async (client) => {
+          try {
+            const detailsRes = await axios.get(
+              `${import.meta.env.VITE_API_URL}/admin/clients/${client.clientId}`,
+              { withCredentials: true }
+            );
+
+            // Handle response format
+            let clientDetails;
+            if (detailsRes.data.success && detailsRes.data.client) {
+              clientDetails = detailsRes.data.client;
+            } else if (detailsRes.data._id || detailsRes.data.clientId) {
+              clientDetails = detailsRes.data;
+            } else {
+              return client; // Return original if format wrong
+            }
+
+            console.log(`✅ PLAN FOR ${client.name}:`, clientDetails.planSelected);
+
+            // Merge plan into client object
+            return {
+              ...client,
+              planSelected: clientDetails.planSelected
+            };
+
+          } catch (error) {
+            console.error(`❌ Error fetching details for ${client.name}:`, error);
+            return client; // Return original on error
+          }
+        })
+      );
+
+      console.log("📋 FINAL CLIENTS WITH PLANS:", clientsWithPlans);
+      setClients(clientsWithPlans);
+
+      // Check for employee notes
+      checkForEmployeeNotes(clientsWithPlans);
+
     } catch (error) {
       console.error("Error loading clients:", error);
       showSnackbar("Error loading clients", "error");
@@ -1088,129 +1128,145 @@ const AdminClients = () => {
       <Modal
         open={clientDetailsModal}
         onClose={() => setClientDetailsModal(false)}
-        aria-labelledby="client-details-modal"
-        aria-describedby="client-details-description"
+        aria-labelledby="admin-client-details-modal"
+        aria-describedby="admin-client-details-description"
       >
-        <Box className="client-details-modal">
-          <div className="modal-header">
-            <h2 className="modal-title">
+        <Box className="admin-client-details-modal">
+          <div className="admin-modal-header">
+            <h2 className="admin-modal-title">
               <FiUser size={24} />
               Client Details
             </h2>
             <button
-              className="modal-close-btn"
+              className="admin-modal-close-btn"
               onClick={() => setClientDetailsModal(false)}
             >
               ✕
             </button>
           </div>
 
-          <div className="modal-content">
-            <div className="client-info-grid">
-              <div className="info-section">
-                <h3><FiUser size={18} /> Personal Information</h3>
-                <div className="info-row">
-                  <span className="label">Full Name:</span>
-                  <span className="value">{selectedClient.name}</span>
-                </div>
-                <div className="info-row">
-                  <span className="label">First Name:</span>
-                  <span className="value">{selectedClient.firstName || 'N/A'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="label">Last Name:</span>
-                  <span className="value">{selectedClient.lastName || 'N/A'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="label">Email:</span>
-                  <span className="value">{selectedClient.email}</span>
-                </div>
-                <div className="info-row">
-                  <span className="label">Phone:</span>
-                  <span className="value">{selectedClient.phone || 'N/A'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="label">Address:</span>
-                  <span className="value">{selectedClient.address || 'N/A'}</span>
-                </div>
-              </div>
-
-              <div className="info-section">
-                <h3><FiBriefcase size={18} /> Business Information</h3>
-                <div className="info-row">
-                  <span className="label">Business Name:</span>
-                  <span className="value">{selectedClient.businessName || 'N/A'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="label">Business Address:</span>
-                  <span className="value">{selectedClient.businessAddress || 'N/A'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="label">Business Nature:</span>
-                  <span className="value">{selectedClient.businessNature || 'N/A'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="label">Registered Trade:</span>
-                  <span className="value">{selectedClient.registerTrade || 'N/A'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="label">VAT Period:</span>
-                  <span className="value">{selectedClient.vatPeriod || 'N/A'}</span>
+          <div className="admin-modal-body">
+            <div className="admin-info-grid">
+              <div className="admin-info-card">
+                <h3 className="admin-info-card-title">
+                  <FiUser size={18} /> Personal Information
+                </h3>
+                <div className="admin-info-card-content">
+                  <div className="admin-info-item">
+                    <span className="admin-info-label">Full Name:</span>
+                    <span className="admin-info-value">{selectedClient.name}</span>
+                  </div>
+                  <div className="admin-info-item">
+                    <span className="admin-info-label">First Name:</span>
+                    <span className="admin-info-value">{selectedClient.firstName || 'N/A'}</span>
+                  </div>
+                  <div className="admin-info-item">
+                    <span className="admin-info-label">Last Name:</span>
+                    <span className="admin-info-value">{selectedClient.lastName || 'N/A'}</span>
+                  </div>
+                  <div className="admin-info-item">
+                    <span className="admin-info-label">Email:</span>
+                    <span className="admin-info-value">{selectedClient.email}</span>
+                  </div>
+                  <div className="admin-info-item">
+                    <span className="admin-info-label">Phone:</span>
+                    <span className="admin-info-value">{selectedClient.phone || 'N/A'}</span>
+                  </div>
+                  <div className="admin-info-item">
+                    <span className="admin-info-label">Address:</span>
+                    <span className="admin-info-value">{selectedClient.address || 'N/A'}</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="info-section">
-                <h3><FiCard size={18} /> Financial Information</h3>
-                <div className="info-row">
-                  <span className="label">Bank Account:</span>
-                  <span className="value">{selectedClient.bankAccount || 'N/A'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="label">BIC Code:</span>
-                  <span className="value">{selectedClient.bicCode || 'N/A'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="label">Plan Selected:</span>
-                  <span className="value">{selectedClient.planSelected || 'N/A'}</span>
+              <div className="admin-info-card">
+                <h3 className="admin-info-card-title">
+                  <FiBriefcase size={18} /> Business Information
+                </h3>
+                <div className="admin-info-card-content">
+                  <div className="admin-info-item">
+                    <span className="admin-info-label">Business Name:</span>
+                    <span className="admin-info-value">{selectedClient.businessName || 'N/A'}</span>
+                  </div>
+                  <div className="admin-info-item">
+                    <span className="admin-info-label">Business Address:</span>
+                    <span className="admin-info-value">{selectedClient.businessAddress || 'N/A'}</span>
+                  </div>
+                  <div className="admin-info-item">
+                    <span className="admin-info-label">Business Nature:</span>
+                    <span className="admin-info-value">{selectedClient.businessNature || 'N/A'}</span>
+                  </div>
+                  <div className="admin-info-item">
+                    <span className="admin-info-label">Registered Trade:</span>
+                    <span className="admin-info-value">{selectedClient.registerTrade || 'N/A'}</span>
+                  </div>
+                  <div className="admin-info-item">
+                    <span className="admin-info-label">VAT Period:</span>
+                    <span className="admin-info-value">{selectedClient.vatPeriod || 'N/A'}</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="info-section">
-                <h3><FiShield size={18} /> Legal Information</h3>
-                <div className="info-row">
-                  <span className="label">Visa Type:</span>
-                  <span className="value">{selectedClient.visaType || 'N/A'}</span>
+              <div className="admin-info-card">
+                <h3 className="admin-info-card-title">
+                  <FiCard size={18} /> Financial Information
+                </h3>
+                <div className="admin-info-card-content">
+                  <div className="admin-info-item">
+                    <span className="admin-info-label">Bank Account:</span>
+                    <span className="admin-info-value">{selectedClient.bankAccount || 'N/A'}</span>
+                  </div>
+                  <div className="admin-info-item">
+                    <span className="admin-info-label">BIC Code:</span>
+                    <span className="admin-info-value">{selectedClient.bicCode || 'N/A'}</span>
+                  </div>
+                  <div className="admin-info-item">
+                    <span className="admin-info-label">Plan Selected:</span>
+                    <span className="admin-info-value">{selectedClient.planSelected || 'N/A'}</span>
+                  </div>
                 </div>
-                <div className="info-row">
-                  <span className="label">Strong ID:</span>
-                  <span className="value">{selectedClient.hasStrongId || 'N/A'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="label">Status:</span>
-                  <span className="value">
-                    {selectedClient.isActive ? (
-                      <span className="active-status">Active</span>
-                    ) : (
-                      <span className="inactive-status">Inactive</span>
-                    )}
-                  </span>
-                </div>
-                <div className="info-row">
-                  <span className="label">Enrollment Date:</span>
-                  <span className="value">
-                    {selectedClient.enrollmentDate ?
-                      new Date(selectedClient.enrollmentDate).toLocaleDateString() :
-                      new Date(selectedClient.createdAt).toLocaleDateString()
-                    }
-                  </span>
+              </div>
+
+              <div className="admin-info-card">
+                <h3 className="admin-info-card-title">
+                  <FiShield size={18} /> Legal Information
+                </h3>
+                <div className="admin-info-card-content">
+                  <div className="admin-info-item">
+                    <span className="admin-info-label">Visa Type:</span>
+                    <span className="admin-info-value">{selectedClient.visaType || 'N/A'}</span>
+                  </div>
+                  <div className="admin-info-item">
+                    <span className="admin-info-label">Strong ID:</span>
+                    <span className="admin-info-value">{selectedClient.hasStrongId || 'N/A'}</span>
+                  </div>
+                  <div className="admin-info-item">
+                    <span className="admin-info-label">Status:</span>
+                    <span className="admin-info-value">
+                      {selectedClient.isActive ? (
+                        <span className="admin-status-badge admin-status-active">Active</span>
+                      ) : (
+                        <span className="admin-status-badge admin-status-inactive">Inactive</span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="admin-info-item">
+                    <span className="admin-info-label">Enrollment Date:</span>
+                    <span className="admin-info-value">
+                      {selectedClient.enrollmentDate ?
+                        new Date(selectedClient.enrollmentDate).toLocaleDateString() :
+                        new Date(selectedClient.createdAt).toLocaleDateString()
+                      }
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="modal-footer">
+          <div className="admin-modal-footer">
             <button
-              className="close-modal-btn"
+              className="admin-modal-footer-btn"
               onClick={() => setClientDetailsModal(false)}
             >
               Close
@@ -1333,6 +1389,29 @@ const AdminClients = () => {
                       <p className="client-email">{client.email}</p>
                       <div className="client-meta">
                         {getStatusBadge(client.isActive)}
+
+                        {/* ADD CONSOLE LOGS TO DEBUG */}
+                        {console.log("CLIENT DATA:", {
+                          name: client.name,
+                          isActive: client.isActive,
+                          planSelected: client.planSelected,
+                          currentPlan: client.currentPlan,
+                          plan: client.plan
+                        })}
+
+                        {/* ONLY SHOW PLAN IF CLIENT IS ACTIVE */}
+                        {client.isActive && client.planSelected && (
+                          <>
+                            {console.log("✅ SHOWING PLAN FOR:", client.name, "PLAN:", client.planSelected)}
+                            <span className="plan-badge-small">
+                              {client.planSelected}
+                            </span>
+                          </>
+                        )}
+
+                        {/* IF NOT SHOWING, LOG WHY */}
+                        {!client.isActive && console.log("❌ CLIENT INACTIVE - no plan for:", client.name)}
+                        {client.isActive && !client.planSelected && console.log("⚠️ CLIENT ACTIVE BUT NO PLAN for:", client.name)}
                       </div>
                     </div>
                     {selectedClient?.clientId === client.clientId && (

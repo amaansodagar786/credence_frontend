@@ -137,6 +137,8 @@ const ClientFilesUpload = () => {
     const [driveSelectedIds, setDriveSelectedIds] = useState([]);
     const [driveLoading, setDriveLoading] = useState(false);
     const [driveDownloading, setDriveDownloading] = useState(false);
+    // Add this with your other states in ClientFilesUpload.jsx
+    const [clientData, setClientData] = useState(null);
 
     // Ref for protection
     const previewRef = useRef(null);
@@ -382,7 +384,6 @@ const ClientFilesUpload = () => {
         });
     };
 
-    /* ================= FETCH MONTH DATA ================= */
     const fetchMonthData = async (y, m) => {
         if (!y || !m) return;
 
@@ -390,10 +391,11 @@ const ClientFilesUpload = () => {
         setErrorMessage("");
 
         try {
-            // ✅ NEW: Calculate if month is too old FIRST
+            // Calculate if month is too old FIRST
             const monthTooOld = calculateIsMonthTooOld(parseInt(y), parseInt(m));
             setIsMonthTooOld(monthTooOld);
 
+            // Get month data
             const monthResponse = await axios.get(
                 `${import.meta.env.VITE_API_URL}/clientupload/month-data`,
                 {
@@ -403,11 +405,40 @@ const ClientFilesUpload = () => {
             );
 
             const data = monthResponse.data || {};
+            console.log("✅ MONTH DATA RESPONSE:", data);
+
+            // ===== NEW: Get client info for plan and active status =====
+            try {
+                const clientResponse = await axios.get(
+                    `${import.meta.env.VITE_API_URL}/client/me`,
+                    { withCredentials: true }
+                );
+
+                console.log("✅ CLIENT DATA FROM PROFILE ENDPOINT:", clientResponse.data);
+                console.log("✅ IS ACTIVE:", clientResponse.data?.isActive);
+                console.log("✅ PLAN SELECTED:", clientResponse.data?.planSelected);
+
+                // Store full client data
+                setClientData(clientResponse.data);
+
+                // Add plan to month data if it exists
+                if (clientResponse.data?.planSelected) {
+                    data.clientPlan = clientResponse.data.planSelected;
+                    console.log("✅ PLAN ADDED TO MONTH DATA:", data.clientPlan);
+                }
+
+            } catch (clientError) {
+                console.error("❌ ERROR FETCHING CLIENT INFO:", clientError);
+            }
+            // ==========================================================
+
+            console.log("✅ FINAL DATA WITH PLAN:", data);
             setMonthData(data);
 
-            // ✅ NEW: Set month active status from response
+            // Set month active status from response
             setIsMonthActive(data.monthActiveStatus !== 'inactive');
 
+            // Handle other categories
             const existingOtherCategories = data.other || [];
             setOtherCategories(existingOtherCategories.map(cat => ({
                 ...cat,
@@ -415,6 +446,7 @@ const ClientFilesUpload = () => {
                 note: ""
             })));
 
+            // Get employee assignments
             const employeeResponse = await axios.get(
                 `${import.meta.env.VITE_API_URL}/clientupload/employee-assignment`,
                 {
@@ -423,22 +455,20 @@ const ClientFilesUpload = () => {
                 }
             );
 
-            // WAS: setEmployeeAssignment(employeeResponse.data);
-            // NEW: Handle array response
             const assignments = employeeResponse.data || [];
             setEmployeeAssignments(assignments);
-            // Set default selected task to first task if available
+
             if (assignments.length > 0 && assignments[0].task) {
                 setSelectedTask(assignments[0].task);
             }
 
-            setEmployeeAssignment(employeeResponse.data);
-
         } catch (error) {
-            console.error("Fetch month data error:", error);
+            console.error("❌ FETCH MONTH DATA ERROR:", error);
+
             if (error.response?.status !== 404) {
                 setErrorMessage(error.response?.data?.message || "Failed to load month data");
             }
+
             setMonthData({
                 isLocked: false,
                 wasLockedOnce: false,
@@ -448,10 +478,11 @@ const ClientFilesUpload = () => {
                 other: [],
                 monthNotes: []
             });
+
             setOtherCategories([]);
-            setEmployeeAssignment(null);
-            setIsMonthTooOld(false); // Reset on error
-            setIsMonthActive(true); // Reset on error
+            setEmployeeAssignments([]);
+            setIsMonthTooOld(false);
+            setIsMonthActive(true);
         } finally {
             setLoading(false);
         }
@@ -2062,6 +2093,25 @@ const ClientFilesUpload = () => {
                         <p className="subtitle">
                             Select month and upload your files
                         </p>
+                    </div>
+
+                    {/* Show plan or inactive status */}
+                    <div className="header-right">
+                        {!clientData?.isActive ? (
+                            // If client is inactive - show this
+                            <div className="active-plan-badge inactive">
+                                <FiAlertCircle size={16} />
+                                <span className="inactive-text">Account Inactive</span>
+                            </div>
+                        ) : monthData?.clientPlan ? (
+                            // If client is active and has plan - show plan
+                            <div className="active-plan-badge">
+                                <span className="plan-label">Active Plan:</span>
+                                <span className="plan-name">
+                                    {monthData.clientPlan}
+                                </span>
+                            </div>
+                        ) : null}
                     </div>
                 </div>
 

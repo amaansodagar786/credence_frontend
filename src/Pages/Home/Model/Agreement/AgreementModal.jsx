@@ -11,7 +11,7 @@ const AgreementModal = () => {
 
   const handleDownloadPDF = () => {
     // Replace with your actual PDF URL
-    const pdfUrl = '/terms.pdf';
+    const pdfUrl = '/termsandconditions.pdf';
     const link = document.createElement('a');
     link.href = pdfUrl;
     link.download = 'Credence_Terms_Conditions.pdf';
