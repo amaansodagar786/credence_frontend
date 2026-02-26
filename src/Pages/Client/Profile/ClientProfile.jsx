@@ -1179,14 +1179,14 @@ const ClientProfile = () => {
 
                 {/* Change Password Modal */}
                 {showChangePasswordModal && (
-                    <div className="profile-modal-overlay">
-                        <div className="profile-modal">
-                            <div className="modal-header">
-                                <h3>
+                    <div className="profile-password-modal-overlay">
+                        <div className="profile-password-modal">
+                            <div className="profile-password-header">
+                                <h3 className="profile-password-title">
                                     <FiLock size={20} /> Change Password
                                 </h3>
                                 <button
-                                    className="close-btn"
+                                    className="profile-password-close-btn"
                                     onClick={() => {
                                         setShowChangePasswordModal(false);
                                         resetChangePasswordForm();
@@ -1197,38 +1197,38 @@ const ClientProfile = () => {
                                 </button>
                             </div>
 
-                            <div className="modal-content">
+                            <div className="profile-password-content">
                                 {passwordError && (
-                                    <div className="modal-error">
+                                    <div className="profile-password-error">
                                         <FiAlertCircle size={16} />
                                         <span>{passwordError}</span>
                                     </div>
                                 )}
 
                                 {passwordSuccess && (
-                                    <div className="modal-success">
+                                    <div className="profile-password-success">
                                         <FiCheck size={16} />
                                         <span>{passwordSuccess}</span>
                                     </div>
                                 )}
 
-                                <div className="form-group">
-                                    <label className="form-label">
+                                <div className="profile-password-field">
+                                    <label className="profile-password-label">
                                         <FiLock size={18} />
                                         Current Password
                                     </label>
-                                    <div className="password-input-container">
+                                    <div className="profile-password-input-wrapper">
                                         <input
                                             type={showOldPassword ? "text" : "password"}
                                             placeholder="Enter your current password"
                                             value={oldPassword}
                                             onChange={(e) => setOldPassword(e.target.value)}
                                             disabled={changingPassword}
-                                            className="modal-input"
+                                            className="profile-password-input"
                                         />
                                         <button
                                             type="button"
-                                            className="show-password-btn"
+                                            className="profile-password-toggle"
                                             onClick={() => setShowOldPassword(!showOldPassword)}
                                             disabled={changingPassword}
                                         >
@@ -1237,23 +1237,23 @@ const ClientProfile = () => {
                                     </div>
                                 </div>
 
-                                <div className="form-group">
-                                    <label className="form-label">
+                                <div className="profile-password-field">
+                                    <label className="profile-password-label">
                                         <MdOutlineVpnKey size={18} />
                                         New Password
                                     </label>
-                                    <div className="password-input-container">
+                                    <div className="profile-password-input-wrapper">
                                         <input
                                             type={showNewPassword ? "text" : "password"}
                                             placeholder="Enter new password (min. 6 characters)"
                                             value={newPassword}
                                             onChange={(e) => setNewPassword(e.target.value)}
                                             disabled={changingPassword}
-                                            className="modal-input"
+                                            className="profile-password-input"
                                         />
                                         <button
                                             type="button"
-                                            className="show-password-btn"
+                                            className="profile-password-toggle"
                                             onClick={() => setShowNewPassword(!showNewPassword)}
                                             disabled={changingPassword}
                                         >
@@ -1262,23 +1262,23 @@ const ClientProfile = () => {
                                     </div>
                                 </div>
 
-                                <div className="form-group">
-                                    <label className="form-label">
+                                <div className="profile-password-field">
+                                    <label className="profile-password-label">
                                         <FiLock size={18} />
                                         Confirm New Password
                                     </label>
-                                    <div className="password-input-container">
+                                    <div className="profile-password-input-wrapper">
                                         <input
                                             type={showConfirmPassword ? "text" : "password"}
                                             placeholder="Confirm your new password"
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
                                             disabled={changingPassword}
-                                            className="modal-input"
+                                            className="profile-password-input"
                                         />
                                         <button
                                             type="button"
-                                            className="show-password-btn"
+                                            className="profile-password-toggle"
                                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                             disabled={changingPassword}
                                         >
@@ -1287,9 +1287,9 @@ const ClientProfile = () => {
                                     </div>
                                 </div>
 
-                                <div className="modal-actions">
+                                <div className="profile-password-actions">
                                     <button
-                                        className="modal-btn secondary"
+                                        className="profile-password-btn profile-password-btn-secondary"
                                         onClick={() => {
                                             setShowChangePasswordModal(false);
                                             resetChangePasswordForm();
@@ -1299,13 +1299,13 @@ const ClientProfile = () => {
                                         Cancel
                                     </button>
                                     <button
-                                        className="modal-btn primary"
+                                        className="profile-password-btn profile-password-btn-primary"
                                         onClick={handleChangePassword}
                                         disabled={changingPassword}
                                     >
                                         {changingPassword ? (
                                             <>
-                                                <span className="spinner small"></span>
+                                                <span className="spinner-small"></span>
                                                 Changing...
                                             </>
                                         ) : (
@@ -1314,7 +1314,7 @@ const ClientProfile = () => {
                                     </button>
                                 </div>
 
-                                <div className="forgot-password-link">
+                                <div className="profile-password-forgot-link">
                                     <button
                                         type="button"
                                         onClick={() => {
@@ -1333,14 +1333,14 @@ const ClientProfile = () => {
 
                 {/* Change Plan Modal */}
                 {showChangePlanModal && (
-                    <div className="profile-modal-overlay">
-                        <div className="profile-modal change-plan-modal">
-                            <div className="modal-header">
-                                <h3>
+                    <div className="profile-plan-modal-overlay">
+                        <div className="profile-plan-modal">
+                            <div className="profile-plan-header">
+                                <h3 className="profile-plan-title">
                                     <FiCreditCard size={20} /> Change Your Plan
                                 </h3>
                                 <button
-                                    className="close-btn"
+                                    className="profile-plan-close-btn"
                                     onClick={() => {
                                         setShowChangePlanModal(false);
                                         resetChangePlanForm();
@@ -1351,24 +1351,24 @@ const ClientProfile = () => {
                                 </button>
                             </div>
 
-                            <div className="modal-content">
-                                <div className="plan-change-info">
-                                    <p className="current-plan-info">
+                            <div className="profile-plan-content">
+                                <div className="profile-plan-info-box">
+                                    <p className="profile-plan-current">
                                         Your current plan: <strong>{clientData?.planSelected}</strong> ({planPrices[clientData?.planSelected] || 'N/A'})
                                     </p>
 
                                     {clientData?.nextMonthPlan && (
-                                        <div className="pending-change-alert">
+                                        <div className="profile-plan-pending-alert">
                                             <FiInfo size={16} />
                                             <span>You already have a pending change to <strong>{clientData.nextMonthPlan}</strong> effective from <strong>{formatDate(clientData.planEffectiveFrom)}</strong></span>
                                         </div>
                                     )}
 
-                                    <div className="date-info">
+                                    <div className="profile-plan-date-info">
                                         <p>
                                             <strong>Today is {isFirstOfMonth() ? '1st of month' : 'not 1st of month'}</strong>
                                         </p>
-                                        <p className="small-text">
+                                        <p className="profile-plan-small-text">
                                             {isFirstOfMonth()
                                                 ? 'Plan changes will be effective immediately.'
                                                 : 'Plan changes will be effective from 1st of next month.'}
@@ -1376,13 +1376,13 @@ const ClientProfile = () => {
                                     </div>
                                 </div>
 
-                                <div className="plan-selection">
-                                    <h4 className="section-title">Select New Plan</h4>
-                                    <div className="plan-list">
+                                <div className="profile-plan-selection">
+                                    <h4 className="profile-plan-section-title">Select New Plan</h4>
+                                    <div className="profile-plan-list">
                                         {['Lite', 'Taxi', 'Premium', 'Pro', 'Restaurant'].map((plan) => (
                                             <label
                                                 key={plan}
-                                                className={`plan-item ${selectedNewPlan === plan ? 'selected' : ''} ${clientData?.planSelected === plan ? 'current' : ''}`}
+                                                className={`profile-plan-item ${selectedNewPlan === plan ? 'selected' : ''} ${clientData?.planSelected === plan ? 'current' : ''}`}
                                             >
                                                 <input
                                                     type="radio"
@@ -1392,17 +1392,17 @@ const ClientProfile = () => {
                                                     onChange={(e) => setSelectedNewPlan(e.target.value)}
                                                     disabled={changingPlan}
                                                 />
-                                                <div className="plan-info">
-                                                    <div className="plan-name-section">
-                                                        <span className="plan-name">{plan}</span>
+                                                <div className="profile-plan-item-info">
+                                                    <div className="profile-plan-name-section">
+                                                        <span className="profile-plan-name">{plan}</span>
                                                         {clientData?.planSelected === plan && (
-                                                            <span className="badge current-badge">Current</span>
+                                                            <span className="profile-plan-badge profile-plan-badge-current">Current</span>
                                                         )}
                                                         {selectedNewPlan === plan && (
-                                                            <span className="badge selected-badge">Selected</span>
+                                                            <span className="profile-plan-badge profile-plan-badge-selected">Selected</span>
                                                         )}
                                                     </div>
-                                                    <span className="plan-price">{planPrices[plan]}</span>
+                                                    <span className="profile-plan-price">{planPrices[plan]}</span>
                                                 </div>
                                             </label>
                                         ))}
@@ -1410,9 +1410,9 @@ const ClientProfile = () => {
                                 </div>
 
                                 {selectedNewPlan && (
-                                    <div className="plan-summary">
-                                        <h4 className="section-title">Change Summary</h4>
-                                        <div className="summary-details">
+                                    <div className="profile-plan-summary">
+                                        <h4 className="profile-plan-section-title">Change Summary</h4>
+                                        <div className="profile-plan-summary-details">
                                             <p><strong>From:</strong> {clientData?.planSelected} ({planPrices[clientData?.planSelected] || 'N/A'})</p>
                                             <p><strong>To:</strong> {selectedNewPlan} ({planPrices[selectedNewPlan]})</p>
                                             <p><strong>Effective Date:</strong> {isFirstOfMonth() ? 'Immediately (today)' : '1st of next month'}</p>
@@ -1425,9 +1425,9 @@ const ClientProfile = () => {
                                     </div>
                                 )}
 
-                                <div className="modal-actions">
+                                <div className="profile-plan-actions">
                                     <button
-                                        className="modal-btn secondary"
+                                        className="profile-plan-btn profile-plan-btn-secondary"
                                         onClick={() => {
                                             setShowChangePlanModal(false);
                                             resetChangePlanForm();
@@ -1437,13 +1437,13 @@ const ClientProfile = () => {
                                         Cancel
                                     </button>
                                     <button
-                                        className="modal-btn primary"
+                                        className="profile-plan-btn profile-plan-btn-primary"
                                         onClick={handleChangePlan}
                                         disabled={changingPlan || !selectedNewPlan}
                                     >
                                         {changingPlan ? (
                                             <>
-                                                <span className="spinner small"></span>
+                                                <span className="spinner-small"></span>
                                                 Processing...
                                             </>
                                         ) : (
