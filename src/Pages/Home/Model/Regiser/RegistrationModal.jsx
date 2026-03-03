@@ -10,13 +10,18 @@ const RegistrationModal = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentPlan, setCurrentPlan] = useState(selectedPlan || '');
 
-  // Define plan prices
+  // Define plan prices for all 8 plans (5 Toiminimi + 3 Osakeyhtiö)
   const planPrices = {
+    // Toiminimi plans
     'Lite': '40 Euros + VAT',
     'Taxi': '45 Euros + VAT',
     'Premium': '50 Euros + VAT',
     'Pro': '60 Euros + VAT',
-    'Restaurant': '80 Euros + VAT'
+    'Restaurant': '80 Euros + VAT',
+    // Osakeyhtiö plans
+    'Lite Oy': '120 Euros + VAT',
+    'Premium Oy': '160 Euros + VAT',
+    'Pro Oy': '200 Euros + VAT'
   };
 
   const formik = useFormik({
@@ -468,7 +473,7 @@ const RegistrationModal = () => {
               </div>
             </div>
 
-            {/* Row 10: Plan Selection */}
+            {/* Row 10: Plan Selection - UPDATED WITH ALL 8 PLANS (just added the 3 new ones) */}
             <div className="select-group">
               <div className="select-label-wrapper">
                 <span className="select-label">SELECT PLAN</span>
@@ -488,6 +493,10 @@ const RegistrationModal = () => {
                 <option value="Premium">Premium - {planPrices['Premium']}</option>
                 <option value="Pro">Pro - {planPrices['Pro']}</option>
                 <option value="Restaurant">Restaurant - {planPrices['Restaurant']}</option>
+                {/* Added the 3 new Osakeyhtiö plans */}
+                <option value="Lite Oy">Lite Oy - {planPrices['Lite Oy']}</option>
+                <option value="Premium Oy">Premium Oy - {planPrices['Premium Oy']}</option>
+                <option value="Pro Oy">Pro Oy - {planPrices['Pro Oy']}</option>
               </select>
               {selectedPlan && !formik.values.planSelected && (
                 <p className="plan-note">Plan pre-selected based on your choice</p>

@@ -541,41 +541,41 @@ const PackagePlans = () => {
               </motion.tr>
 
               <motion.tr variants={tableRowVariants}>
-                <td className="features">Accounting Method & Select Plan</td>
-                <td className="lite">
+                <td className="features ">Accounting Method & Select Plan</td>
+                <td className="lite invoice-cell">
                   <div className="cell-content">
                     <span>Double-entry</span>
                     <motion.button
                       onClick={() => handleSelectPlan('Lite Oy')}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="new-select-plan-btn"
+                      // className="new-select-plan-btn" 
                     >
                       Select Plan
                     </motion.button>
-                  </div>
+                  </div>  
                 </td>
-                <td className="premium">
-                  <div className="cell-content">
+                <td className="premium invoice-cell">
+                  <div className="cell-content ">
                     <span>Double-entry</span>
                     <motion.button
                       onClick={() => handleSelectPlan('Premium Oy')}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="new-select-plan-btn"
+                      // className="new-select-plan-btn"
                     >
                       Select Plan
                     </motion.button>
                   </div>
                 </td>
-                <td className="pro">
+                <td className="pro invoice-cell">
                   <div className="cell-content">
                     <span>Double-entry</span>
                     <motion.button
                       onClick={() => handleSelectPlan('Pro Oy')}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="new-select-plan-btn"
+                      // className="new-select-plan-btn"
                     >
                       Select Plan
                     </motion.button>
