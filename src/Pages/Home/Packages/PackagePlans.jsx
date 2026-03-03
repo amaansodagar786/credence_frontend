@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 
 // Import logo image
 import logoImage from "../../../assets/Images/home/logo.png";
-import hero1 from "../../../assets/Images/home/hero2.png";
+import hero1 from "../../../assets/Images/home/herocredence.png";
 
 const PackagePlans = () => {
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
@@ -298,19 +298,28 @@ const PackagePlans = () => {
     }
   };
 
+  const imageVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: 0.8,
+        duration: 0.8
+      }
+    }
+  };
+
   return (
     <>
       {/* ================= HEADER SECTION ================= */}
       <section className="plans-header">
-
         <div className="pulse-layer"></div>
-
         <div className="flow-particle"></div>
         <div className="flow-particle"></div>
         <div className="flow-particle"></div>
         <div className="flow-particle"></div>
         <div className="flow-particle"></div>
-        {/* Background with same theme as packages */}
         <div className="plans-header-bg"></div>
 
         {/* Navbar */}
@@ -321,16 +330,6 @@ const PackagePlans = () => {
           variants={navbarVariants}
         >
           <div className="plans-navbar">
-            <motion.span
-              className="plans-nav-link"
-              onClick={handleEnrollClick}
-              style={{ cursor: 'pointer' }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <span>Enroll Now</span>
-            </motion.span>
-
             <motion.div
               className="plans-logo"
               whileHover={{ scale: 1.05 }}
@@ -342,15 +341,27 @@ const PackagePlans = () => {
               />
             </motion.div>
 
-            <motion.span
-              className="plans-nav-link"
-              onClick={handleSignInClick}
-              style={{ cursor: 'pointer' }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Sign in
-            </motion.span>
+            <div className="nav-buttons">
+              <motion.span
+                className="plans-nav-link"
+                onClick={handleEnrollClick}
+                style={{ cursor: 'pointer' }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <span>Enroll Now</span>
+              </motion.span>
+
+              <motion.span
+                className="plans-nav-link"
+                onClick={handleSignInClick}
+                style={{ cursor: 'pointer' }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Sign in
+              </motion.span>
+            </div>
           </div>
         </motion.div>
 
@@ -384,21 +395,22 @@ const PackagePlans = () => {
           >
             We help entrepreneurs and international companies establish, run, and scale their operations in Finland. From company formation and tax registrations to accounting and virtual office solutions - our experts handle everything so you can focus on growth.
           </motion.p>
-
-          <motion.div
-            className="plans-hero-image-container"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8, duration: 0.8 }}
-          >
-            <img
-              src={hero1}
-              alt="Hero"
-              className="plans-hero-image"
-            />
-          </motion.div>
         </div>
       </section>
+
+      {/* ===== FULL WIDTH HERO IMAGE - NOW OUTSIDE THE CONSTRAINED CONTAINER ===== */}
+      <motion.div
+        className="plans-hero-image-container"
+        initial="hidden"
+        animate="visible"
+        variants={imageVariants}
+      >
+        <img
+          src={hero1}
+          alt="Hero"
+          className="plans-hero-image"
+        />
+      </motion.div>
 
       {/* ================= TOIMINIMI FEES STRUCTURE TABLE ================= */}
       <motion.section
@@ -552,7 +564,7 @@ const PackagePlans = () => {
         </motion.div>
       </motion.section>
 
-      {/* ================= OSAKEYHTIÖ FEES STRUCTURE TABLE (EXACT SAME LAYOUT AS TOIMINIMI) ================= */}
+      {/* ================= OSAKEYHTIÖ FEES STRUCTURE TABLE ================= */}
       <motion.section
         className="packages oy-packages"
         initial="hidden"
@@ -600,38 +612,41 @@ const PackagePlans = () => {
               </motion.tr>
 
               <motion.tr variants={tableRowVariants}>
-                <td className="features invoice-cell">Accounting Method & Select Plan</td>
-                <td className="lite invoice-cell">
+                <td className="features ">Accounting Method & Select Plan</td>
+                <td className="lite ">
                   <div className="cell-content">
                     <span>Double-entry</span>
                     <motion.button
-                      onClick={() => handleSelectPlan('Lite Oy')}
+                      // onClick={() => handleSelectPlan('Lite Oy')} 
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
+                      className="new-select-plan-btn"
                     >
                       Select Plan
                     </motion.button>
                   </div>
                 </td>
-                <td className="premium invoice-cell">
+                <td className="premium ">
                   <div className="cell-content">
                     <span>Double-entry</span>
                     <motion.button
-                      onClick={() => handleSelectPlan('Premium Oy')}
+                      // onClick={() => handleSelectPlan('Premium Oy')}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
+                      className="new-select-plan-btn"
                     >
                       Select Plan
                     </motion.button>
                   </div>
                 </td>
-                <td className="pro invoice-cell">
+                <td className="pro">
                   <div className="cell-content">
                     <span>Double-entry</span>
                     <motion.button
-                      onClick={() => handleSelectPlan('Pro Oy')}
+                      // onClick={() => handleSelectPlan('Pro Oy')}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
+                      className="new-select-plan-btn"
                     >
                       Select Plan
                     </motion.button>
