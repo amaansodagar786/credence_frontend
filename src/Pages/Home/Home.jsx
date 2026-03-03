@@ -10,12 +10,14 @@ import Faq from './Faq/Faq'
 import ScheduleCall from './ScheduleCall/ScheduleCall'
 import Footer from './Footer/Footer'
 import ModalProvider from './Model/ModalProvider'
+import Navbar from './Navbar/Navbar'
 
 
 const Home = () => {
   return (
     <ModalProvider> 
       {/* <Hero/> */}
+      <Navbar/>
       <PackagePlans/> 
       <AboutCredence/>
       <Services/>

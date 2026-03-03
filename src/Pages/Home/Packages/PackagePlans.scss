@@ -17,90 +17,28 @@
 
 body {
   background-color: #ffffff;
+  margin: 0;
+  padding: 0;
 }
 
 // ===== HEADER SECTION =====
 .plans-header {
-  // min-height: 40vh;
   padding: 0px 0 0px;
   display: flex;
   flex-direction: column;
   position: relative;
   background: #ffffff;
-
-  // REMOVED ALL ::before and ::after animations
-  // REMOVED ALL pulse-layer and flow-particle styles
-}
-
-// NAVBAR - UPDATED
-.plans-navbar-wrapper {
-  width: 100%;
-  background: #ffffff;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); // Shadow only at bottom
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-}
-
-.plans-navbar {
-  max-width: 1300px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 8px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: transparent; // Transparent because wrapper has white bg
-
-  .plans-logo {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-  }
-
-  .plans-logo-image {
-    height: 100px;
-    width: auto;
-    object-fit: contain;
-  }
-
-  .nav-buttons {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .plans-nav-link {
-    color: #1a1a1a;
-    font-size: 16px;
-    cursor: pointer;
-    font-family: "Inter", sans-serif;
-    font-weight: 600;
-    padding: 8px 24px !important;
-    border-radius: 50px !important;
-    background: #ffffff !important;
-    border: 2px solid #7cd64b !important;
-    transition: all 0.3s ease !important;
-    white-space: nowrap;
-
-    &:hover {
-      background: #7cd64b !important;
-      color: #ffffff !important;
-      transform: translateY(-2px) !important;
-      box-shadow: 0 4px 12px rgba(124, 214, 75, 0.3);
-    }
-  }
+  display: none;
 }
 
 // ===== HEADER CONTENT =====
 .plans-header-content {
   max-width: 800px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 40px 20px 20px;
   text-align: center;
   z-index: 3;
   position: relative;
-  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -166,6 +104,8 @@ body {
   position: relative;
   z-index: 2;
   overflow: hidden;
+// margin-top: 10px; 
+isolation: isolate;
 }
 
 .plans-hero-image {
@@ -174,6 +114,8 @@ body {
   max-height: 700px;
   object-fit: cover;
   display: block;
+  position: relative;
+  z-index: 1;
 }
 
 // ===== PACKAGES SECTION =====
@@ -644,11 +586,9 @@ body {
   0% {
     transform: scale(1);
   }
-
   50% {
     transform: scale(1.01);
   }
-
   100% {
     transform: scale(1);
   }
@@ -656,24 +596,13 @@ body {
 
 // ===== ERROR STATE ANIMATION =====
 @keyframes shakeError {
-
-  0%,
-  100% {
+  0%, 100% {
     transform: translateX(0);
   }
-
-  10%,
-  30%,
-  50%,
-  70%,
-  90% {
+  10%, 30%, 50%, 70%, 90% {
     transform: translateX(-5px);
   }
-
-  20%,
-  40%,
-  60%,
-  80% {
+  20%, 40%, 60%, 80% {
     transform: translateX(5px);
   }
 }
@@ -715,56 +644,22 @@ body {
   }
 }
 
+// ===== HIDE UNUSED NAVBAR STYLES =====
+.pulse-layer,
+.flow-particle,
+.plans-header-bg {
+  display: none;
+}
+
+// ===== NEW SELECT PLAN BUTTON STYLES =====
+.new-select-plan-btn {
+  display: none;
+}
+
 // ===== MOBILE RESPONSIVE =====
 @media (max-width: 768px) {
-  .plans-header {
-    min-height: auto;
-    padding: 0;
-  }
-
-  .plans-navbar-wrapper {
-    width: 100%;
-    padding: 0;
-  }
-
-  .plans-navbar {
-    width: 100%;
-    padding: 8px 16px;
-    box-sizing: border-box;
-    max-width: 100%;
-
-    .plans-logo-image {
-      height: 60px;
-      width: auto;
-    }
-
-    .nav-buttons {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-
-    .plans-nav-link {
-      font-size: 13px;
-      padding: 6px 12px !important;
-      white-space: nowrap;
-      min-width: auto;
-
-      &:first-child {
-        span {
-          display: none;
-        }
-
-        &::before {
-          content: "Enroll";
-        }
-      }
-    }
-  }
-
   .plans-header-content {
-    padding: 20px 16px 0;
+    padding: 20px 16px;
 
     h1 {
       display: flex;
@@ -790,11 +685,6 @@ body {
       max-width: 100%;
       line-height: 1.5;
     }
-  }
-
-  .plans-hero-image-container {
-    width: 100%;
-    margin: 0;
   }
 
   .plans-hero-image {
@@ -958,25 +848,8 @@ body {
 }
 
 @media (max-width: 480px) {
-  .plans-navbar {
-    padding: 6px 12px;
-
-    .plans-logo-image {
-      height: 50px;
-    }
-
-    .nav-buttons {
-      gap: 6px;
-    }
-
-    .plans-nav-link {
-      font-size: 12px;
-      padding: 5px 8px !important;
-    }
-  }
-
   .plans-header-content {
-    padding: 16px 12px 0;
+    padding: 16px 12px;
 
     h1 {
       font-size: 24px;
@@ -1087,10 +960,4 @@ body {
   .plans-hero-image {
     max-height: 1200px;
   }
-}
-
-
-.new-select-plan-btn
-{
-  display: none;
 }
