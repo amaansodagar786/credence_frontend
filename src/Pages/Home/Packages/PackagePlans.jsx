@@ -300,7 +300,7 @@ const PackagePlans = () => {
 
   return (
     <>
-      {/* ================= HEADER SECTION (Same background theme as packages) ================= */}
+      {/* ================= HEADER SECTION ================= */}
       <section className="plans-header">
 
         <div className="pulse-layer"></div>
@@ -400,7 +400,7 @@ const PackagePlans = () => {
         </div>
       </section>
 
-      {/* ================= PACKAGE & PLANS SECTION (Animated) ================= */}
+      {/* ================= TOIMINIMI FEES STRUCTURE TABLE ================= */}
       <motion.section
         className="packages"
         initial="hidden"
@@ -409,7 +409,7 @@ const PackagePlans = () => {
         variants={packagesSectionVariants}
       >
         <div className="packages-header">
-          <motion.h2 variants={tableHeaderVariants}>Package Plans</motion.h2>
+          <motion.h2 variants={tableHeaderVariants}>Toiminimi Fees Structure</motion.h2>
           <motion.span className="underline" variants={tableHeaderVariants}></motion.span>
           <motion.p variants={tableHeaderVariants}>Monthly Fixed Pricing | VAT Excluded</motion.p>
         </div>
@@ -539,9 +539,122 @@ const PackagePlans = () => {
             </tbody>
           </table>
         </div>
+
+        {/* NOTE for Toiminimi table */}
+        <motion.div
+          className="table-note"
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.2 }}
+        >
+          <p>Note: All prices are monthly and exclusive of VAT. Support hours are Monday–Friday, 09:00–15:00 (EET/EEST).</p>
+        </motion.div>
       </motion.section>
 
-      {/* ================= ADDITIONAL SERVICES SECTION (Animated) ================= */}
+      {/* ================= OSAKEYHTIÖ FEES STRUCTURE TABLE (EXACT SAME LAYOUT AS TOIMINIMI) ================= */}
+      <motion.section
+        className="packages oy-packages"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.3 }}
+        variants={packagesSectionVariants}
+      >
+        <div className="packages-header">
+          <motion.h2 variants={tableHeaderVariants}>Osakeyhtiö Fees Structure</motion.h2>
+          <motion.span className="underline" variants={tableHeaderVariants}></motion.span>
+          <motion.p variants={tableHeaderVariants}>Monthly Fixed Pricing | VAT Excluded</motion.p>
+        </div>
+
+        <div className="table-wrapper oy-table-wrapper">
+          <table className="pricing-table">
+            <thead>
+              <tr>
+                <motion.th variants={tableRowVariants}>Features</motion.th>
+                <motion.th variants={tableRowVariants}>Lite Oy</motion.th>
+                <motion.th variants={tableRowVariants}>Premium Oy</motion.th>
+                <motion.th variants={tableRowVariants}>Pro Oy</motion.th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <motion.tr variants={tableRowVariants}>
+                <td className="features">Monthly Fee (€)</td>
+                <td className="lite">€120</td>
+                <td className="premium">€160</td>
+                <td className="pro">€200</td>
+              </motion.tr>
+
+              <motion.tr variants={tableRowVariants}>
+                <td className="features">Income Sources</td>
+                <td className="lite">1</td>
+                <td className="premium">2</td>
+                <td className="pro">3</td>
+              </motion.tr>
+
+              <motion.tr variants={tableRowVariants}>
+                <td className="features">Receipts + Payments</td>
+                <td className="lite">Up to 30</td>
+                <td className="premium">Up to 60</td>
+                <td className="pro">Up to 90</td>
+              </motion.tr>
+
+              <motion.tr variants={tableRowVariants}>
+                <td className="features invoice-cell">Accounting Method & Select Plan</td>
+                <td className="lite invoice-cell">
+                  <div className="cell-content">
+                    <span>Double-entry</span>
+                    <motion.button
+                      onClick={() => handleSelectPlan('Lite Oy')}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Select Plan
+                    </motion.button>
+                  </div>
+                </td>
+                <td className="premium invoice-cell">
+                  <div className="cell-content">
+                    <span>Double-entry</span>
+                    <motion.button
+                      onClick={() => handleSelectPlan('Premium Oy')}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Select Plan
+                    </motion.button>
+                  </div>
+                </td>
+                <td className="pro invoice-cell">
+                  <div className="cell-content">
+                    <span>Double-entry</span>
+                    <motion.button
+                      onClick={() => handleSelectPlan('Pro Oy')}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Select Plan
+                    </motion.button>
+                  </div>
+                </td>
+              </motion.tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* NOTE for Osakeyhtiö table */}
+        <motion.div
+          className="table-note"
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.2 }}
+        >
+          <p>Note: All Osakeyhtiö plans are billed monthly, exclude VAT, and include double-entry bookkeeping only.</p>
+        </motion.div>
+      </motion.section>
+
+      {/* ================= ADDITIONAL SERVICES SECTION ================= */}
       <motion.section
         className="additional-services"
         initial="hidden"

@@ -95,7 +95,7 @@ body {
   min-height: 40vh;
   padding: 24px;
   display: flex;
-  flex-direction: column; 
+  flex-direction: column;
   position: relative;
   overflow: hidden;
   background: #ffffff;
@@ -376,7 +376,7 @@ body {
 // HEADING
 .packages-header {
   text-align: center;
-  margin-bottom: 50px;
+  margin-bottom: 30px;
 
   h2 {
     font-family: "Heading", sans-serif;
@@ -397,6 +397,8 @@ body {
     font-family: "Arimo", sans-serif;
     font-size: 15px;
     color: #666666;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
   }
 }
 
@@ -1081,25 +1083,26 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    
+
     // Make both buttons same width
     .plans-nav-link {
       font-size: 14px;
-      max-width: 70px;  // Max width for both buttons
-      width: 100%;       // Take full width up to max-width
+      max-width: 70px; // Max width for both buttons
+      width: 100%; // Take full width up to max-width
       text-align: center;
       padding: 7px 12px !important;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      
+
       // First button (Enroll) - show only "Enroll"
       &:first-child {
         span {
-          display: none;  // Hide the "Enroll Now" text
+          display: none; // Hide the "Enroll Now" text
         }
+
         &::before {
-          content: "Enroll";  // Show just "Enroll"
+          content: "Enroll"; // Show just "Enroll"
         }
       }
     }
@@ -1152,3 +1155,87 @@ body {
 // {
 //   display: none !important;
 // }
+
+
+// ===== TABLE NOTES STYLES =====
+.table-note {
+  max-width: 1000px;
+  margin: 20px auto 0;
+  padding: 15px 20px;
+  background: rgba(124, 214, 75, 0.05);
+  border-left: 4px solid #7cd64b;
+  border-radius: 0 8px 8px 0;
+  font-family: "Arimo", sans-serif;
+
+  p {
+    margin: 0;
+    font-size: 14px;
+    color: #666666;
+    line-height: 1.6;
+    font-style: italic;
+  }
+}
+
+
+// ===== OSAKEYHTIÖ TABLE SPECIFIC STYLES =====
+.oy-packages {
+  margin-top: 20px;
+}
+
+.oy-table-wrapper {
+  height: 280px; // Adjusted height for fewer rows
+  
+  .pricing-table {
+    min-width: 800px; // Smaller since only 4 columns
+  }
+}
+
+// ===== TABLE NOTES STYLES =====
+.table-note {
+  max-width: 1250px;
+  margin: 20px auto 0;
+  padding: 15px 20px;
+  background: rgba(124, 214, 75, 0.05);
+  border-left: 4px solid #7cd64b;
+  border-radius: 0 8px 8px 0;
+  font-family: "Arimo", sans-serif;
+  
+  p {
+    margin: 0;
+    font-size: 14px;
+    color: #666666;
+    line-height: 1.6;
+    font-style: italic;
+  }
+}
+
+// ===== MOBILE RESPONSIVE UPDATES =====
+@media (max-width: 768px) {
+  .table-note {
+    margin: 15px 16px 0;
+    padding: 12px 16px;
+    
+    p {
+      font-size: 13px;
+    }
+  }
+  
+  .oy-table-wrapper {
+    height: 300px;
+    
+    .pricing-table {
+      min-width: 700px;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .table-note {
+    margin: 10px 12px 0;
+    padding: 10px 14px;
+    
+    p {
+      font-size: 12px;
+    }
+  }
+}

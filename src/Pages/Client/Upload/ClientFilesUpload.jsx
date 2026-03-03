@@ -1353,104 +1353,103 @@ const ClientFilesUpload = () => {
     const renderDriveModal = () => {
         if (!driveModalOpen) return null;
 
-        const handleOverlayClick = (e) => {
-            if (e.target === e.currentTarget) {
-                closeDriveModal();
-            }
-        };
-
         return (
-            <div className="drive-modal">
-                <div className="modal-overlay" onClick={handleOverlayClick}></div>
-                <div className="modal-content drive-modal-content">
-                    <div className="modal-header">
-                        <h3>
-                            <FaGoogleDrive size={20} /> Select Files from Google Drive
-                            {driveUser && <span className="drive-user"> ({driveUser.email})</span>}
-                        </h3>
-                        <button className="close-modal-btn" onClick={closeDriveModal}>
-                            <FiX size={20} />
-                        </button>
-                    </div>
+            <>
+                <div className="drive-modal-overlay" onClick={closeDriveModal}></div>
+                <div className="drive-modal-container">
+                    <div className="drive-modal-content">
+                        <div className="drive-modal-header">
+                            <h3>
+                                <FaGoogleDrive size={20} /> Select Files from Google Drive
+                                {driveUser && <span className="drive-user"> ({driveUser.email})</span>}
+                            </h3>
+                            <button className="drive-modal-close-btn" onClick={closeDriveModal}>
+                                <FiX size={20} />
+                            </button>
+                        </div>
 
-                    <div className="modal-body">
-                        <div className="drive-toolbar">
-                            {driveFolderHistory.length > 0 && (
-                                <button className="drive-back-btn" onClick={goBackDrive}>
-                                    ⬅ Back
-                                </button>
+                        <div className="drive-modal-body">
+                            <div className="drive-toolbar">
+                                {driveFolderHistory.length > 0 && (
+                                    <button className="drive-back-btn" onClick={goBackDrive}>
+                                        ⬅ Back
+                                    </button>
+                                )}
+                            </div>
+
+                            {driveLoading && (
+                                <div className="drive-loading-state">
+                                    <div className="drive-spinner"></div>
+                                    <p>Loading folder contents...</p>
+                                </div>
+                            )}
+
+                            {!driveLoading && driveItems.length === 0 && (
+                                <div className="drive-empty-state">This folder is empty.</div>
+                            )}
+
+                            {!driveLoading && driveItems.length > 0 && (
+                                <div className="drive-items-container">
+                                    {driveItems.map((item) => {
+                                        const isFolder = item.mimeType === 'application/vnd.google-apps.folder';
+                                        return (
+                                            <div
+                                                key={item.id}
+                                                className={`drive-item-row ${isFolder ? 'folder-item' : ''}`}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={driveSelectedIds.includes(item.id)}
+                                                    onChange={() => toggleDriveSelect(item.id)}
+                                                    disabled={isFolder}
+                                                />
+                                                <div
+                                                    className="drive-item-info"
+                                                    onClick={() => isFolder && openDriveFolder(item.id)}
+                                                >
+                                                    <span className="drive-item-icon">
+                                                        {isFolder ? '📁' : '📄'}
+                                                    </span>
+                                                    <span className="drive-item-name">{item.name}</span>
+                                                    {!isFolder && item.size && (
+                                                        <span className="drive-item-size">
+                                                            {(item.size / 1024).toFixed(0)} KB
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             )}
                         </div>
 
-                        {driveLoading && (
-                            <div className="drive-loading">
-                                <div className="spinner"></div>
-                                <p>Loading folder contents...</p>
+                        <div className="drive-modal-footer">
+                            <div className="drive-selected-count">
+                                {driveSelectedIds.length} file(s) selected
                             </div>
-                        )}
-
-                        {!driveLoading && driveItems.length === 0 && (
-                            <div className="drive-empty">This folder is empty.</div>
-                        )}
-
-                        {!driveLoading && driveItems.length > 0 && (
-                            <div className="drive-items-list">
-                                {driveItems.map((item) => {
-                                    const isFolder = item.mimeType === 'application/vnd.google-apps.folder';
-                                    return (
-                                        <div key={item.id} className={`drive-item ${isFolder ? 'folder' : 'file'}`}>
-                                            <input
-                                                type="checkbox"
-                                                checked={driveSelectedIds.includes(item.id)}
-                                                onChange={() => toggleDriveSelect(item.id)}
-                                                disabled={isFolder}
-                                            />
-                                            <div
-                                                className="drive-item-info"
-                                                onClick={() => isFolder && openDriveFolder(item.id)}
-                                            >
-                                                <span className="drive-item-icon">
-                                                    {isFolder ? '📁' : '📄'}
-                                                </span>
-                                                <span className="drive-item-name">{item.name}</span>
-                                                {!isFolder && item.size && (
-                                                    <span className="drive-item-size">
-                                                        {(item.size / 1024).toFixed(0)} KB
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                            <div className="drive-footer-actions">
+                                <button className="drive-cancel-btn" onClick={closeDriveModal}>
+                                    Cancel
+                                </button>
+                                <button
+                                    className="drive-add-btn"
+                                    onClick={downloadDriveFiles}
+                                    disabled={driveSelectedIds.length === 0 || driveDownloading}
+                                >
+                                    {driveDownloading ? (
+                                        <>
+                                            <span className="drive-spinner-small"></span> Downloading...
+                                        </>
+                                    ) : (
+                                        `Add ${driveSelectedIds.length} File(s)`
+                                    )}
+                                </button>
                             </div>
-                        )}
-                    </div>
-
-                    <div className="modal-footer">
-                        <div className="selected-count">
-                            {driveSelectedIds.length} file(s) selected
-                        </div>
-                        <div className="footer-actions">
-                            <button className="btn-cancel" onClick={closeDriveModal}>
-                                Cancel
-                            </button>
-                            <button
-                                className="btn-add-selected"
-                                onClick={downloadDriveFiles}
-                                disabled={driveSelectedIds.length === 0 || driveDownloading}
-                            >
-                                {driveDownloading ? (
-                                    <>
-                                        <span className="spinner"></span> Downloading...
-                                    </>
-                                ) : (
-                                    `Add ${driveSelectedIds.length} File(s)`
-                                )}
-                            </button>
                         </div>
                     </div>
                 </div>
-            </div>
+            </>
         );
     };
 
