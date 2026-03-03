@@ -482,6 +482,20 @@ const PackagePlans = () => {
         </div>
 
         {/* NOTE for Toiminimi table */}
+        {/* First NOTE for Toiminimi table - Document limit */}
+        <motion.div
+          className="table-note document-note"
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.3 }}
+        >
+          <p>
+            <span className="note-number">Note 1:</span> In case the number of documents exceeds your plan's maximum limit, kindly email <a href="mailto:support@jladgroup.fi">support@jladgroup.fi</a>
+          </p>
+        </motion.div>
+
+        {/* Second NOTE for Toiminimi table */}
         <motion.div
           className="table-note"
           initial={{ opacity: 0, y: 10 }}
@@ -489,7 +503,9 @@ const PackagePlans = () => {
           viewport={{ once: true }}
           transition={{ delay: 0.2 }}
         >
-          <p>Note: All prices are monthly and exclusive of VAT. Support hours are Monday–Friday, 09:00–15:00 (EET/EEST).</p>
+          <p>
+            <span className="note-number">Note 2:</span> All prices are monthly and exclusive of VAT. Support hours are Monday–Friday, 09:00–15:00 (EET/EEST).
+          </p>
         </motion.div>
       </motion.section>
 
@@ -549,11 +565,11 @@ const PackagePlans = () => {
                       onClick={() => handleSelectPlan('Lite Oy')}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      // className="new-select-plan-btn" 
+                    // className="new-select-plan-btn" 
                     >
                       Select Plan
                     </motion.button>
-                  </div>  
+                  </div>
                 </td>
                 <td className="premium invoice-cell">
                   <div className="cell-content ">
@@ -562,7 +578,7 @@ const PackagePlans = () => {
                       onClick={() => handleSelectPlan('Premium Oy')}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      // className="new-select-plan-btn"
+                    // className="new-select-plan-btn"
                     >
                       Select Plan
                     </motion.button>
@@ -575,7 +591,7 @@ const PackagePlans = () => {
                       onClick={() => handleSelectPlan('Pro Oy')}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      // className="new-select-plan-btn"
+                    // className="new-select-plan-btn"
                     >
                       Select Plan
                     </motion.button>
@@ -587,6 +603,20 @@ const PackagePlans = () => {
         </div>
 
         {/* NOTE for Osakeyhtiö table */}
+        {/* First NOTE for Osakeyhtiö table - Document limit */}
+        <motion.div
+          className="table-note document-note"
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.3 }}
+        >
+          <p>
+            <span className="note-number">Note 1:</span> In case the number of documents exceeds your plan's maximum limit, kindly email <a href="mailto:support@jladgroup.fi">support@jladgroup.fi</a>
+          </p>
+        </motion.div>
+
+        {/* Second NOTE for Osakeyhtiö table */}
         <motion.div
           className="table-note"
           initial={{ opacity: 0, y: 10 }}
@@ -594,7 +624,9 @@ const PackagePlans = () => {
           viewport={{ once: true }}
           transition={{ delay: 0.2 }}
         >
-          <p>Note: All Osakeyhtiö plans are billed monthly, exclude VAT, and include double-entry bookkeeping only.</p>
+          <p>
+            <span className="note-number">Note 2:</span> All Osakeyhtiö plans are billed monthly, exclude VAT, and include double-entry bookkeeping only.
+          </p>
         </motion.div>
       </motion.section>
 
