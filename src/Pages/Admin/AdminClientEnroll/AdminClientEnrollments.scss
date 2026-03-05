@@ -345,7 +345,6 @@
     }
   }
 
-  /* ========== ACTIVE CONTROL & CLIENTS DATA TABLE STYLES ========== */
   .client-row {
     td {
       &.business-cell {
@@ -387,6 +386,22 @@
           &.restaurant {
             background: rgba(239, 68, 68, 0.1);
             color: #991b1b;
+          }
+
+          /* New Osakeyhtiö plans */
+          &.lite-oy {
+            background: rgba(124, 214, 75, 0.1);
+            color: #2e7d32;
+          }
+
+          &.premium-oy {
+            background: rgba(255, 152, 0, 0.1);
+            color: #c43e00;
+          }
+
+          &.pro-oy {
+            background: rgba(156, 39, 176, 0.1);
+            color: #6a1b9a;
           }
         }
       }
@@ -1473,7 +1488,7 @@
   background: rgba(16, 185, 129, 0.1);
   color: #065f46;
   border: 1px solid rgba(16, 185, 129, 0.3);
-  padding: 9px; 
+  padding: 9px;
   margin-top: 5px;
   border-radius: 5px;
 

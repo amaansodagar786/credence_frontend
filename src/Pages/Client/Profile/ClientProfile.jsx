@@ -129,16 +129,14 @@ const ClientProfile = () => {
                     });
 
                     // Set plan change info if exists
+                    // Set plan change info if exists
                     if (response.data.nextMonthPlan) {
-                        const today = new Date();
-                        const currentDate = today.getDate();
-                        const isFirstOfMonth = currentDate === 1;
-
                         setPlanChangeInfo({
                             currentPlan: response.data.planSelected,
                             nextMonthPlan: response.data.nextMonthPlan,
                             effectiveDate: response.data.planEffectiveFrom ? new Date(response.data.planEffectiveFrom) : null,
-                            changeType: isFirstOfMonth ? 'immediate' : 'scheduled'
+                            // REMOVED: changeType based on date - now always scheduled if exists
+                            changeType: 'scheduled'
                         });
                     }
                 }
@@ -272,28 +270,20 @@ const ClientProfile = () => {
             );
 
             if (response.data.success) {
-                // Update client data
+                // Update client data with new plan (IMMEDIATE)
                 setClientData(prev => ({
                     ...prev,
                     planSelected: response.data.planDetails.planSelected,
                     currentPlan: response.data.planDetails.currentPlan,
-                    nextMonthPlan: response.data.planDetails.nextMonthPlan,
-                    planEffectiveFrom: response.data.planDetails.effectiveFrom
+                    nextMonthPlan: '',  // Always cleared now
+                    planEffectiveFrom: new Date() // Today's date
                 }));
 
-                // Update plan change info
-                const today = new Date();
-                const currentDate = today.getDate();
-                const isFirstOfMonth = currentDate === 1;
+                // Clear any pending plan change info
+                setPlanChangeInfo(null);
 
-                setPlanChangeInfo({
-                    currentPlan: response.data.planDetails.currentPlan,
-                    nextMonthPlan: response.data.planDetails.nextMonthPlan,
-                    effectiveDate: new Date(response.data.planDetails.effectiveFrom),
-                    changeType: isFirstOfMonth ? 'immediate' : 'scheduled'
-                });
-
-                toast.success(response.data.message, {
+                // Show success toast with immediate message
+                toast.success(`✅ Plan changed to ${selectedNewPlan} successfully!`, {
                     position: "top-center",
                     autoClose: 5000,
                 });
@@ -1362,21 +1352,20 @@ const ClientProfile = () => {
                                         Your current plan: <strong>{clientData?.planSelected}</strong> ({planPrices[clientData?.planSelected] || 'N/A'})
                                     </p>
 
-                                    {clientData?.nextMonthPlan && (
-                                        <div className="profile-plan-pending-alert">
-                                            <FiInfo size={16} />
-                                            <span>You already have a pending change to <strong>{clientData.nextMonthPlan}</strong> effective from <strong>{formatDate(clientData.planEffectiveFrom)}</strong></span>
-                                        </div>
-                                    )}
+                                    {/* REMOVED: pending alert and date info - no longer needed */}
+                                    {/* REMOVED: clientData?.nextMonthPlan check */}
 
-                                    <div className="profile-plan-date-info">
-                                        <p>
-                                            <strong>Today is {isFirstOfMonth() ? '1st of month' : 'not 1st of month'}</strong>
-                                        </p>
-                                        <p className="profile-plan-small-text">
-                                            {isFirstOfMonth()
-                                                ? 'Plan changes will be effective immediately.'
-                                                : 'Plan changes will be effective from 1st of next month.'}
+                                    {/* ADDED: Immediate change notice */}
+                                    <div className="profile-plan-immediate-notice" style={{
+                                        background: '#e8f5e9',
+                                        borderLeft: '4px solid #4caf50',
+                                        padding: '12px 15px',
+                                        borderRadius: '6px',
+                                        marginTop: '15px'
+                                    }}>
+                                        <p style={{ margin: 0, color: '#2e7d32', fontWeight: 500 }}>
+                                            <FiCheckCircle size={16} style={{ marginRight: '8px' }} />
+                                            Plan changes are applied immediately
                                         </p>
                                     </div>
                                 </div>
@@ -1417,12 +1406,9 @@ const ClientProfile = () => {
                                         <div className="profile-plan-summary-details">
                                             <p><strong>From:</strong> {clientData?.planSelected} ({planPrices[clientData?.planSelected] || 'N/A'})</p>
                                             <p><strong>To:</strong> {selectedNewPlan} ({planPrices[selectedNewPlan]})</p>
-                                            <p><strong>Effective Date:</strong> {isFirstOfMonth() ? 'Immediately (today)' : '1st of next month'}</p>
-                                            <p><strong>Billing Note:</strong> {
-                                                isFirstOfMonth()
-                                                    ? `You will be billed ${planPrices[selectedNewPlan]} starting this month.`
-                                                    : `You will continue with ${planPrices[clientData?.planSelected] || 'current billing'} this month, and ${planPrices[selectedNewPlan]} from next month.`
-                                            }</p>
+                                            {/* UPDATED: Always immediate now */}
+                                            <p><strong>Effective Date:</strong> <span style={{ color: '#4caf50', fontWeight: 600 }}>Immediately (today)</span></p>
+                                            <p><strong>Billing Note:</strong> You will be billed {planPrices[selectedNewPlan]} starting immediately.</p>
                                         </div>
                                     </div>
                                 )}
@@ -1451,7 +1437,7 @@ const ClientProfile = () => {
                                         ) : (
                                             <>
                                                 <FiRefreshCw size={16} />
-                                                {isFirstOfMonth() ? 'Change Plan Immediately' : 'Schedule Plan Change'}
+                                                Change Plan Immediately
                                             </>
                                         )}
                                     </button>
