@@ -87,11 +87,16 @@ const ClientProfile = () => {
 
     // Plan prices
     const planPrices = {
+        // Toiminimi plans
         'Lite': '40 Euros + VAT',
         'Taxi': '45 Euros + VAT',
         'Premium': '50 Euros + VAT',
         'Pro': '60 Euros + VAT',
-        'Restaurant': '80 Euros + VAT'
+        'Restaurant': '80 Euros + VAT',
+        // Osakeyhtiö plans
+        'Lite Oy': '120 Euros + VAT',
+        'Premium Oy': '160 Euros + VAT',
+        'Pro Oy': '200 Euros + VAT'
     };
 
     // Fetch client data
@@ -1376,37 +1381,34 @@ const ClientProfile = () => {
                                     </div>
                                 </div>
 
-                                <div className="profile-plan-selection">
-                                    <h4 className="profile-plan-section-title">Select New Plan</h4>
-                                    <div className="profile-plan-list">
-                                        {['Lite', 'Taxi', 'Premium', 'Pro', 'Restaurant'].map((plan) => (
-                                            <label
-                                                key={plan}
-                                                className={`profile-plan-item ${selectedNewPlan === plan ? 'selected' : ''} ${clientData?.planSelected === plan ? 'current' : ''}`}
-                                            >
-                                                <input
-                                                    type="radio"
-                                                    name="newPlan"
-                                                    value={plan}
-                                                    checked={selectedNewPlan === plan}
-                                                    onChange={(e) => setSelectedNewPlan(e.target.value)}
-                                                    disabled={changingPlan}
-                                                />
-                                                <div className="profile-plan-item-info">
-                                                    <div className="profile-plan-name-section">
-                                                        <span className="profile-plan-name">{plan}</span>
-                                                        {clientData?.planSelected === plan && (
-                                                            <span className="profile-plan-badge profile-plan-badge-current">Current</span>
-                                                        )}
-                                                        {selectedNewPlan === plan && (
-                                                            <span className="profile-plan-badge profile-plan-badge-selected">Selected</span>
-                                                        )}
-                                                    </div>
-                                                    <span className="profile-plan-price">{planPrices[plan]}</span>
+                                <div className="profile-plan-list">
+                                    {['Lite', 'Taxi', 'Premium', 'Pro', 'Restaurant', 'Lite Oy', 'Premium Oy', 'Pro Oy'].map((plan) => (
+                                        <label
+                                            key={plan}
+                                            className={`profile-plan-item ${selectedNewPlan === plan ? 'selected' : ''} ${clientData?.planSelected === plan ? 'current' : ''}`}
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="newPlan"
+                                                value={plan}
+                                                checked={selectedNewPlan === plan}
+                                                onChange={(e) => setSelectedNewPlan(e.target.value)}
+                                                disabled={changingPlan}
+                                            />
+                                            <div className="profile-plan-item-info">
+                                                <div className="profile-plan-name-section">
+                                                    <span className="profile-plan-name">{plan}</span>
+                                                    {clientData?.planSelected === plan && (
+                                                        <span className="profile-plan-badge profile-plan-badge-current">Current</span>
+                                                    )}
+                                                    {selectedNewPlan === plan && (
+                                                        <span className="profile-plan-badge profile-plan-badge-selected">Selected</span>
+                                                    )}
                                                 </div>
-                                            </label>
-                                        ))}
-                                    </div>
+                                                <span className="profile-plan-price">{planPrices[plan]}</span>
+                                            </div>
+                                        </label>
+                                    ))}
                                 </div>
 
                                 {selectedNewPlan && (

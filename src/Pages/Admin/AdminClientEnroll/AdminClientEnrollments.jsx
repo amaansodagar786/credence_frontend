@@ -778,7 +778,7 @@ const AdminClientEnrollments = () => {
                       <div className="form-group">
                         <label className="form-label">Plan Selection</label>
                         <div className="radio-options">
-                          {['Lite', 'Taxi', 'Premium', 'Pro', 'Restaurant'].map((plan) => (
+                          {['Lite', 'Taxi', 'Premium', 'Pro', 'Restaurant', 'Lite Oy', 'Premium Oy', 'Pro Oy'].map((plan) => (
                             <label key={plan} className="radio-label">
                               <input
                                 type="radio"
@@ -1514,7 +1514,7 @@ const AdminClientEnrollments = () => {
                       {client.businessName || 'N/A'}
                     </td>
                     <td className="plan-cell">
-                      <span className={`plan-badge ${client.planSelected?.toLowerCase()}`}>
+                      <span className={`plan-badge ${client.planSelected?.toLowerCase().replace(/\s+/g, '-')}`}>
                         {client.planSelected || 'N/A'}
                       </span>
                     </td>
