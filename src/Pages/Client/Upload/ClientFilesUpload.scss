@@ -2529,7 +2529,7 @@
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(124, 214, 75, 0.2);
   border: 2px solid transparent;
-  display: none;
+  // display: none; 
 
   &:hover:not(:disabled) {
     transform: translateY(-2px);
