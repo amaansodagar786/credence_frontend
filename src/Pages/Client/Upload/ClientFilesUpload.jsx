@@ -1513,8 +1513,9 @@ const ClientFilesUpload = () => {
                         <button
                             className="drive-icon-btn"
                             onClick={() => openDriveModal({ type, categoryName: null })}
-                            disabled={loading || monthInactive}
-                            title="Add files from Google Drive"
+                            // ✅ FIX: Apply SAME disabled conditions as the file input
+                            disabled={!canUpload || loading || monthInactive}
+                            title={!canUpload || monthInactive ? "Cannot add files - Category locked or month inactive" : "Add files from Google Drive"}
                         >
                             <FaGoogleDrive size={20} />
                         </button>
@@ -1648,8 +1649,9 @@ const ClientFilesUpload = () => {
                         <button
                             className="drive-icon-btn"
                             onClick={() => openDriveModal({ type: "other", categoryName: cat.categoryName })}
-                            disabled={loading || monthInactive}
-                            title="Add files from Google Drive"
+                            // ✅ FIX: Apply SAME disabled conditions as the file input
+                            disabled={!canUploadCat || loading || monthInactive}
+                            title={!canUploadCat || monthInactive ? "Cannot add files - Category locked or month inactive" : "Add files from Google Drive"}
                         >
                             <FaGoogleDrive size={20} />
                         </button>
