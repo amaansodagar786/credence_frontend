@@ -770,7 +770,7 @@ const ClientFilesUpload = () => {
 
         const tokenClient = window.google.accounts.oauth2.initTokenClient({
             client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-            scope: "https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/userinfo.email",
+            scope: "https://www.googleapis.com/auth/drive.file",
             prompt: "select_account consent",
             callback: async (response) => {
                 if (response.error) {
