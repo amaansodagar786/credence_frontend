@@ -45,7 +45,8 @@ import {
   FiList,
   FiImage,
   FiGrid,
-  FiX
+  FiX,
+  FiDollarSign as FiPayment // Added for payment
 } from "react-icons/fi";
 import { Snackbar, Alert, Modal, Box, Typography } from "@mui/material";
 import "./AdminClients.scss";
@@ -94,6 +95,14 @@ const AdminClients = () => {
   // Add these states near other state declarations
   const [monthLockLoading, setMonthLockLoading] = useState(false);
   const [categoryLockLoading, setCategoryLockLoading] = useState({});
+
+  // ✅ NEW: Payment status states
+  const [paymentStatus, setPaymentStatus] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentNotes, setPaymentNotes] = useState("");
+  const [showPaymentNotes, setShowPaymentNotes] = useState(false);
+  const [paymentHistory, setPaymentHistory] = useState([]);
+  const [showPaymentHistory, setShowPaymentHistory] = useState(false);
 
   const now = new Date();
   const currentYear = now.getFullYear();
@@ -381,18 +390,6 @@ const AdminClients = () => {
                   position: 'relative'
                 }}
               >
-                {/* <div className="protection-note" style={{
-                  backgroundColor: '#2196F3',
-                  color: 'white',
-                  padding: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}>
-                  <FiLock size={16} />
-                  <span>Microsoft Excel Online Viewer - Read Only</span>
-                </div> */}
-
                 <iframe
                   src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewDoc.url)}&wdStartOn=1`}
                   width="100%"
@@ -492,6 +489,9 @@ const AdminClients = () => {
       year: year,
       month: selectedMonthNum
     });
+    // Reset payment status when month changes
+    setPaymentStatus(false);
+    setPaymentHistory([]);
   };
 
   /* ================= HANDLE MONTH SELECTION ================= */
@@ -502,6 +502,9 @@ const AdminClients = () => {
       year: selectedYear,
       month: month
     });
+    // Reset payment status when month changes
+    setPaymentStatus(false);
+    setPaymentHistory([]);
   };
 
   /* ================= LOAD ALL CLIENTS ================= */
@@ -561,6 +564,65 @@ const AdminClients = () => {
       showSnackbar("Error loading clients", "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  /* ================= LOAD PAYMENT STATUS ================= */
+  const loadPaymentStatus = async () => {
+    if (!selectedClient || !selectedMonth) return;
+
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_URL}/admin/clients/${selectedClient.clientId}/payment-status`,
+        {
+          params: {
+            year: selectedMonth.year,
+            month: selectedMonth.month
+          },
+          withCredentials: true
+        }
+      );
+
+      if (res.data.success) {
+        setPaymentStatus(res.data.paymentStatus);
+        setPaymentHistory(res.data.paymentHistory || []);
+      }
+    } catch (error) {
+      console.error("Error loading payment status:", error);
+      // Don't show error to user, just log it
+    }
+  };
+
+  /* ================= TOGGLE PAYMENT STATUS ================= */
+  const togglePaymentStatus = async () => {
+    if (!selectedClient || !selectedMonth || paymentLoading) return;
+
+    try {
+      setPaymentLoading(true);
+
+      const newStatus = !paymentStatus;
+
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL}/admin/clients/${selectedClient.clientId}/payment-status`,
+        {
+          year: selectedMonth.year,
+          month: selectedMonth.month,
+          status: newStatus,
+          notes: `Payment marked as ${newStatus ? 'PAID' : 'PENDING'}` // Simple auto note
+        },
+        { withCredentials: true }
+      );
+
+      if (res.data.success) {
+        setPaymentStatus(newStatus);
+        setPaymentHistory(res.data.paymentHistory || []);
+        showSnackbar(`Payment status updated to ${newStatus ? 'PAID' : 'PENDING'}`, "success");
+      }
+    } catch (error) {
+      console.error("Error toggling payment status:", error);
+      showSnackbar(`Error: ${error.response?.data?.message || error.message}`, "error");
+    } finally {
+      setPaymentLoading(false);
     }
   };
 
@@ -711,6 +773,11 @@ const AdminClients = () => {
         year: newSelectedYear,
         month: newSelectedMonth
       });
+
+      // Load payment status for current month
+      setTimeout(() => {
+        loadPaymentStatus();
+      }, 100);
 
       // Don't update alerts here - they'll be updated by useEffect
       showSnackbar("Client data loaded successfully", "success");
@@ -928,6 +995,23 @@ const AdminClients = () => {
         ) : (
           <>
             <FiAlertCircle /> Documents Pending
+          </>
+        )}
+      </span>
+    );
+  };
+
+  /* ================= GET PAYMENT BADGE ================= */
+  const getPaymentBadge = () => {
+    return (
+      <span className={`payment-badge ${paymentStatus ? 'paid' : 'pending'}`}>
+        {paymentStatus ? (
+          <>
+            <FiCheckCircle /> Payment Done
+          </>
+        ) : (
+          <>
+            <FiAlertCircle /> Payment Pending
           </>
         )}
       </span>
@@ -1298,6 +1382,13 @@ const AdminClients = () => {
     updateAlerts();
   }, [updateAlerts]);
 
+  // Load payment status when month changes
+  useEffect(() => {
+    if (selectedClient && selectedMonth) {
+      loadPaymentStatus();
+    }
+  }, [selectedClient, selectedMonth]);
+
   const monthData = getMonthData();
   const currentMonthAlert = monthAlerts[`${selectedClient?.clientId}-${selectedMonth?.year}-${selectedMonth?.month}`];
 
@@ -1537,6 +1628,91 @@ const AdminClients = () => {
                         </span>
                       )}
                     </div>
+                  </div>
+                </div>
+
+                {/* ✅ NEW: Payment Status Section - Right after month selection */}
+                <div className="payment-status-section">
+                  <div className="section-header">
+                    <h4>
+                      <FiDollarSign size={18} /> Payment Status
+                    </h4>
+                    <div className="payment-status-display">
+                      {getPaymentBadge()}
+                      {/* {paymentHistory.length > 0 && (
+                        <button
+                          className="history-toggle-btn"
+                          onClick={() => setShowPaymentHistory(!showPaymentHistory)}
+                          title="View payment history"
+                        >
+                          <FiClock size={14} />
+                          History
+                        </button>
+                      )} */}
+                    </div>
+                  </div>
+
+                  <div className="payment-content">
+                    <div className="payment-info">
+                      <div className="payment-info-item">
+                        <span className="label">Month:</span>
+                        <span className="value">{formatMonthYear(selectedMonthNum, selectedYear)}</span>
+                      </div>
+                      <div className="payment-info-item">
+                        <span className="label">Current Status:</span>
+                        <span className={`value status-text ${paymentStatus ? 'paid' : 'pending'}`}>
+                          {paymentStatus ? 'PAID' : 'PENDING'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="payment-actions">
+                      <button
+                        className={`payment-toggle-btn ${paymentStatus ? 'mark-pending' : 'mark-paid'}`}
+                        onClick={togglePaymentStatus}
+                        disabled={paymentLoading}
+                      >
+                        {paymentLoading ? (
+                          <>
+                            <div className="spinner-tiny"></div>
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            {paymentStatus ? 'Mark as Pending' : 'Mark as Paid'}
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Payment History */}
+                    {/* {showPaymentHistory && paymentHistory.length > 0 && (
+                      <div className="payment-history">
+                        <h5>Payment History</h5>
+                        <div className="history-list">
+                          {paymentHistory.map((entry, index) => (
+                            <div key={index} className="history-item">
+                              <div className="history-header">
+                                <span className={`history-status ${entry.status ? 'paid' : 'pending'}`}>
+                                  {entry.status ? 'PAID' : 'PENDING'}
+                                </span>
+                                <span className="history-date">
+                                  {new Date(entry.changedAt).toLocaleString()}
+                                </span>
+                              </div>
+                              <div className="history-details">
+                                <span className="history-user">
+                                  <FiUser size={12} /> {entry.changedByName || 'Unknown'}
+                                </span>
+                                {entry.notes && (
+                                  <span className="history-notes">{entry.notes}</span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )} */}
                   </div>
                 </div>
 
@@ -1896,7 +2072,6 @@ const AdminClients = () => {
                                     {/* Files in this category */}
                                     {renderFilesInCategory(otherCategory.document?.files, 'other', otherCategory.categoryName)}
 
-                                    {/* Category Lock Controls */}
                                     {/* Category Lock Controls */}
                                     {otherCategory.document && (
                                       <div className="category-controls">

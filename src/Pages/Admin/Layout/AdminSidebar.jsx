@@ -311,7 +311,7 @@ const AdminSidebar = ({ children }) => {
           </li>
 
           {/* Plan Change Trigger Button */}
-          <li>
+          {/* <li>
             <button
               className="admin-plan-change-btn"
               onClick={() =>
@@ -330,7 +330,7 @@ const AdminSidebar = ({ children }) => {
                 {isTriggeringPlanChange ? "Processing..." : "Trigger Plan Change"}
               </span>
             </button>
-          </li>
+          </li> */}
 
           {/* Document Upload Reminder Button with date validation */}
           <li>

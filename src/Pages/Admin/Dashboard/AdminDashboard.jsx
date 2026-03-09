@@ -21,7 +21,8 @@ import {
   FiDollarSign,
   FiBell,
   FiBook,
-  FiBriefcase
+  FiBriefcase,
+  FiCheckCircle // New icon for completed tasks
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
@@ -29,6 +30,7 @@ import "react-toastify/dist/ReactToastify.css";
 import AdminLayout from "../Layout/AdminLayout";
 import "./AdminDashboard.scss";
 import AdminNotesPanel from "./Notes/AdminNotesPanel";
+import Select from 'react-select'; // Add this import
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -50,6 +52,11 @@ const AdminDashboard = () => {
   const [unviewedNotesSummary, setUnviewedNotesSummary] = useState(null);
   const [selectedClientNotes, setSelectedClientNotes] = useState(null);
   const [notesLoading, setNotesLoading] = useState(false);
+
+  // Completed Tasks specific states
+  const [completedTasksSearch, setCompletedTasksSearch] = useState("");
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [filteredCompletedTasks, setFilteredCompletedTasks] = useState(null);
 
   // Time filter options
   const timeFilterOptions = [
@@ -310,6 +317,40 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchCompletedTasks = async () => {
+    try {
+      setModalLoading(true);
+      setActiveModal('completedTasks');
+      setCompletedTasksSearch("");
+      setSelectedEmployee(null);
+      setFilteredCompletedTasks(null);
+
+      const params = { timeFilter };
+      if (timeFilter === "custom" && customStartDate && customEndDate) {
+        params.customStart = customStartDate;
+        params.customEnd = customEndDate;
+      }
+
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/admin/dashboard/completed-tasks`,
+        {
+          params,
+          withCredentials: true
+        }
+      );
+
+      if (response.data.success) {
+        setModalData(response.data);
+        setFilteredCompletedTasks(response.data.monthsData);
+      }
+    } catch (error) {
+      console.error("Error fetching completed tasks:", error);
+      showToast("Error loading completed tasks", "error");
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
   const fetchModalData = async (modalType) => {
     try {
       setModalLoading(true);
@@ -371,6 +412,35 @@ const AdminDashboard = () => {
     }
   };
 
+  /* ==================== FILTER FUNCTIONS FOR COMPLETED TASKS ==================== */
+  const applyCompletedTasksFilters = () => {
+    if (!modalData || !modalData.monthsData) return;
+
+    let filtered = modalData.monthsData.map(month => ({
+      ...month,
+      tasks: month.tasks.filter(task => {
+        // Apply search filter (client name OR employee name)
+        const matchesSearch = completedTasksSearch === "" ||
+          task.clientName.toLowerCase().includes(completedTasksSearch.toLowerCase()) ||
+          task.employeeName.toLowerCase().includes(completedTasksSearch.toLowerCase());
+
+        // Apply employee filter
+        const matchesEmployee = !selectedEmployee || selectedEmployee.value === "all" ||
+          task.employeeId === selectedEmployee.value;
+
+        return matchesSearch && matchesEmployee;
+      })
+    })).filter(month => month.tasks.length > 0); // Remove months with no tasks after filtering
+
+    setFilteredCompletedTasks(filtered);
+  };
+
+  useEffect(() => {
+    if (activeModal === 'completedTasks' && modalData) {
+      applyCompletedTasksFilters();
+    }
+  }, [completedTasksSearch, selectedEmployee, modalData]);
+
   /* ==================== HELPER FUNCTIONS ==================== */
   const showToast = (message, type = "success") => {
     toast[type](message, {
@@ -416,6 +486,17 @@ const AdminDashboard = () => {
     });
   };
 
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   const formatMonthYear = (year, month) => {
     const date = new Date(year, month - 1, 1);
     return date.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
@@ -456,6 +537,9 @@ const AdminDashboard = () => {
     setModalData(null);
     setSelectedClientNotes(null);
     setUnviewedNotesSummary(null);
+    setFilteredCompletedTasks(null);
+    setCompletedTasksSearch("");
+    setSelectedEmployee(null);
   };
 
   // Set default custom dates to current month
@@ -518,14 +602,14 @@ const AdminDashboard = () => {
         color: "#ff4b4b",
         onClick: () => fetchModalData('incompleteTasks')
       },
-      // {
-      //   title: "Recent Notes",
-      //   value: dashboardData.metrics.recentNotes,
-      //   subtitle: "Notes added in selected period",
-      //   icon: <FiMessageSquare />,
-      //   color: "#9b59b6",
-      //   onClick: () => fetchModalData('recentNotes')
-      // },
+      {
+        title: "Completed Tasks",
+        value: dashboardData.metrics.completedTasks || 0,
+        subtitle: "Tasks marked as complete",
+        icon: <FiCheckCircle />,
+        color: "#10b981",
+        onClick: fetchCompletedTasks
+      },
       {
         title: "Pending Finance Requests",
         value: dashboardData.metrics.pendingFinancialRequests || 0,
@@ -533,15 +617,7 @@ const AdminDashboard = () => {
         icon: <FiDollarSign />,
         color: "#3498db",
         onClick: () => fetchModalData('pendingFinance')
-      },
-      // {
-      //   title: "Uploaded & Locked",
-      //   value: "View Details",
-      //   subtitle: "Clients with uploaded docs in locked months",
-      //   icon: <FiLock />,
-      //   color: "#8B5CF6",
-      //   onClick: () => fetchModalData('uploadedLocked')
-      // }
+      }
     ];
 
     return (
@@ -572,6 +648,178 @@ const AdminDashboard = () => {
             )}
           </div>
         ))}
+      </div>
+    );
+  };
+
+  const renderCompletedTasksModal = () => {
+    if (activeModal !== 'completedTasks' || !modalData) return null;
+
+    const tasksToDisplay = filteredCompletedTasks || modalData.monthsData || [];
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal completed-tasks-modal">
+          <div className="modal-header">
+            <div className="modal-title">
+              <FiCheckCircle size={24} color="#10b981" />
+              <h3>
+                Completed Tasks
+                <span className="completed-summary-badge">
+                  {modalData.totalCompletedTasks} completed tasks
+                </span>
+              </h3>
+            </div>
+            <button className="close-modal" onClick={closeModal}>
+              <FiX size={24} />
+            </button>
+          </div>
+
+          <div className="modal-body">
+            <div className="filter-info">
+              <p>
+                <strong>Time Period:</strong> {getFilterDisplayText()}
+                {modalData.monthsInRange ? ` (${modalData.monthsInRange} months)` : ''}
+              </p>
+            </div>
+
+            {/* Filters Section */}
+            <div className="completed-tasks-filters">
+              <div className="search-filter">
+                <input
+                  type="text"
+                  placeholder="Search by client or employee..."
+                  value={completedTasksSearch}
+                  onChange={(e) => setCompletedTasksSearch(e.target.value)}
+                  className="search-input"
+                />
+              </div>
+
+              <div className="employee-filter">
+                <Select
+                  options={modalData.employees || []}
+                  value={selectedEmployee}
+                  onChange={setSelectedEmployee}
+                  placeholder="Filter by employee..."
+                  isClearable={false}
+                  className="employee-select"
+                  classNamePrefix="react-select"
+                />
+              </div>
+            </div>
+
+            {modalLoading ? (
+              <div className="loading-state">
+                <div className="spinner"></div>
+                <p>Loading completed tasks...</p>
+              </div>
+            ) : tasksToDisplay.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">✅</div>
+                <h4>No completed tasks found</h4>
+                <p>No tasks have been marked as complete for the selected time period</p>
+              </div>
+            ) : (
+              <div className="completed-tasks-list">
+                {tasksToDisplay.map((month, monthIndex) => {
+                  // Group tasks by client+employee for this month
+                  const groupedTasks = [];
+                  const groupMap = new Map();
+
+                  month.tasks.forEach(task => {
+                    const groupKey = `${task.clientId}_${task.employeeId}`;
+
+                    if (!groupMap.has(groupKey)) {
+                      groupMap.set(groupKey, {
+                        clientId: task.clientId,
+                        clientName: task.clientName,
+                        employeeId: task.employeeId,
+                        employeeName: task.employeeName,
+                        tasks: [],
+                        latestCompletion: task.completedAt
+                      });
+                    }
+
+                    const group = groupMap.get(groupKey);
+                    group.tasks.push(task.task);
+
+                    // Keep the latest completion date
+                    if (new Date(task.completedAt) > new Date(group.latestCompletion)) {
+                      group.latestCompletion = task.completedAt;
+                    }
+                  });
+
+                  // Convert map to array
+                  groupMap.forEach(value => {
+                    groupedTasks.push(value);
+                  });
+
+                  // Sort by client name
+                  groupedTasks.sort((a, b) => a.clientName.localeCompare(b.clientName));
+
+                  return (
+                    <div key={monthIndex} className="completed-month-section">
+                      <div className="completed-month-header">
+                        <h4>
+                          <FiCalendar size={18} /> {month.monthName}
+                          <span className="completed-month-count">
+                            {month.totalCompleted} task{month.totalCompleted !== 1 ? 's' : ''}
+                          </span>
+                        </h4>
+                      </div>
+
+                      <div className="responsive-table">
+                        <table className="dashboard-table">
+                          <thead>
+                            <tr>
+                              <th>Client Name</th>
+                              <th>Employee Name</th>
+                              <th>Completed Tasks</th>
+                              <th>Completed On</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {groupedTasks.map((group, groupIndex) => (
+                              <tr key={groupIndex}>
+                                <td>
+                                  <div className="client-cell">
+                                    <div className="client-avatar-small">
+                                      {getInitials(group.clientName)}
+                                    </div>
+                                    <span>{group.clientName}</span>
+                                  </div>
+                                </td>
+                                <td>
+                                  <div className="employee-cell">
+                                    <span className="employee-name">{group.employeeName}</span>
+                                  </div>
+                                </td>
+                                <td>
+                                  <div className="completed-tasks-list-cell">
+                                    {group.tasks.map((task, taskIndex) => (
+                                      <span key={taskIndex} className="task-completed-badge">
+                                        {task}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </td>
+                                <td>
+                                  <span className="completed-date">
+                                    {formatDateTime(group.latestCompletion)}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     );
   };
@@ -804,6 +1052,10 @@ const AdminDashboard = () => {
 
     if (activeModal === 'unviewedNotes') {
       return renderUnviewedNotesModal();
+    }
+
+    if (activeModal === 'completedTasks') {
+      return renderCompletedTasksModal();
     }
 
     let modalTitle = "";
