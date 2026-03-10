@@ -1499,3 +1499,687 @@
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
   }
 }
+
+
+
+/* ===============================
+   TASK INFO SECTION STYLES
+================================ */
+.admin-client-management {
+
+  /* ========== TASK INFO FILTERS ========== */
+  .task-info-filters {
+    .time-filters {
+      .filter-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        svg {
+          font-size: 14px;
+        }
+      }
+    }
+  }
+
+  /* ========== CUSTOM DATE PICKER ========== */
+  .filters-container {
+    position: relative;
+    /* IMPORTANT: For absolute positioning of date picker */
+  }
+
+  .custom-date-picker {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 10px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    animation: slideDown 0.3s ease;
+    width: 400px;
+
+    @media (max-width: 768px) {
+      width: 300px;
+      right: 0;
+    }
+
+    .date-inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+
+      .date-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        label {
+          color: #333;
+          font-size: 13px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
+        }
+
+        input[type="date"] {
+          padding: 10px 12px;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          font-size: 14px;
+          color: #333;
+          background: #f8f9fa;
+          transition: all 0.2s ease;
+
+          &:focus {
+            outline: none;
+            border-color: #7cd64b;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(124, 214, 75, 0.1);
+          }
+        }
+      }
+
+      .apply-date-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px;
+        background: #7cd64b;
+        color: #000;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-top: 10px;
+
+        &:hover:not(:disabled) {
+          background: #6bc73a;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(124, 214, 75, 0.3);
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        svg {
+          font-size: 16px;
+        }
+      }
+    }
+  }
+
+  /* ========== TASK INFO TABLE ========== */
+  .task-info-table {
+    th {
+      white-space: nowrap;
+    }
+
+    .number-cell {
+      font-weight: 600;
+
+      .task-number {
+        display: inline-block;
+        padding: 4px 12px;
+        background: #f0f0f0;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        text-align: center;
+        min-width: 40px;
+
+        &.pending {
+          background: rgba(245, 158, 11, 0.1);
+          color: #92400e;
+        }
+
+        &.completed {
+          background: rgba(16, 185, 129, 0.1);
+          color: #065f46;
+        }
+      }
+    }
+
+    .payment-cell {
+      .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+
+        &.approved {
+          background: rgba(16, 185, 129, 0.1);
+          color: #065f46;
+          border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        &.pending {
+          background: rgba(245, 158, 11, 0.1);
+          color: #92400e;
+          border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        &.partial {
+          background: rgba(59, 130, 246, 0.1);
+          color: #1d4ed8;
+          border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+      }
+    }
+  }
+
+  /* ========== TASK INFO MODAL ========== */
+  .task-info-modal-overlay {
+    z-index: 1100;
+  }
+
+  .task-info-modal {
+    max-width: 900px !important;
+    width: 95%;
+
+    .client-summary.compact {
+      .summary-header {
+        padding: 16px 24px;
+
+        .client-avatar {
+          width: 48px;
+          height: 48px;
+          font-size: 20px;
+        }
+
+        .client-info {
+          h4 {
+            font-size: 18px;
+            margin-bottom: 4px;
+          }
+
+          .client-meta {
+            gap: 8px;
+
+            .email,
+            .business {
+              font-size: 13px;
+              color: #666;
+
+              &::before {
+                content: '';
+                display: inline-block;
+                width: 4px;
+                height: 4px;
+                background: #7cd64b;
+                border-radius: 50%;
+                margin-right: 4px;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    /* ========== TASK TABS ========== */
+    .task-tabs {
+      display: flex;
+      border-bottom: 2px solid #f0f0f0;
+      padding: 0 24px;
+      background: #fafafa;
+
+      .task-tab {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 16px 24px;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        color: #666;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+
+        svg {
+          font-size: 16px;
+        }
+
+        &:hover {
+          color: #333;
+          background: rgba(124, 214, 75, 0.05);
+        }
+
+        &.active {
+          color: #7cd64b;
+          border-bottom-color: #7cd64b;
+          background: rgba(124, 214, 75, 0.08);
+
+          svg {
+            color: #7cd64b;
+          }
+        }
+
+        .tab-count {
+          background: #f0f0f0;
+          color: #666;
+          padding: 2px 8px;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 600;
+          margin-left: 4px;
+        }
+      }
+    }
+
+    /* ========== TASK TAB CONTENT ========== */
+    .task-tab-content {
+      padding: 24px;
+      max-height: 500px;
+      overflow-y: auto;
+
+      /* Tasks Monthly View */
+      .tasks-monthly-view {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+
+        .month-tasks-section {
+          background: #fafafa;
+          border-radius: 12px;
+          border: 1px solid #f0f0f0;
+          overflow: hidden;
+
+          .month-tasks-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-bottom: 1px solid #f0f0f0;
+
+            h4 {
+              margin: 0;
+              color: #000;
+              font-size: 16px;
+              font-weight: 700;
+              display: flex;
+              align-items: center;
+              gap: 10px;
+
+              .partial-badge {
+                background: rgba(124, 214, 75, 0.1);
+                color: #2e7d32;
+                padding: 4px 10px;
+                border-radius: 20px;
+                font-size: 11px;
+                font-weight: 600;
+                text-transform: uppercase;
+              }
+            }
+
+            .task-count-badge {
+              background: #7cd64b;
+              color: #000;
+              padding: 4px 12px;
+              border-radius: 20px;
+              font-size: 12px;
+              font-weight: 600;
+            }
+          }
+
+          .tasks-list {
+            padding: 16px;
+
+            .task-item {
+              display: flex;
+              gap: 12px;
+              padding: 12px;
+              border-bottom: 1px solid #f0f0f0;
+              transition: background 0.2s ease;
+
+              &:last-child {
+                border-bottom: none;
+              }
+
+              &:hover {
+                background: rgba(124, 214, 75, 0.04);
+              }
+
+              .task-icon {
+                flex-shrink: 0;
+
+                svg {
+                  width: 20px;
+                  height: 20px;
+
+                  &.completed-icon {
+                    color: #10b981;
+                  }
+
+                  &.pending-icon {
+                    color: #f59e0b;
+                  }
+
+                  &.assigned-icon {
+                    color: #3b82f6;
+                  }
+                }
+              }
+
+              .task-details {
+                flex: 1;
+
+                .task-name {
+                  font-weight: 600;
+                  color: #000;
+                  margin-bottom: 4px;
+                  font-size: 14px;
+                }
+
+                .task-meta {
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 12px;
+                  font-size: 12px;
+
+                  .employee-name,
+                  .task-date {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    color: #666;
+
+                    svg {
+                      font-size: 12px;
+                    }
+
+                    &.completed {
+                      color: #10b981;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      /* Payment Monthly View - FIXED VERSION */
+      .payment-monthly-view {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+
+        .payment-month-card {
+          background: #fafafa;
+          border-radius: 12px;
+          border: 1px solid #f0f0f0;
+          overflow: hidden;
+
+          .payment-month-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-bottom: 1px solid #f0f0f0;
+
+            h4 {
+              margin: 0;
+              color: #000;
+              font-size: 16px;
+              font-weight: 700;
+              display: flex;
+              align-items: center;
+              gap: 10px;
+
+              .partial-badge {
+                background: rgba(124, 214, 75, 0.1);
+                color: #2e7d32;
+                padding: 4px 10px;
+                border-radius: 20px;
+                font-size: 11px;
+                font-weight: 600;
+                text-transform: uppercase;
+              }
+            }
+
+            .payment-status-badge {
+              padding: 6px 14px;
+              border-radius: 20px;
+              font-size: 12px;
+              font-weight: 700;
+              text-transform: uppercase;
+
+              &.paid {
+                background: rgba(16, 185, 129, 0.1);
+                color: #065f46;
+                border: 1px solid rgba(16, 185, 129, 0.2);
+              }
+
+              &.pending {
+                background: rgba(245, 158, 11, 0.1);
+                color: #92400e;
+                border: 1px solid rgba(245, 158, 11, 0.2);
+              }
+            }
+          }
+
+          .payment-details {
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+
+            .payment-detail {
+              display: flex;
+              gap: 8px;
+              font-size: 13px;
+
+              .detail-label {
+                color: #666;
+                font-weight: 500;
+                min-width: 100px;
+              }
+
+              .detail-value {
+                color: #000;
+                font-weight: 500;
+
+                &.notes {
+                  color: #666;
+                  font-style: italic;
+                }
+              }
+            }
+
+            &.notes {
+              background: #f0f0f0;
+              padding: 10px;
+              border-radius: 6px;
+              margin-top: 5px;
+            }
+          }
+
+          /* FIXED: Pending message - now properly styled outside payment-details */
+          .pending-message {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 20px;
+            color: #f59e0b;
+            background: rgba(245, 158, 11, 0.05);
+            border-top: 1px dashed rgba(245, 158, 11, 0.3);
+            margin: 0;
+
+            svg {
+              flex-shrink: 0;
+              color: #f59e0b;
+            }
+
+            span {
+              font-size: 13px;
+              font-weight: 500;
+            }
+          }
+        }
+      }
+
+      /* Empty State */
+      .empty-state.small {
+        padding: 40px 20px;
+        text-align: center;
+
+        svg {
+          color: #7cd64b;
+          opacity: 0.5;
+          margin-bottom: 12px;
+        }
+
+        p {
+          color: #666;
+          font-size: 14px;
+          font-weight: 500;
+          margin: 0;
+        }
+      }
+    }
+
+    /* Modal Footer */
+    .view-modal-footer {
+      .close-btn {
+        background: #7cd64b;
+        color: #000;
+        border: none;
+        padding: 12px 32px;
+
+        &:hover {
+          background: #6bc73a;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(124, 214, 75, 0.3);
+        }
+      }
+    }
+  }
+
+  /* ========== FILTER INDICATOR IN FOOTER ========== */
+  .table-footer {
+    .footer-info {
+      .filter-indicator {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #f0f0f0;
+        padding: 6px 14px;
+        border-radius: 20px;
+        color: #333;
+        font-size: 13px;
+        font-weight: 500;
+
+        svg {
+          color: #7cd64b;
+        }
+      }
+    }
+  }
+}
+
+/* ========== ADDITIONAL ANIMATION ========== */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========== TASK INFO RESPONSIVE ========== */
+@media (max-width: 768px) {
+  .admin-client-management {
+    .task-tabs {
+      flex-wrap: wrap;
+      padding: 0 16px !important;
+
+      .task-tab {
+        padding: 12px 16px !important;
+        font-size: 13px !important;
+
+        svg {
+          font-size: 14px !important;
+        }
+      }
+    }
+
+    .task-tab-content {
+      padding: 16px !important;
+    }
+
+    .month-tasks-header {
+      flex-direction: column;
+      align-items: flex-start !important;
+      gap: 8px;
+
+      h4 {
+        font-size: 15px !important;
+      }
+    }
+
+    .payment-month-header {
+      flex-direction: column;
+      align-items: flex-start !important;
+      gap: 8px;
+    }
+
+    .task-meta {
+      flex-direction: column;
+      gap: 6px !important;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-client-management {
+    .custom-date-picker {
+      width: 280px;
+      right: -20px;
+    }
+
+    .task-info-table {
+
+      th,
+      td {
+        padding: 12px !important;
+        font-size: 13px !important;
+      }
+    }
+  }
+}
+
+.finance-approve {
+  background: rgba(16, 185, 129, 0.1);
+  color: #065f46;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 9px;
+  margin-top: 5px;
+  border-radius: 5px;
+
+  &:hover {
+    background: #10b981;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  }
+}

@@ -19,10 +19,18 @@ import {
   FiMail,
   FiCheck,
   FiAlertCircle,
-  FiFileMinus
+  FiFileMinus,
+  FiBriefcase,
+  FiCheckSquare,
+  FiSquare,
+  FiTrendingUp,
+  FiList,
+  FiPieChart
 } from "react-icons/fi";
-import { MdOutlineFilterList } from "react-icons/md";
+import { MdOutlineFilterList, MdDateRange } from "react-icons/md";
 import { AiOutlineSearch } from "react-icons/ai";
+import { BiTask, BiTimeFive } from "react-icons/bi";
+import { IoMdOptions } from "react-icons/io";
 import "./AdminClientEnrollments.scss";
 
 const AdminClientEnrollments = () => {
@@ -45,20 +53,20 @@ const AdminClientEnrollments = () => {
   const [processing, setProcessing] = useState(false);
   const [processingId, setProcessingId] = useState(null);
 
-  // State for Active Control
+  // State for Active Control & Clients Data
   const [clients, setClients] = useState([]);
   const [clientsLoading, setClientsLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
 
-  // State for Clients Data
+  // State for Clients Data Modal
   const [showClientModal, setShowClientModal] = useState(false);
   const [clientModalData, setClientModalData] = useState(null);
   const [editingClient, setEditingClient] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [updatingClient, setUpdatingClient] = useState(false);
 
-  // NEW: State for Finance Requests
+  // State for Finance Requests
   const [financialRequests, setFinancialRequests] = useState([]);
   const [financeLoading, setFinanceLoading] = useState(false);
   const [financeSearchTerm, setFinanceSearchTerm] = useState("");
@@ -72,11 +80,23 @@ const AdminClientEnrollments = () => {
     requestId: null,
     clientName: "",
     monthYear: "",
-    fromDate: null,  // ✅ add this
+    fromDate: null,
     toDate: null
   });
 
-
+  // ========== NEW: State for Task Info Tab ==========
+  const [taskInfoData, setTaskInfoData] = useState([]);
+  const [taskInfoLoading, setTaskInfoLoading] = useState(false);
+  const [taskInfoFilter, setTaskInfoFilter] = useState("thisMonth"); // 'thisMonth', 'lastMonth', 'custom'
+  const [customDateRange, setCustomDateRange] = useState({
+    from: "",
+    to: ""
+  });
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
+  const [showTaskInfoModal, setShowTaskInfoModal] = useState(false);
+  const [selectedClientTasks, setSelectedClientTasks] = useState(null);
+  const [activeTaskTab, setActiveTaskTab] = useState("assigned"); // 'assigned', 'pending', 'completed', 'payment'
+  const [taskInfoSearchTerm, setTaskInfoSearchTerm] = useState("");
 
   // ADD THIS HELPER FUNCTION after your other state declarations:
   const formatDateRange = (fromDate, toDate) => {
@@ -95,6 +115,16 @@ const AdminClientEnrollments = () => {
       month: 'short',
       year: 'numeric'
     })}`;
+  };
+
+  // Format date for display
+  const formatDate = (date) => {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
   };
 
   // Fetch enrollments
@@ -132,7 +162,7 @@ const AdminClientEnrollments = () => {
     }
   };
 
-  // NEW: Fetch financial statement requests
+  // Fetch financial statement requests
   const fetchFinancialRequests = async () => {
     try {
       setFinanceLoading(true);
@@ -163,6 +193,56 @@ const AdminClientEnrollments = () => {
     }
   };
 
+  const fetchTaskInfo = async () => {
+    try {
+      setTaskInfoLoading(true);
+
+      let url = `${import.meta.env.VITE_API_URL}/client-management/task-info?filterType=${taskInfoFilter}`;
+
+      if (taskInfoFilter === 'custom' && customDateRange.from && customDateRange.to) {
+        url += `&fromDate=${customDateRange.from}&toDate=${customDateRange.to}`;
+      }
+
+      const res = await axios.get(url, { withCredentials: true });
+
+      if (res.data.success) {
+        setTaskInfoData(res.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching task info:", error);
+      showToast("Failed to fetch task information", "error");
+    } finally {
+      setTaskInfoLoading(false);
+    }
+  };
+
+  // Handle task info filter change
+  const handleTaskInfoFilterChange = (filter) => {
+    setTaskInfoFilter(filter);
+    if (filter !== 'custom') {
+      setShowCustomDatePicker(false);
+      fetchTaskInfo();
+    } else {
+      setShowCustomDatePicker(true);
+    }
+  };
+
+  // Apply custom date filter
+  const applyCustomDateFilter = () => {
+    if (!customDateRange.from || !customDateRange.to) {
+      showToast("Please select both from and to dates", "error");
+      return;
+    }
+    setShowCustomDatePicker(false);
+    fetchTaskInfo();
+  };
+
+  // Open task info modal for client
+  const openTaskInfoModal = (client) => {
+    setSelectedClientTasks(client);
+    setActiveTaskTab("assigned");
+    setShowTaskInfoModal(true);
+  };
 
   // Toggle client active status
   const toggleClientStatus = async (clientId, currentStatus) => {
@@ -202,7 +282,7 @@ const AdminClientEnrollments = () => {
     }
   };
 
-  // NEW: Approve financial statement request
+  // Approve financial statement request
   const approveFinancialRequest = async (requestId, downloadUrl = "", adminNotes = "") => {
     try {
       setApprovingRequest(true);
@@ -246,7 +326,7 @@ const AdminClientEnrollments = () => {
     }
   };
 
-  // NEW: Open finance request details modal
+  // Open finance request details modal
   const openFinanceModal = async (requestId) => {
     try {
       const res = await axios.get(
@@ -265,9 +345,9 @@ const AdminClientEnrollments = () => {
     setFinanceConfirmData({
       requestId,
       clientName,
-      fromDate,    // ✅ Now defined
-      toDate,      // ✅ Now defined
-      monthYear: `${new Date(fromDate).toLocaleDateString('en-GB', { month: 'short' })} ${new Date(fromDate).getFullYear()}` // Keep for backward compatibility
+      fromDate,
+      toDate,
+      monthYear: `${new Date(fromDate).toLocaleDateString('en-GB', { month: 'short' })} ${new Date(fromDate).getFullYear()}`
     });
     setShowFinanceConfirmModal(true);
   };
@@ -339,14 +419,11 @@ const AdminClientEnrollments = () => {
     return true;
   });
 
-  // NEW: Filter financial requests
+  // Filter financial requests
   const filteredFinancialRequests = financialRequests.filter(request => {
-    // Status filter
     if (financeStatusFilter !== 'all' && request.status !== financeStatusFilter) {
       return false;
     }
-
-    // Search filter
     if (financeSearchTerm) {
       const searchLower = financeSearchTerm.toLowerCase();
       return (
@@ -356,7 +433,20 @@ const AdminClientEnrollments = () => {
         `${request.month} ${request.year}`.toLowerCase().includes(searchLower)
       );
     }
+    return true;
+  });
 
+  // Filter task info
+  const filteredTaskInfo = taskInfoData.filter(client => {
+    if (taskInfoSearchTerm) {
+      const searchLower = taskInfoSearchTerm.toLowerCase();
+      return (
+        client.clientName?.toLowerCase().includes(searchLower) ||
+        client.email?.toLowerCase().includes(searchLower) ||
+        client.businessName?.toLowerCase().includes(searchLower) ||
+        client.clientId?.toLowerCase().includes(searchLower)
+      );
+    }
     return true;
   });
 
@@ -368,8 +458,17 @@ const AdminClientEnrollments = () => {
       fetchClients();
     } else if (activeSection === "financeRequests") {
       fetchFinancialRequests();
+    } else if (activeSection === "taskInfo") {
+      fetchTaskInfo();
     }
   }, [activeSection]);
+
+  // Fetch task info when filter changes (for non-custom filters)
+  useEffect(() => {
+    if (activeSection === "taskInfo" && taskInfoFilter !== 'custom') {
+      fetchTaskInfo();
+    }
+  }, [taskInfoFilter, activeSection]);
 
   // Existing functions for enrollments
   const fetchEnrollmentDetails = async (enrollId) => {
@@ -453,7 +552,7 @@ const AdminClientEnrollments = () => {
     }
   };
 
-  // NEW: Get financial request status icon
+  // Get financial request status icon
   const getFinanceStatusIcon = (status) => {
     switch (status) {
       case "approved":
@@ -470,7 +569,7 @@ const AdminClientEnrollments = () => {
     }
   };
 
-  // NEW: Get financial status text
+  // Get financial status text
   const getFinanceStatusText = (status) => {
     switch (status) {
       case "pending": return "Pending";
@@ -479,6 +578,19 @@ const AdminClientEnrollments = () => {
       case "sent": return "Sent";
       case "cancelled": return "Cancelled";
       default: return status;
+    }
+  };
+
+  // Get payment status badge
+  const getPaymentStatusBadge = (paymentSummary) => {
+    if (!paymentSummary) return <span className="status-badge pending">No Data</span>;
+
+    if (paymentSummary.paidMonths === paymentSummary.totalMonths && paymentSummary.totalMonths > 0) {
+      return <span className="status-badge approved">All Paid</span>;
+    } else if (paymentSummary.paidMonths === 0) {
+      return <span className="status-badge pending">All Pending</span>;
+    } else {
+      return <span className="status-badge partial">{paymentSummary.displayText}</span>;
     }
   };
 
@@ -529,13 +641,13 @@ const AdminClientEnrollments = () => {
     });
   };
 
-  // NEW: Close finance modal
+  // Close finance modal
   const closeFinanceModal = () => {
     setShowFinanceModal(false);
     setFinanceModalData(null);
   };
 
-  // NEW: Close finance confirmation modal
+  // Close finance confirmation modal
   const closeFinanceConfirmModal = () => {
     setShowFinanceConfirmModal(false);
     setFinanceConfirmData({
@@ -543,6 +655,996 @@ const AdminClientEnrollments = () => {
       clientName: "",
       monthYear: ""
     });
+  };
+
+  // Close task info modal
+  const closeTaskInfoModal = () => {
+    setShowTaskInfoModal(false);
+    setSelectedClientTasks(null);
+    setActiveTaskTab("assigned");
+  };
+
+  // ========== RENDER FUNCTIONS FOR EACH SECTION ==========
+
+  // Render Enrollments Section
+  const renderEnrollments = () => {
+    if (loading) {
+      return (
+        <div className="section-content loading">
+          <div className="loading-spinner"></div>
+          <p>Loading enrollment requests...</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="section-content">
+        <div className="table-container">
+          <table className="enrollments-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {(!enrollments || enrollments.length === 0) ? (
+                <tr className="no-data">
+                  <td colSpan="5">
+                    <div className="empty-state">
+                      <FiCheckCircle size={40} />
+                      <p>No pending enrollment requests</p>
+                      <small>All enrollments have been processed</small>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                enrollments.map((item) => (
+                  <tr key={item.enrollId} className="enrollment-row">
+                    <td className="name-cell">
+                      <div className="client-name">
+                        <strong>{item.firstName} {item.lastName}</strong>
+                      </div>
+                    </td>
+                    <td className="email-cell">
+                      <a href={`mailto:${item.email}`}>{item.email}</a>
+                    </td>
+                    <td className="phone-cell">
+                      <a href={`tel:${item.mobile}`}>{item.mobile}</a>
+                    </td>
+                    <td className="status-cell">
+                      <div className="status-wrapper">
+                        {getStatusIcon(item.status)}
+                        <span className={`status-badge ${item.status.toLowerCase()}`}>
+                          {item.status}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="actions-cell">
+                      <div className="action-buttons">
+                        <button
+                          className="action-btn view-btn"
+                          onClick={() => openViewModal(item.enrollId, `${item.firstName} ${item.lastName}`)}
+                        >
+                          <FiEye />
+                          <span>View</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="table-footer">
+          <div className="footer-info">
+            <div className="total-count">
+              <span className="count-label">Total Requests:</span>
+              <span className="count-value">{enrollments?.length || 0}</span>
+            </div>
+            <div className="status-summary">
+              <span className="pending-count">
+                Pending: {enrollments?.filter(item => item.status === "PENDING").length || 0}
+              </span>
+              <span className="approved-count">
+                Approved: {enrollments?.filter(item => item.status === "APPROVED").length || 0}
+              </span>
+              <span className="rejected-count">
+                Rejected: {enrollments?.filter(item => item.status === "REJECTED").length || 0}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render Active Control Section
+  const renderActiveControl = () => {
+    return (
+      <div className="section-content">
+        <div className="filters-container">
+          <div className="search-box">
+            <AiOutlineSearch className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search clients..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+          </div>
+          <div className="filter-buttons">
+            <button
+              className={`filter-btn ${activeFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('all')}
+            >
+              All
+            </button>
+            <button
+              className={`filter-btn ${activeFilter === 'active' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('active')}
+            >
+              Active
+            </button>
+            <button
+              className={`filter-btn ${activeFilter === 'inactive' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('inactive')}
+            >
+              Inactive
+            </button>
+          </div>
+        </div>
+
+        <div className="table-container">
+          <table className="enrollments-table">
+            <thead>
+              <tr>
+                <th>Client Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Business</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {clientsLoading ? (
+                <tr>
+                  <td colSpan="6" className="loading-cell">
+                    <div className="loading-spinner"></div>
+                    Loading clients...
+                  </td>
+                </tr>
+              ) : filteredClients.length === 0 ? (
+                <tr className="no-data">
+                  <td colSpan="6">
+                    <div className="empty-state">
+                      <FiUsers size={40} />
+                      <p>No clients found</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredClients.map((client) => (
+                  <tr key={client.clientId} className="client-row">
+                    <td className="name-cell">
+                      <div className="client-name">
+                        <strong>{client.name}</strong>
+                        <small className="client-id">{client.clientId?.substring(0, 8)}...</small>
+                      </div>
+                    </td>
+                    <td className="email-cell">
+                      <a href={`mailto:${client.email}`}>{client.email}</a>
+                    </td>
+                    <td className="phone-cell">
+                      <a href={`tel:${client.phone}`}>{client.phone}</a>
+                    </td>
+                    <td className="business-cell">
+                      {client.businessName || 'N/A'}
+                    </td>
+                    <td className="status-cell">
+                      <div className="status-wrapper">
+                        {client.isActive ? (
+                          <FiUserCheck className="status-icon active" />
+                        ) : (
+                          <FiUserX className="status-icon inactive" />
+                        )}
+                        <span className={`status-badge ${client.isActive ? 'active' : 'inactive'}`}>
+                          {client.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="actions-cell">
+                      <div className="action-buttons">
+                        <button
+                          className={`action-btn ${client.isActive ? 'deactivate-btn' : 'activate-btn'}`}
+                          onClick={() => toggleClientStatus(client.clientId, client.isActive)}
+                        >
+                          {client.isActive ? (
+                            <>
+                              <FiUserX />
+                              <span>Deactivate</span>
+                            </>
+                          ) : (
+                            <>
+                              <FiUserCheck />
+                              <span>Activate</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="table-footer">
+          <div className="footer-info">
+            <div className="total-count">
+              <span className="count-label">Total Clients:</span>
+              <span className="count-value">{filteredClients.length}</span>
+            </div>
+            <div className="status-summary">
+              <span className="active-count">
+                Active: {clients.filter(c => c.isActive).length}
+              </span>
+              <span className="inactive-count">
+                Inactive: {clients.filter(c => !c.isActive).length}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render Clients Data Section
+  const renderClientsData = () => {
+    return (
+      <div className="section-content">
+        <div className="filters-container">
+          <div className="search-box">
+            <AiOutlineSearch className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search clients..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+          </div>
+          <div className="filter-buttons">
+            <button
+              className={`filter-btn ${activeFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('all')}
+            >
+              All
+            </button>
+            <button
+              className={`filter-btn ${activeFilter === 'active' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('active')}
+            >
+              Active
+            </button>
+            <button
+              className={`filter-btn ${activeFilter === 'inactive' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('inactive')}
+            >
+              Inactive
+            </button>
+          </div>
+        </div>
+
+        <div className="table-container">
+          <table className="enrollments-table">
+            <thead>
+              <tr>
+                <th>Client Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Business</th>
+                <th>Plan</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {clientsLoading ? (
+                <tr>
+                  <td colSpan="7" className="loading-cell">
+                    <div className="loading-spinner"></div>
+                    Loading clients...
+                  </td>
+                </tr>
+              ) : filteredClients.length === 0 ? (
+                <tr className="no-data">
+                  <td colSpan="7">
+                    <div className="empty-state">
+                      <FiDatabase size={40} />
+                      <p>No clients found</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredClients.map((client) => (
+                  <tr key={client.clientId} className="client-row">
+                    <td className="name-cell">
+                      <div className="client-name">
+                        <strong>{client.name}</strong>
+                      </div>
+                    </td>
+                    <td className="email-cell">
+                      <a href={`mailto:${client.email}`}>{client.email}</a>
+                    </td>
+                    <td className="phone-cell">
+                      <a href={`tel:${client.phone}`}>{client.phone}</a>
+                    </td>
+                    <td className="business-cell">
+                      {client.businessName || 'N/A'}
+                    </td>
+                    <td className="plan-cell">
+                      <span className={`plan-badge ${client.planSelected?.toLowerCase().replace(/\s+/g, '-')}`}>
+                        {client.planSelected || 'N/A'}
+                      </span>
+                    </td>
+                    <td className="status-cell">
+                      <div className="status-wrapper">
+                        {client.isActive ? (
+                          <FiUserCheck className="status-icon active" />
+                        ) : (
+                          <FiUserX className="status-icon inactive" />
+                        )}
+                      </div>
+                    </td>
+                    <td className="actions-cell">
+                      <div className="action-buttons">
+                        <button
+                          className="action-btn view-btn"
+                          onClick={() => openClientModal(client.clientId)}
+                        >
+                          <FiEye />
+                          <span>View</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="table-footer">
+          <div className="footer-info">
+            <div className="total-count">
+              <span className="count-label">Total Clients:</span>
+              <span className="count-value">{filteredClients.length}</span>
+            </div>
+            <div className="status-summary">
+              <span className="active-count">
+                Active: {clients.filter(c => c.isActive).length}
+              </span>
+              <span className="inactive-count">
+                Inactive: {clients.filter(c => !c.isActive).length}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render Finance Requests Section
+  const renderFinanceRequests = () => {
+    return (
+      <div className="section-content">
+        <div className="filters-container">
+          <div className="search-box">
+            <AiOutlineSearch className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search by client name, email, or period..."
+              value={financeSearchTerm}
+              onChange={(e) => setFinanceSearchTerm(e.target.value)}
+              className="search-input"
+            />
+          </div>
+          <div className="filter-buttons">
+            <button
+              className={`filter-btn ${financeStatusFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setFinanceStatusFilter('all')}
+            >
+              All
+            </button>
+            <button
+              className={`filter-btn ${financeStatusFilter === 'pending' ? 'active' : ''}`}
+              onClick={() => setFinanceStatusFilter('pending')}
+            >
+              Pending
+            </button>
+            <button
+              className={`filter-btn ${financeStatusFilter === 'approved' ? 'active' : ''}`}
+              onClick={() => setFinanceStatusFilter('approved')}
+            >
+              Approved
+            </button>
+            <button
+              className={`filter-btn ${financeStatusFilter === 'sent' ? 'active' : ''}`}
+              onClick={() => setFinanceStatusFilter('sent')}
+            >
+              Sent
+            </button>
+          </div>
+        </div>
+
+        <div className="table-container">
+          <table className="enrollments-table">
+            <thead>
+              <tr>
+                <th>Client Name</th>
+                <th>Email</th>
+                <th>Period</th>
+                <th>Requested</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {financeLoading ? (
+                <tr>
+                  <td colSpan="6" className="loading-cell">
+                    <div className="loading-spinner"></div>
+                    Loading finance requests...
+                  </td>
+                </tr>
+              ) : filteredFinancialRequests.length === 0 ? (
+                <tr className="no-data">
+                  <td colSpan="6">
+                    <div className="empty-state">
+                      <FiFileMinus size={40} />
+                      <p>No finance requests found</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredFinancialRequests.map((request) => (
+                  <tr key={request.requestId} className="finance-row">
+                    <td className="name-cell">
+                      <div className="client-name">
+                        <strong>{request.clientName}</strong>
+                        <small className="client-id">{request.clientId?.substring(0, 8)}...</small>
+                      </div>
+                    </td>
+                    <td className="email-cell">
+                      <a href={`mailto:${request.clientEmail}`}>{request.clientEmail}</a>
+                    </td>
+                    <td className="period-cell">
+                      <div className="period-info">
+                        <FiCalendar className="period-icon" />
+                        <span className="period-text">
+                          {request.fromDate && request.toDate ? (
+                            <>
+                              {new Date(request.fromDate).toLocaleDateString('en-GB', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric'
+                              })} - {new Date(request.toDate).toLocaleDateString('en-GB', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric'
+                              })}
+                            </>
+                          ) : (
+                            'Invalid date range'
+                          )}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="date-cell">
+                      {new Date(request.requestedAt).toLocaleDateString('en-GB')}
+                    </td>
+                    <td className="status-cell">
+                      <div className="status-wrapper">
+                        {getFinanceStatusIcon(request.status)}
+                        <span className={`status-badge ${request.status}`}>
+                          {getFinanceStatusText(request.status)}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="actions-cell">
+                      <div className="action-buttons">
+                        <button
+                          className="action-btn view-btn"
+                          onClick={() => openFinanceModal(request.requestId)}
+                        >
+                          <FiEye />
+                          <span>View</span>
+                        </button>
+                        {request.status === 'pending' && (
+                          <button
+                            className="action-btn approve-btn finance-approve"
+                            onClick={() => openFinanceConfirmation(
+                              request.requestId,
+                              request.clientName,
+                              request.fromDate,
+                              request.toDate
+                            )}
+                            disabled={approvingRequest && approvingRequestId === request.requestId}
+                          >
+                            {approvingRequest && approvingRequestId === request.requestId ? (
+                              <>
+                                <div className="spinner-small"></div>
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                <FiCheck />
+                                <span>Approve</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="table-footer">
+          <div className="footer-info">
+            <div className="total-count">
+              <span className="count-label">Total Requests:</span>
+              <span className="count-value">{filteredFinancialRequests.length}</span>
+            </div>
+            <div className="status-summary">
+              <span className="pending-count">
+                Pending: {financialRequests.filter(r => r.status === 'pending').length}
+              </span>
+              <span className="approved-count">
+                Approved: {financialRequests.filter(r => r.status === 'approved').length}
+              </span>
+              <span className="sent-count">
+                Sent: {financialRequests.filter(r => r.status === 'sent').length}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ========== NEW: Render Task Info Section ==========
+  const renderTaskInfo = () => {
+    return (
+      <div className="section-content">
+        {/* Task Info Filters */}
+        <div className="filters-container task-info-filters">
+          <div className="search-box">
+            <AiOutlineSearch className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search clients..."
+              value={taskInfoSearchTerm}
+              onChange={(e) => setTaskInfoSearchTerm(e.target.value)}
+              className="search-input"
+            />
+          </div>
+
+          <div className="filter-buttons time-filters">
+            <button
+              className={`filter-btn ${taskInfoFilter === 'thisMonth' ? 'active' : ''}`}
+              onClick={() => handleTaskInfoFilterChange('thisMonth')}
+            >
+              <BiTimeFive />
+              <span>This Month</span>
+            </button>
+            <button
+              className={`filter-btn ${taskInfoFilter === 'lastMonth' ? 'active' : ''}`}
+              onClick={() => handleTaskInfoFilterChange('lastMonth')}
+            >
+              <BiTimeFive />
+              <span>Last Month</span>
+            </button>
+            <button
+              className={`filter-btn ${taskInfoFilter === 'custom' ? 'active' : ''}`}
+              onClick={() => handleTaskInfoFilterChange('custom')}
+            >
+              <MdDateRange />
+              <span>Custom</span>
+            </button>
+          </div>
+
+          {/* Custom Date Picker */}
+          {showCustomDatePicker && (
+            <div className="custom-date-picker">
+              <div className="date-inputs">
+                <div className="date-field">
+                  <label>From:</label>
+                  <input
+                    type="date"
+                    value={customDateRange.from}
+                    onChange={(e) => setCustomDateRange({ ...customDateRange, from: e.target.value })}
+                    max={customDateRange.to || undefined}
+                  />
+                </div>
+                <div className="date-field">
+                  <label>To:</label>
+                  <input
+                    type="date"
+                    value={customDateRange.to}
+                    onChange={(e) => setCustomDateRange({ ...customDateRange, to: e.target.value })}
+                    min={customDateRange.from || undefined}
+                  />
+                </div>
+                <button
+                  className="apply-date-btn"
+                  onClick={applyCustomDateFilter}
+                  disabled={!customDateRange.from || !customDateRange.to}
+                >
+                  <FiCheck /> Apply
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Task Info Table */}
+        <div className="table-container">
+          <table className="enrollments-table task-info-table">
+            <thead>
+              <tr>
+                <th>Client Name</th>
+                <th>Business</th>
+                {/* <th>Total Tasks</th> */}
+                <th>Assigned</th>
+                <th>Pending</th>
+                <th>Completed</th>
+                <th>Payment Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {taskInfoLoading ? (
+                <tr>
+                  <td colSpan="8" className="loading-cell">
+                    <div className="loading-spinner"></div>
+                    Loading task information...
+                  </td>
+                </tr>
+              ) : filteredTaskInfo.length === 0 ? (
+                <tr className="no-data">
+                  <td colSpan="8">
+                    <div className="empty-state">
+                      <BiTask size={40} />
+                      <p>No task data found</p>
+                      <small>No clients with tasks in selected period</small>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredTaskInfo.map((client) => (
+                  <tr key={client.clientId} className="task-info-row">
+                    <td className="name-cell">
+                      <div className="client-name">
+                        <strong>{client.clientName}</strong>
+                        {/* <small className="client-id">{client.clientId?.substring(0, 8)}...</small> */}
+                      </div>
+                    </td>
+                    <td className="business-cell">
+                      {client.businessName || 'N/A'}
+                    </td>
+                    {/* <td className="number-cell total">
+                      <span className="task-number">{client.tasksSummary?.total || 0}</span>
+                    </td> */}
+                    <td className="number-cell assigned">
+                      <span className="task-number">{client.tasksSummary?.assigned || 0}</span>
+                    </td>
+                    <td className="number-cell pending">
+                      <span className="task-number pending">{client.tasksSummary?.pending || 0}</span>
+                    </td>
+                    <td className="number-cell completed">
+                      <span className="task-number completed">{client.tasksSummary?.completed || 0}</span>
+                    </td>
+                    <td className="payment-cell">
+                      {getPaymentStatusBadge(client.paymentSummary)}
+                    </td>
+                    <td className="actions-cell">
+                      <div className="action-buttons">
+                        <button
+                          className="action-btn view-btn"
+                          onClick={() => openTaskInfoModal(client)}
+                        >
+                          <FiEye />
+                          <span>View</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Task Info Footer */}
+        <div className="table-footer">
+          <div className="footer-info">
+            <div className="total-count">
+              <span className="count-label">Active Clients:</span>
+              <span className="count-value">{filteredTaskInfo.length}</span>
+            </div>
+            <div className="filter-indicator">
+              <FiCalendar size={14} />
+              <span>
+                Showing: {taskInfoFilter === 'thisMonth' ? 'This Month' :
+                  taskInfoFilter === 'lastMonth' ? 'Last Month' :
+                    `Custom: ${formatDate(customDateRange.from)} - ${formatDate(customDateRange.to)}`}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+
+
+  // ========== NEW: Render Task Info Modal ==========
+  const renderTaskInfoModal = () => {
+    if (!showTaskInfoModal || !selectedClientTasks) return null;
+
+    const { clientName, monthlyBreakdown = [], email, businessName } = selectedClientTasks;
+
+    // Get tasks based on active tab
+    const getFilteredTasks = (monthData) => {
+      if (!monthData.tasks) return [];
+
+      switch (activeTaskTab) {
+        case 'assigned':
+          return monthData.tasks;
+        case 'pending':
+          return monthData.tasks.filter(task => !task.accountingDone);
+        case 'completed':
+          return monthData.tasks.filter(task => task.accountingDone);
+        default:
+          return [];
+      }
+    };
+
+    return (
+      <div className="view-modal-overlay task-info-modal-overlay">
+        <div className="view-modal task-info-modal">
+          <div className="view-modal-header">
+            <h3>Task Details - {clientName}</h3>
+            <button className="modal-close-btn" onClick={closeTaskInfoModal}>
+              &times;
+            </button>
+          </div>
+
+          <div className="view-modal-body">
+            {/* Client Summary */}
+            <div className="client-summary compact">
+              <div className="summary-header">
+                <div className="client-avatar">
+                  {clientName?.charAt(0).toUpperCase() || 'C'}
+                </div>
+                <div className="client-info">
+                  <h4>{clientName}</h4>
+                  <div className="client-meta">
+                    <span className="email">{email}</span>
+                    <span className="business">{businessName || 'No Business Name'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Task Tabs */}
+            <div className="task-tabs">
+              <button
+                className={`task-tab ${activeTaskTab === 'assigned' ? 'active' : ''}`}
+                onClick={() => setActiveTaskTab('assigned')}
+              >
+                <FiList />
+                <span>Assigned</span>
+                <span className="tab-count">
+                  {monthlyBreakdown.reduce((sum, m) => sum + (m.tasks?.length || 0), 0)}
+                </span>
+              </button>
+              <button
+                className={`task-tab ${activeTaskTab === 'pending' ? 'active' : ''}`}
+                onClick={() => setActiveTaskTab('pending')}
+              >
+                <FiClock />
+                <span>Pending</span>
+                <span className="tab-count">
+                  {monthlyBreakdown.reduce((sum, m) => sum + (m.tasks?.filter(t => !t.accountingDone)?.length || 0), 0)}
+                </span>
+              </button>
+              <button
+                className={`task-tab ${activeTaskTab === 'completed' ? 'active' : ''}`}
+                onClick={() => setActiveTaskTab('completed')}
+              >
+                <FiCheckCircle />
+                <span>Completed</span>
+                <span className="tab-count">
+                  {monthlyBreakdown.reduce((sum, m) => sum + (m.tasks?.filter(t => t.accountingDone)?.length || 0), 0)}
+                </span>
+              </button>
+              <button
+                className={`task-tab ${activeTaskTab === 'payment' ? 'active' : ''}`}
+                onClick={() => setActiveTaskTab('payment')}
+              >
+                <FiDollarSign />
+                <span>Payment</span>
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            <div className="task-tab-content">
+              {activeTaskTab === 'payment' ? (
+                // PAYMENT TAB - Show month by month payment status
+                <div className="payment-monthly-view">
+                  {monthlyBreakdown.map((month, index) => (
+                    <div key={`${month.month}-${month.year}-${index}`} className="payment-month-card">
+                      <div className="payment-month-header">
+                        <h4>
+                          {month.month} {month.year}
+                          {month.isPartial && (
+                            <span className="partial-badge">
+                              {formatDate(month.fromDate)} - {formatDate(month.toDate)}
+                            </span>
+                          )}
+                        </h4>
+                        <span className={`payment-status-badge ${month.payment?.status ? 'paid' : 'pending'}`}>
+                          {month.payment?.status ? 'Paid' : 'Pending'}
+                        </span>
+                      </div>
+
+                      {month.payment?.status && (
+                        <div className="payment-details">
+                          {month.payment.updatedAt && (
+                            <div className="payment-detail">
+                              <span className="detail-label">Paid On:</span>
+                              <span className="detail-value">{formatDate(month.payment.updatedAt)}</span>
+                            </div>
+                          )}
+                          {month.payment.updatedByName && (
+                            <div className="payment-detail">
+                              <span className="detail-label">Updated By:</span>
+                              <span className="detail-value">{month.payment.updatedByName}</span>
+                            </div>
+                          )}
+                          {month.payment.notes && (
+                            <div className="payment-detail notes">
+                              <span className="detail-label">Notes:</span>
+                              <span className="detail-value">{month.payment.notes}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {!month.payment?.status && (
+                        <div className="payment-detail pending-message">
+                          <FiAlertCircle size={16} />
+                          <span>Payment not received for this period</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {monthlyBreakdown.length === 0 && (
+                    <div className="empty-state small">
+                      <FiDollarSign size={30} />
+                      <p>No payment data available</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                // TASKS TAB - Show tasks month by month
+                <div className="tasks-monthly-view">
+                  {monthlyBreakdown.map((month, monthIndex) => {
+                    const filteredTasks = getFilteredTasks(month);
+
+                    if (filteredTasks.length === 0) return null;
+
+                    return (
+                      <div key={`${month.month}-${month.year}-${monthIndex}`} className="month-tasks-section">
+                        <div className="month-tasks-header">
+                          <h4>
+                            {month.month} {month.year}
+                            {month.isPartial && (
+                              <span className="partial-badge">
+                                {formatDate(month.fromDate)} - {formatDate(month.toDate)}
+                              </span>
+                            )}
+                          </h4>
+                          <span className="task-count-badge">
+                            {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'}
+                          </span>
+                        </div>
+
+                        <div className="tasks-list">
+                          {filteredTasks.map((task, taskIndex) => (
+                            <div key={taskIndex} className="task-item">
+                              <div className="task-icon">
+                                {activeTaskTab === 'completed' ? (
+                                  <FiCheckCircle className="completed-icon" />
+                                ) : activeTaskTab === 'pending' ? (
+                                  <FiClock className="pending-icon" />
+                                ) : (
+                                  <FiBriefcase className="assigned-icon" />
+                                )}
+                              </div>
+                              <div className="task-details">
+                                <div className="task-name">{task.taskName || 'Task'}</div>
+                                <div className="task-meta">
+                                  <span className="employee-name">
+                                    <FiUserCheck size={12} />
+                                    {task.employeeName || 'Unassigned'}
+                                  </span>
+                                  <span className="task-date">
+                                    <FiCalendar size={12} />
+                                    Assigned: {formatDate(task.assignedAt)}
+                                  </span>
+                                  {task.completedAt && (
+                                    <span className="task-date completed">
+                                      <FiCheck size={12} />
+                                      Completed: {formatDate(task.completedAt)}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Show message if no tasks in current tab */}
+                  {monthlyBreakdown.every(month => getFilteredTasks(month).length === 0) && (
+                    <div className="empty-state small">
+                      {activeTaskTab === 'assigned' && <FiBriefcase size={30} />}
+                      {activeTaskTab === 'pending' && <FiClock size={30} />}
+                      {activeTaskTab === 'completed' && <FiCheckCircle size={30} />}
+                      <p>No {activeTaskTab} tasks in this period</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="view-modal-footer">
+            <div className="action-buttons">
+              <button
+                className="modal-btn close-btn"
+                onClick={closeTaskInfoModal}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Render Client Modal
@@ -858,190 +1960,7 @@ const AdminClientEnrollments = () => {
     );
   };
 
-  // NEW: Render Finance Requests Section
-  const renderFinanceRequests = () => {
-    return (
-      <div className="section-content">
-        <div className="filters-container">
-          <div className="search-box">
-            <AiOutlineSearch className="search-icon" />
-            <input
-              type="text"
-              placeholder="Search by client name, email, or period..."
-              value={financeSearchTerm}
-              onChange={(e) => setFinanceSearchTerm(e.target.value)}
-              className="search-input"
-            />
-          </div>
-          <div className="filter-buttons">
-            <button
-              className={`filter-btn ${financeStatusFilter === 'all' ? 'active' : ''}`}
-              onClick={() => setFinanceStatusFilter('all')}
-            >
-              All
-            </button>
-            <button
-              className={`filter-btn ${financeStatusFilter === 'pending' ? 'active' : ''}`}
-              onClick={() => setFinanceStatusFilter('pending')}
-            >
-              Pending
-            </button>
-            <button
-              className={`filter-btn ${financeStatusFilter === 'approved' ? 'active' : ''}`}
-              onClick={() => setFinanceStatusFilter('approved')}
-            >
-              Approved
-            </button>
-            <button
-              className={`filter-btn ${financeStatusFilter === 'sent' ? 'active' : ''}`}
-              onClick={() => setFinanceStatusFilter('sent')}
-            >
-              Sent
-            </button>
-          </div>
-        </div>
-
-        <div className="table-container">
-          <table className="enrollments-table">
-            <thead>
-              <tr>
-                <th>Client Name</th>
-                <th>Email</th>
-                <th>Period</th>
-                <th>Requested</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {financeLoading ? (
-                <tr>
-                  <td colSpan="6" className="loading-cell">
-                    <div className="loading-spinner"></div>
-                    Loading finance requests...
-                  </td>
-                </tr>
-              ) : filteredFinancialRequests.length === 0 ? (
-                <tr className="no-data">
-                  <td colSpan="6">
-                    <div className="empty-state">
-                      <FiFileMinus size={40} />
-                      <p>No finance requests found</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredFinancialRequests.map((request) => (
-                  <tr key={request.requestId} className="finance-row">
-                    <td className="name-cell">
-                      <div className="client-name">
-                        <strong>{request.clientName}</strong>
-                        <small className="client-id">{request.clientId?.substring(0, 8)}...</small>
-                      </div>
-                    </td>
-                    <td className="email-cell">
-                      <a href={`mailto:${request.clientEmail}`}>{request.clientEmail}</a>
-                    </td>
-                    <td className="period-cell">
-                      <div className="period-info">
-                        <FiCalendar className="period-icon" />
-                        <span className="period-text">
-                          {request.fromDate && request.toDate ? (
-                            <>
-                              {new Date(request.fromDate).toLocaleDateString('en-GB', {
-                                day: 'numeric',
-                                month: 'short',
-                                year: 'numeric'
-                              })} - {new Date(request.toDate).toLocaleDateString('en-GB', {
-                                day: 'numeric',
-                                month: 'short',
-                                year: 'numeric'
-                              })}
-                            </>
-                          ) : (
-                            'Invalid date range'
-                          )}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="date-cell">
-                      {new Date(request.requestedAt).toLocaleDateString('en-GB')}
-                    </td>
-                    <td className="status-cell">
-                      <div className="status-wrapper">
-                        {getFinanceStatusIcon(request.status)}
-                        <span className={`status-badge ${request.status}`}>
-                          {getFinanceStatusText(request.status)}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="actions-cell">
-                      <div className="action-buttons">
-                        <button
-                          className="action-btn view-btn"
-                          onClick={() => openFinanceModal(request.requestId)}
-                        >
-                          <FiEye />
-                          <span>View</span>
-                        </button>
-                        {request.status === 'pending' && (
-                          <button
-                            className="action-btn approve-btn finance-approve"
-                            onClick={() => openFinanceConfirmation(
-                              request.requestId,
-                              request.clientName,
-                              request.fromDate,  // ✅ pass fromDate
-                              request.toDate
-                            )}
-                            disabled={approvingRequest && approvingRequestId === request.requestId}
-                          >
-                            {approvingRequest && approvingRequestId === request.requestId ? (
-                              <>
-                                <div className="spinner-small"></div>
-                                Processing...
-                              </>
-                            ) : (
-                              <>
-                                <FiCheck />
-                                <span>Approve</span>
-                              </>
-                            )}
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="table-footer">
-          <div className="footer-info">
-            <div className="total-count">
-              <span className="count-label">Total Requests:</span>
-              <span className="count-value">{filteredFinancialRequests.length}</span>
-            </div>
-            <div className="status-summary">
-              <span className="pending-count">
-                Pending: {financialRequests.filter(r => r.status === 'pending').length}
-              </span>
-              <span className="approved-count">
-                Approved: {financialRequests.filter(r => r.status === 'approved').length}
-              </span>
-              <span className="sent-count">
-                Sent: {financialRequests.filter(r => r.status === 'sent').length}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // NEW: Render Finance Request Modal
+  // Render Finance Request Modal
   const renderFinanceModal = () => {
     if (!showFinanceModal || !financeModalData) return null;
 
@@ -1199,7 +2118,8 @@ const AdminClientEnrollments = () => {
                   onClick={() => openFinanceConfirmation(
                     financeModalData.requestId,
                     financeModalData.clientName,
-                    `${financeModalData.month} ${financeModalData.year}`
+                    financeModalData.fromDate,
+                    financeModalData.toDate
                   )}
                 >
                   <FiCheck />
@@ -1213,7 +2133,7 @@ const AdminClientEnrollments = () => {
     );
   };
 
-  // NEW: Render Finance Confirmation Modal
+  // Render Finance Confirmation Modal
   const renderFinanceConfirmModal = () => {
     if (!showFinanceConfirmModal) return null;
 
@@ -1284,386 +2204,6 @@ const AdminClientEnrollments = () => {
     );
   };
 
-  // Render Active Control Section
-  const renderActiveControl = () => {
-    return (
-      <div className="section-content">
-        <div className="filters-container">
-          <div className="search-box">
-            <AiOutlineSearch className="search-icon" />
-            <input
-              type="text"
-              placeholder="Search clients..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-          </div>
-          <div className="filter-buttons">
-            <button
-              className={`filter-btn ${activeFilter === 'all' ? 'active' : ''}`}
-              onClick={() => setActiveFilter('all')}
-            >
-              All
-            </button>
-            <button
-              className={`filter-btn ${activeFilter === 'active' ? 'active' : ''}`}
-              onClick={() => setActiveFilter('active')}
-            >
-              Active
-            </button>
-            <button
-              className={`filter-btn ${activeFilter === 'inactive' ? 'active' : ''}`}
-              onClick={() => setActiveFilter('inactive')}
-            >
-              Inactive
-            </button>
-          </div>
-        </div>
-
-        <div className="table-container">
-          <table className="enrollments-table">
-            <thead>
-              <tr>
-                <th>Client Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Business</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {clientsLoading ? (
-                <tr>
-                  <td colSpan="6" className="loading-cell">
-                    <div className="loading-spinner"></div>
-                    Loading clients...
-                  </td>
-                </tr>
-              ) : filteredClients.length === 0 ? (
-                <tr className="no-data">
-                  <td colSpan="6">
-                    <div className="empty-state">
-                      <FiUsers size={40} />
-                      <p>No clients found</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredClients.map((client) => (
-                  <tr key={client.clientId} className="client-row">
-                    <td className="name-cell">
-                      <div className="client-name">
-                        <strong>{client.name}</strong>
-                        <small className="client-id">{client.clientId?.substring(0, 8)}...</small>
-                      </div>
-                    </td>
-                    <td className="email-cell">
-                      <a href={`mailto:${client.email}`}>{client.email}</a>
-                    </td>
-                    <td className="phone-cell">
-                      <a href={`tel:${client.phone}`}>{client.phone}</a>
-                    </td>
-                    <td className="business-cell">
-                      {client.businessName || 'N/A'}
-                    </td>
-                    <td className="status-cell">
-                      <div className="status-wrapper">
-                        {client.isActive ? (
-                          <FiUserCheck className="status-icon active" />
-                        ) : (
-                          <FiUserX className="status-icon inactive" />
-                        )}
-                        <span className={`status-badge ${client.isActive ? 'active' : 'inactive'}`}>
-                          {client.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="actions-cell">
-                      <div className="action-buttons">
-                        <button
-                          className={`action-btn ${client.isActive ? 'deactivate-btn' : 'activate-btn'}`}
-                          onClick={() => toggleClientStatus(client.clientId, client.isActive)}
-                        >
-                          {client.isActive ? (
-                            <>
-                              <FiUserX />
-                              <span>Deactivate</span>
-                            </>
-                          ) : (
-                            <>
-                              <FiUserCheck />
-                              <span>Activate</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="table-footer">
-          <div className="footer-info">
-            <div className="total-count">
-              <span className="count-label">Total Clients:</span>
-              <span className="count-value">{filteredClients.length}</span>
-            </div>
-            <div className="status-summary">
-              <span className="active-count">
-                Active: {clients.filter(c => c.isActive).length}
-              </span>
-              <span className="inactive-count">
-                Inactive: {clients.filter(c => !c.isActive).length}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Render Clients Data Section
-  const renderClientsData = () => {
-    return (
-      <div className="section-content">
-        <div className="filters-container">
-          <div className="search-box">
-            <AiOutlineSearch className="search-icon" />
-            <input
-              type="text"
-              placeholder="Search clients..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-          </div>
-          <div className="filter-buttons">
-            <button
-              className={`filter-btn ${activeFilter === 'all' ? 'active' : ''}`}
-              onClick={() => setActiveFilter('all')}
-            >
-              All
-            </button>
-            <button
-              className={`filter-btn ${activeFilter === 'active' ? 'active' : ''}`}
-              onClick={() => setActiveFilter('active')}
-            >
-              Active
-            </button>
-            <button
-              className={`filter-btn ${activeFilter === 'inactive' ? 'active' : ''}`}
-              onClick={() => setActiveFilter('inactive')}
-            >
-              Inactive
-            </button>
-          </div>
-        </div>
-
-        <div className="table-container">
-          <table className="enrollments-table">
-            <thead>
-              <tr>
-                <th>Client Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Business</th>
-                <th>Plan</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {clientsLoading ? (
-                <tr>
-                  <td colSpan="7" className="loading-cell">
-                    <div className="loading-spinner"></div>
-                    Loading clients...
-                  </td>
-                </tr>
-              ) : filteredClients.length === 0 ? (
-                <tr className="no-data">
-                  <td colSpan="7">
-                    <div className="empty-state">
-                      <FiDatabase size={40} />
-                      <p>No clients found</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredClients.map((client) => (
-                  <tr key={client.clientId} className="client-row">
-                    <td className="name-cell">
-                      <div className="client-name">
-                        <strong>{client.name}</strong>
-                      </div>
-                    </td>
-                    <td className="email-cell">
-                      <a href={`mailto:${client.email}`}>{client.email}</a>
-                    </td>
-                    <td className="phone-cell">
-                      <a href={`tel:${client.phone}`}>{client.phone}</a>
-                    </td>
-                    <td className="business-cell">
-                      {client.businessName || 'N/A'}
-                    </td>
-                    <td className="plan-cell">
-                      <span className={`plan-badge ${client.planSelected?.toLowerCase().replace(/\s+/g, '-')}`}>
-                        {client.planSelected || 'N/A'}
-                      </span>
-                    </td>
-                    <td className="status-cell">
-                      <div className="status-wrapper">
-                        {client.isActive ? (
-                          <FiUserCheck className="status-icon active" />
-                        ) : (
-                          <FiUserX className="status-icon inactive" />
-                        )}
-                      </div>
-                    </td>
-                    <td className="actions-cell">
-                      <div className="action-buttons">
-                        <button
-                          className="action-btn view-btn"
-                          onClick={() => openClientModal(client.clientId)}
-                        >
-                          <FiEye />
-                          <span>View</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="table-footer">
-          <div className="footer-info">
-            <div className="total-count">
-              <span className="count-label">Total Clients:</span>
-              <span className="count-value">{filteredClients.length}</span>
-            </div>
-            <div className="status-summary">
-              <span className="active-count">
-                Active: {clients.filter(c => c.isActive).length}
-              </span>
-              <span className="inactive-count">
-                Inactive: {clients.filter(c => !c.isActive).length}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Render Enrollments Section
-  const renderEnrollments = () => {
-    if (loading) {
-      return (
-        <div className="section-content loading">
-          <div className="loading-spinner"></div>
-          <p>Loading enrollment requests...</p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="section-content">
-        <div className="table-container">
-          <table className="enrollments-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {(!enrollments || enrollments.length === 0) ? (
-                <tr className="no-data">
-                  <td colSpan="5">
-                    <div className="empty-state">
-                      <FiCheckCircle size={40} />
-                      <p>No pending enrollment requests</p>
-                      <small>All enrollments have been processed</small>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                enrollments.map((item) => (
-                  <tr key={item.enrollId} className="enrollment-row">
-                    <td className="name-cell">
-                      <div className="client-name">
-                        <strong>{item.firstName} {item.lastName}</strong>
-                      </div>
-                    </td>
-                    <td className="email-cell">
-                      <a href={`mailto:${item.email}`}>{item.email}</a>
-                    </td>
-                    <td className="phone-cell">
-                      <a href={`tel:${item.mobile}`}>{item.mobile}</a>
-                    </td>
-                    <td className="status-cell">
-                      <div className="status-wrapper">
-                        {getStatusIcon(item.status)}
-                        <span className={`status-badge ${item.status.toLowerCase()}`}>
-                          {item.status}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="actions-cell">
-                      <div className="action-buttons">
-                        <button
-                          className="action-btn view-btn"
-                          onClick={() => openViewModal(item.enrollId, `${item.firstName} ${item.lastName}`)}
-                        >
-                          <FiEye />
-                          <span>View</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="table-footer">
-          <div className="footer-info">
-            <div className="total-count">
-              <span className="count-label">Total Requests:</span>
-              <span className="count-value">{enrollments?.length || 0}</span>
-            </div>
-            <div className="status-summary">
-              <span className="pending-count">
-                Pending: {enrollments?.filter(item => item.status === "PENDING").length || 0}
-              </span>
-              <span className="approved-count">
-                Approved: {enrollments?.filter(item => item.status === "APPROVED").length || 0}
-              </span>
-              <span className="rejected-count">
-                Rejected: {enrollments?.filter(item => item.status === "REJECTED").length || 0}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <AdminLayout>
       <div className="admin-client-management">
@@ -1681,6 +2221,7 @@ const AdminClientEnrollments = () => {
               </span>
             )}
           </button>
+
           <button
             className={`section-tab ${activeSection === 'activeControl' ? 'active' : ''}`}
             onClick={() => setActiveSection('activeControl')}
@@ -1691,6 +2232,7 @@ const AdminClientEnrollments = () => {
               <span className="tab-badge">{clients.length}</span>
             )}
           </button>
+
           <button
             className={`section-tab ${activeSection === 'clientsData' ? 'active' : ''}`}
             onClick={() => setActiveSection('clientsData')}
@@ -1701,7 +2243,7 @@ const AdminClientEnrollments = () => {
               <span className="tab-badge">{clients.length}</span>
             )}
           </button>
-          {/* NEW: Finance Requests Tab */}
+
           <button
             className={`section-tab ${activeSection === 'financeRequests' ? 'active' : ''}`}
             onClick={() => setActiveSection('financeRequests')}
@@ -1714,6 +2256,18 @@ const AdminClientEnrollments = () => {
               </span>
             )}
           </button>
+
+          {/* NEW: Task Info Tab */}
+          <button
+            className={`section-tab ${activeSection === 'taskInfo' ? 'active' : ''}`}
+            onClick={() => setActiveSection('taskInfo')}
+          >
+            <BiTask />
+            <span>Task Info</span>
+            {taskInfoData.length > 0 && (
+              <span className="tab-badge">{taskInfoData.length}</span>
+            )}
+          </button>
         </div>
 
         {/* Page Header */}
@@ -1724,12 +2278,14 @@ const AdminClientEnrollments = () => {
               {activeSection === 'activeControl' && 'Client Active Control'}
               {activeSection === 'clientsData' && 'Clients Data Management'}
               {activeSection === 'financeRequests' && 'Financial Statement Requests'}
+              {activeSection === 'taskInfo' && 'Client Task Information'}
             </h2>
             <p className="subtitle">
               {activeSection === 'enrollments' && 'Review and manage client enrollment submissions'}
               {activeSection === 'activeControl' && 'Activate or deactivate client accounts'}
               {activeSection === 'clientsData' && 'View and manage client information'}
               {activeSection === 'financeRequests' && 'Approve and manage financial statement requests'}
+              {activeSection === 'taskInfo' && 'Monitor client tasks, assignments, and payment status'}
             </p>
           </div>
           <button
@@ -1738,11 +2294,12 @@ const AdminClientEnrollments = () => {
               if (activeSection === 'enrollments') fetchEnrollments();
               else if (activeSection === 'activeControl' || activeSection === 'clientsData') fetchClients();
               else if (activeSection === 'financeRequests') fetchFinancialRequests();
+              else if (activeSection === 'taskInfo') fetchTaskInfo();
             }}
-            disabled={refreshing || clientsLoading || financeLoading}
+            disabled={refreshing || clientsLoading || financeLoading || taskInfoLoading}
           >
-            <FiRefreshCw className={refreshing || clientsLoading || financeLoading ? "spinning" : ""} />
-            {refreshing || clientsLoading || financeLoading ? "Refreshing..." : "Refresh"}
+            <FiRefreshCw className={refreshing || clientsLoading || financeLoading || taskInfoLoading ? "spinning" : ""} />
+            {refreshing || clientsLoading || financeLoading || taskInfoLoading ? "Refreshing..." : "Refresh"}
           </button>
         </div>
 
@@ -1751,6 +2308,7 @@ const AdminClientEnrollments = () => {
         {activeSection === 'activeControl' && renderActiveControl()}
         {activeSection === 'clientsData' && renderClientsData()}
         {activeSection === 'financeRequests' && renderFinanceRequests()}
+        {activeSection === 'taskInfo' && renderTaskInfo()}
 
         {/* Existing Modals */}
         {showViewModal && viewModalData && (
@@ -1906,11 +2464,14 @@ const AdminClientEnrollments = () => {
         {/* Client Details Modal */}
         {renderClientModal()}
 
-        {/* NEW: Finance Request Modal */}
+        {/* Finance Request Modal */}
         {renderFinanceModal()}
 
-        {/* NEW: Finance Confirmation Modal */}
+        {/* Finance Confirmation Modal */}
         {renderFinanceConfirmModal()}
+
+        {/* NEW: Task Info Modal */}
+        {renderTaskInfoModal()}
 
         {showConfirmationModal && (
           <div className="confirmation-modal-overlay">
