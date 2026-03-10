@@ -123,7 +123,7 @@ const ClientFilesUpload = () => {
 
     // ===== Google Drive State =====
     const [driveAccessToken, setDriveAccessToken] = useState(null);
-    const [driveUser, setDriveUser] = useState(null);
+    // ⬇️ REMOVED: driveUser state - no longer needed
     const [isDriveAuthenticated, setIsDriveAuthenticated] = useState(false);
     const [driveModalOpen, setDriveModalOpen] = useState(false);
     const [activeDriveCategory, setActiveDriveCategory] = useState(null);
@@ -770,7 +770,7 @@ const ClientFilesUpload = () => {
 
         const tokenClient = window.google.accounts.oauth2.initTokenClient({
             client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-            scope: "https://www.googleapis.com/auth/drive.file",
+            scope: "https://www.googleapis.com/auth/drive.file", // ✅ FIXED: Only drive.file scope
             prompt: "select_account consent",
             callback: async (response) => {
                 if (response.error) {
@@ -781,15 +781,7 @@ const ClientFilesUpload = () => {
                 setDriveAccessToken(response.access_token);
                 setIsDriveAuthenticated(true);
 
-                try {
-                    const userRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
-                        headers: { Authorization: `Bearer ${response.access_token}` },
-                    });
-                    const userData = await userRes.json();
-                    setDriveUser(userData);
-                } catch (err) {
-                    console.error("Failed to fetch Drive user info", err);
-                }
+                // 🚫 REMOVED: User info fetch - no longer needed
 
                 openDriveModalAfterAuth(categoryInfo, response.access_token);
             },
@@ -1361,7 +1353,7 @@ const ClientFilesUpload = () => {
                         <div className="drive-modal-header">
                             <h3>
                                 <FaGoogleDrive size={20} /> Select Files from Google Drive
-                                {driveUser && <span className="drive-user"> ({driveUser.email})</span>}
+                                {/* 🚫 REMOVED: driveUser email display */}
                             </h3>
                             <button className="drive-modal-close-btn" onClick={closeDriveModal}>
                                 <FiX size={20} />
