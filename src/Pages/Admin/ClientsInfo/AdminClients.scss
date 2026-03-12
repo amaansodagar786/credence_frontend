@@ -3092,3 +3092,193 @@ button:disabled {
     }
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+/* ================= ZOOM CONTROLS FOR DOCUMENT PREVIEW ================= */
+.document-preview-modal {
+  .preview-modal-body {
+
+    .image-viewer-wrapper,
+    .excel-viewer-wrapper {
+      position: relative;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .zoom-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: rgba(255, 255, 255, 0.98);
+      border-bottom: 1px solid #e5e7eb;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(4px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+      .zoom-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        background: white;
+        color: #333;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover:not(:disabled) {
+          background: #7cd64b;
+          color: #000;
+          border-color: #7cd64b;
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(124, 214, 75, 0.3);
+        }
+
+        &:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+
+        &.reset {
+          width: auto;
+          padding: 0 16px;
+          gap: 8px;
+
+          svg {
+            margin-right: 4px;
+          }
+
+          span {
+            font-size: 13px;
+            font-weight: 600;
+          }
+        }
+      }
+
+      .zoom-level {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        min-width: 70px;
+        text-align: center;
+        background: #f8f9fa;
+        padding: 6px 12px;
+        border-radius: 20px;
+        border: 1px solid #e5e7eb;
+      }
+    }
+
+    .image-viewer-container {
+      flex: 1;
+      overflow: auto !important;
+      transition: all 0.2s ease;
+      background: #f5f5f5;
+
+      &.dragging {
+        cursor: grabbing !important;
+
+        img {
+          transition: none;
+        }
+      }
+
+      &::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 6px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #7cd64b;
+        border-radius: 6px;
+
+        &:hover {
+          background: #5a9e30;
+        }
+      }
+    }
+
+    .excel-viewer-container {
+      flex: 1;
+      overflow: auto;
+      background: white;
+
+      &::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 6px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #7cd64b;
+        border-radius: 6px;
+
+        &:hover {
+          background: #5a9e30;
+        }
+      }
+    }
+
+    .protection-note {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 16px;
+      background: linear-gradient(to right, #fff3cd, #fff8e7);
+      color: #856404;
+      font-size: 13px;
+      border-bottom: 1px solid #ffeaa7;
+      flex-wrap: wrap;
+
+      .zoom-hint {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #5a9e30;
+        font-size: 12px;
+        background: rgba(124, 214, 75, 0.1);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+
+        svg {
+          color: #7cd64b;
+        }
+
+        @media (max-width: 768px) {
+          margin-left: 0;
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 768px) {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  }
+}

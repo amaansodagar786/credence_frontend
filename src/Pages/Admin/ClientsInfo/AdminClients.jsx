@@ -46,7 +46,10 @@ import {
   FiImage,
   FiGrid,
   FiX,
-  FiDollarSign as FiPayment // Added for payment
+  FiDollarSign as FiPayment,
+  FiZoomIn,
+  FiZoomOut,
+  FiMaximize
 } from "react-icons/fi";
 import { Snackbar, Alert, Modal, Box, Typography } from "@mui/material";
 import "./AdminClients.scss";
@@ -72,6 +75,12 @@ const AdminClients = () => {
   const [previewDoc, setPreviewDoc] = useState(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const previewRef = useRef(null);
+
+  // Zoom and Pan States
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   // Client Details Modal
   const [clientDetailsModal, setClientDetailsModal] = useState(false);
@@ -126,6 +135,44 @@ const AdminClients = () => {
     { value: 11, label: "November" },
     { value: 12, label: "December" }
   ];
+
+  // Zoom functions
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.25, 3));
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 0.25, 0.5));
+  };
+
+  const handleZoomReset = () => {
+    setZoomLevel(1);
+    setImagePosition({ x: 0, y: 0 });
+  };
+
+  // Pan functions for images
+  const handleMouseDown = (e) => {
+    if (zoomLevel > 1) {
+      setIsDragging(true);
+      setDragStart({
+        x: e.clientX - imagePosition.x,
+        y: e.clientY - imagePosition.y
+      });
+    }
+  };
+
+  const handleMouseMove = (e) => {
+    if (isDragging && zoomLevel > 1) {
+      setImagePosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
 
   /* ================= ADD FILE TYPE DETECTION FUNCTION ================= */
   const getFileType = (fileName) => {
@@ -217,6 +264,11 @@ const AdminClients = () => {
       return;
     }
 
+    // Reset zoom and position when opening new document
+    setZoomLevel(1);
+    setImagePosition({ x: 0, y: 0 });
+    setIsDragging(false);
+
     // Determine file type
     const fileType = getFileType(document.fileName);
     setPreviewDoc({ ...document, fileType });
@@ -232,9 +284,12 @@ const AdminClients = () => {
     cleanupProtection();
     setIsPreviewOpen(false);
     setPreviewDoc(null);
+    setZoomLevel(1);
+    setImagePosition({ x: 0, y: 0 });
+    setIsDragging(false);
   };
 
-  /* ================= RENDER DOCUMENT PREVIEW (FIXED VERSION) ================= */
+  /* ================= RENDER DOCUMENT PREVIEW (COMPLETELY UPDATED WITH ZOOM) ================= */
   const renderDocumentPreview = () => {
     if (!previewDoc || !isPreviewOpen) return null;
 
@@ -297,12 +352,12 @@ const AdminClients = () => {
               <span className="protection-text">
                 SECURE VIEW: Downloading and right-click disabled
               </span>
-              <span className="scroll-hint">
-                (Scroll to view full content)
+              <span className="zoom-hint">
+                <FiZoomIn size={14} /> Use zoom controls or Ctrl+Mouse Wheel to zoom
               </span>
             </div>
 
-            {/* PDF Viewer */}
+            {/* PDF Viewer - Native browser zoom works with Ctrl+Mouse Wheel */}
             {fileType === 'pdf' && (
               <div className="protected-view-container pdf-viewer-container">
                 <iframe
@@ -326,88 +381,183 @@ const AdminClients = () => {
               </div>
             )}
 
-            {/* Image Viewer */}
+            {/* Image Viewer with Zoom and Pan */}
             {fileType === 'image' && (
-              <div
-                className="protected-view-container image-viewer-container"
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  return false;
-                }}
-                style={{
-                  overflow: 'auto',
-                  maxHeight: '70vh',
-                  textAlign: 'center',
-                  backgroundColor: '#f5f5f5',
-                  position: 'relative'
-                }}
-              >
-                <img
-                  src={previewDoc.url}
-                  alt={previewDoc.fileName}
-                  style={{
-                    maxWidth: '100%',
-                    maxHeight: '100%',
-                    pointerEvents: 'none',
-                    userSelect: 'none',
-                    WebkitUserSelect: 'none',
-                    MozUserSelect: 'none',
-                    msUserSelect: 'none'
-                  }}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    return false;
-                  }}
-                  onDragStart={(e) => e.preventDefault()}
-                />
-                {/* Protection overlay */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    pointerEvents: 'none',
-                    zIndex: 10
-                  }}
-                />
-              </div>
-            )}
+              <div className="image-viewer-wrapper">
+                {/* Zoom Controls */}
+                <div className="zoom-controls">
+                  <button
+                    onClick={handleZoomOut}
+                    disabled={zoomLevel <= 0.5}
+                    className="zoom-btn"
+                    title="Zoom Out"
+                  >
+                    <FiZoomOut size={18} />
+                  </button>
+                  <span className="zoom-level">{Math.round(zoomLevel * 100)}%</span>
+                  <button
+                    onClick={handleZoomIn}
+                    disabled={zoomLevel >= 3}
+                    className="zoom-btn"
+                    title="Zoom In"
+                  >
+                    <FiZoomIn size={18} />
+                  </button>
+                  <button
+                    onClick={handleZoomReset}
+                    className="zoom-btn reset"
+                    title="Reset Zoom"
+                  >
+                    <FiMaximize size={16} />
+                    <span>Reset</span>
+                  </button>
+                </div>
 
-            {/* Excel Viewer */}
-            {fileType === 'excel' && (
-              <div
-                className="protected-view-container excel-viewer-container"
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  return false;
-                }}
-                style={{
-                  height: '70vh',
-                  position: 'relative'
-                }}
-              >
-                <iframe
-                  src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewDoc.url)}&wdStartOn=1`}
-                  width="100%"
-                  height="100%"
-                  frameBorder="0"
-                  scrolling="yes"
-                  style={{
-                    border: 'none',
-                    display: 'block'
-                  }}
-                  title={`Excel Viewer - ${previewDoc.fileName}`}
+                <div
+                  className={`protected-view-container image-viewer-container ${isDragging ? 'dragging' : ''}`}
                   onContextMenu={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     return false;
                   }}
-                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-                />
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                  style={{
+                    overflow: 'auto',
+                    maxHeight: '70vh',
+                    textAlign: 'center',
+                    backgroundColor: '#f5f5f5',
+                    position: 'relative',
+                    cursor: zoomLevel > 1 ? 'grab' : 'default'
+                  }}
+                >
+                  <div
+                    style={{
+                      transform: `scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`,
+                      transformOrigin: 'center',
+                      transition: isDragging ? 'none' : 'transform 0.1s ease',
+                      display: 'inline-block',
+                      padding: '20px',
+                      minWidth: '100%',
+                      minHeight: '100%'
+                    }}
+                  >
+                    <img
+                      src={previewDoc.url}
+                      alt={previewDoc.fileName}
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '100%',
+                        pointerEvents: 'none',
+                        userSelect: 'none',
+                        WebkitUserSelect: 'none',
+                        MozUserSelect: 'none',
+                        msUserSelect: 'none',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        return false;
+                      }}
+                      onDragStart={(e) => e.preventDefault()}
+                    />
+                  </div>
+
+                  {/* Protection overlay */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      pointerEvents: 'none',
+                      zIndex: 10
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Excel Viewer with Zoom Controls */}
+            {fileType === 'excel' && (
+              <div className="excel-viewer-wrapper">
+                {/* Zoom Controls */}
+                <div className="zoom-controls">
+                  <button
+                    onClick={handleZoomOut}
+                    disabled={zoomLevel <= 0.5}
+                    className="zoom-btn"
+                    title="Zoom Out"
+                  >
+                    <FiZoomOut size={18} />
+                  </button>
+                  <span className="zoom-level">{Math.round(zoomLevel * 100)}%</span>
+                  <button
+                    onClick={handleZoomIn}
+                    disabled={zoomLevel >= 3}
+                    className="zoom-btn"
+                    title="Zoom In"
+                  >
+                    <FiZoomIn size={18} />
+                  </button>
+                  <button
+                    onClick={handleZoomReset}
+                    className="zoom-btn reset"
+                    title="Reset Zoom"
+                  >
+                    <FiMaximize size={16} />
+                    <span>Reset</span>
+                  </button>
+                </div>
+
+                <div
+                  className="protected-view-container excel-viewer-container"
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                  }}
+                  style={{
+                    height: '70vh',
+                    position: 'relative',
+                    overflow: 'auto',
+                    backgroundColor: '#ffffff'
+                  }}
+                >
+                  <div
+                    style={{
+                      transform: `scale(${zoomLevel})`,
+                      transformOrigin: 'top left',
+                      transition: 'transform 0.1s ease',
+                      width: `${100 / zoomLevel}%`,
+                      height: `${100 / zoomLevel}%`,
+                      minWidth: '100%',
+                      minHeight: '100%'
+                    }}
+                  >
+                    <iframe
+                      src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewDoc.url)}&wdStartOn=1`}
+                      width="100%"
+                      height="100%"
+                      frameBorder="0"
+                      scrolling="no"
+                      style={{
+                        border: 'none',
+                        display: 'block'
+                      }}
+                      title={`Excel Viewer - ${previewDoc.fileName}`}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return false;
+                      }}
+                      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+                    />
+                  </div>
+                </div>
 
                 <div className="viewer-info" style={{
                   padding: '10px',

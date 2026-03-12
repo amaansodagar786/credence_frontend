@@ -39,7 +39,10 @@ import {
   FiArrowLeft,
   FiArrowRight,
   FiCheckSquare,
-  FiSquare
+  FiSquare,
+  FiZoomIn,
+  FiZoomOut,
+  FiMaximize
 } from "react-icons/fi";
 import { FaCheck } from "react-icons/fa6";
 import "./EmployeeAssignedClients.scss";
@@ -76,6 +79,12 @@ const EmployeeAssignedClients = () => {
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const previewRef = useRef(null);
 
+  /* ================= ZOOM AND PAN STATES ================= */
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
   /* ================= EXPANDED CATEGORY NOTES STATE ================= */
   const [expandedCategoryNotes, setExpandedCategoryNotes] = useState({});
 
@@ -87,6 +96,43 @@ const EmployeeAssignedClients = () => {
   const [checkingViewed, setCheckingViewed] = useState(false);
   const [auditIconStatus, setAuditIconStatus] = useState({});
 
+  /* ================= ZOOM FUNCTIONS ================= */
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.25, 3));
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 0.25, 0.5));
+  };
+
+  const handleZoomReset = () => {
+    setZoomLevel(1);
+    setImagePosition({ x: 0, y: 0 });
+  };
+
+  /* ================= PAN FUNCTIONS FOR IMAGES ================= */
+  const handleMouseDown = (e) => {
+    if (zoomLevel > 1) {
+      setIsDragging(true);
+      setDragStart({
+        x: e.clientX - imagePosition.x,
+        y: e.clientY - imagePosition.y
+      });
+    }
+  };
+
+  const handleMouseMove = (e) => {
+    if (isDragging && zoomLevel > 1) {
+      setImagePosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
 
   /* ================= ADD FILE TYPE DETECTION FUNCTION ================= */
   const getFileType = (fileName) => {
@@ -109,17 +155,10 @@ const EmployeeAssignedClients = () => {
 
       const data = res.data; // Don't filter here! 
 
-
-
-
       setAssignments(data);
 
-
-      // CONSOLE LOG: All assignments data
-     
-
       const grouped = groupAssignmentsByMonthYear(data);
-     
+
       setGroupedAssignments(grouped);
 
       const clientMap = {};
@@ -150,20 +189,11 @@ const EmployeeAssignedClients = () => {
 
       const clientsArray = Object.values(clientMap);
 
-     
-
-      // Log each client's details
-      clientsArray.forEach((client, index) => {
-        
-      });
-
       setClientList(clientsArray);
 
       if (clientsArray.length > 0) {
         const defaultClient = clientsArray[0];
         setActiveClient(defaultClient);
-
-        
 
         const clientAssignments = getAssignmentsForClient(defaultClient.clientId);
         if (clientAssignments.length > 0) {
@@ -173,8 +203,6 @@ const EmployeeAssignedClients = () => {
             const monthAssignments = grouped[defaultClient.clientId][firstMonthYear];
             if (monthAssignments && monthAssignments.length > 0) {
               setActiveAssignment(monthAssignments[0]);
-
-              
             }
           }
         } else {
@@ -257,7 +285,6 @@ const EmployeeAssignedClients = () => {
       );
     }
   }, [activeAssignment]);
-
 
   useEffect(() => {
     const loadAllViewedStatus = async () => {
@@ -386,8 +413,6 @@ const EmployeeAssignedClients = () => {
       const { year, month, task } = activeAssignment;
       const { categoryType, categoryName, fileName, url } = fileData;
 
-      
-
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/employee/toggle-file-viewed`,
         {
@@ -510,6 +535,11 @@ const EmployeeAssignedClients = () => {
   const openDocumentPreview = async (document, categoryType = null, categoryName = null) => {
     if (!document || !document.url) return;
 
+    // Reset zoom and position when opening new document
+    setZoomLevel(1);
+    setImagePosition({ x: 0, y: 0 });
+    setIsDragging(false);
+
     // Determine file type
     const fileType = getFileType(document.fileName);
 
@@ -579,6 +609,10 @@ const EmployeeAssignedClients = () => {
         categoryType: previewDoc?.categoryType
       });
 
+      // Reset zoom for new file
+      setZoomLevel(1);
+      setImagePosition({ x: 0, y: 0 });
+
       // Check file viewed status for the new file
       await checkFileViewedStatus({
         categoryType: previewDoc?.categoryType,
@@ -606,6 +640,10 @@ const EmployeeAssignedClients = () => {
         categoryType: previewDoc?.categoryType
       });
 
+      // Reset zoom for new file
+      setZoomLevel(1);
+      setImagePosition({ x: 0, y: 0 });
+
       // Check file viewed status for the new file
       await checkFileViewedStatus({
         categoryType: previewDoc?.categoryType,
@@ -631,6 +669,9 @@ const EmployeeAssignedClients = () => {
     setCurrentCategoryFiles([]);
     setCurrentFileIndex(0);
     setPreviewCategoryName("");
+    setZoomLevel(1);
+    setImagePosition({ x: 0, y: 0 });
+    setIsDragging(false);
   };
 
   /* ================= ADD NOTE FUNCTIONALITY ================= */
@@ -1346,7 +1387,7 @@ const EmployeeAssignedClients = () => {
     );
   };
 
-  /* ================= RENDER DOCUMENT PREVIEW (WITH CATEGORY NAVIGATION AND CHECKMARK) ================= */
+  /* ================= RENDER DOCUMENT PREVIEW (WITH CATEGORY NAVIGATION, CHECKMARK AND ZOOM) ================= */
   const renderDocumentPreview = () => {
     if (!previewDoc || !isPreviewOpen) return null;
 
@@ -1483,12 +1524,12 @@ const EmployeeAssignedClients = () => {
               <span className="protection-text">
                 SECURE VIEW: Downloading and right-click disabled
               </span>
-              <span className="scroll-hint">
-                (Scroll to view full content)
+              <span className="zoom-hint">
+                <FiZoomIn size={14} /> Use zoom controls or Ctrl+Mouse Wheel to zoom
               </span>
             </div>
 
-            {/* PDF Viewer */}
+            {/* PDF Viewer - Native browser zoom works with Ctrl+Mouse Wheel */}
             {fileType === 'pdf' && (
               <div className="protected-view-container pdf-viewer-container">
                 <iframe
@@ -1512,80 +1553,183 @@ const EmployeeAssignedClients = () => {
               </div>
             )}
 
-            {/* Image Viewer */}
+            {/* Image Viewer with Zoom and Pan */}
             {fileType === 'image' && (
-              <div
-                className="protected-view-container image-viewer-container"
-                onContextMenu={(e) => e.preventDefault()}
-                style={{
-                  overflow: 'auto',
-                  maxHeight: '70vh',
-                  textAlign: 'center',
-                  backgroundColor: '#f5f5f5'
-                }}
-              >
-                <img
-                  src={previewDoc.url}
-                  alt={previewDoc.fileName}
-                  style={{
-                    maxWidth: '100%',
-                    maxHeight: '100%',
-                    pointerEvents: 'none',
-                    userSelect: 'none',
-                    WebkitUserSelect: 'none',
-                    MozUserSelect: 'none',
-                    msUserSelect: 'none',
-                    draggable: 'false'
-                  }}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    return false;
-                  }}
-                  onDragStart={(e) => e.preventDefault()}
-                />
-                <div
-                  className="image-protection-overlay"
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    pointerEvents: 'none',
-                    zIndex: 10
-                  }}
-                ></div>
-              </div>
-            )}
+              <div className="image-viewer-wrapper">
+                {/* Zoom Controls */}
+                <div className="zoom-controls">
+                  <button
+                    onClick={handleZoomOut}
+                    disabled={zoomLevel <= 0.5}
+                    className="zoom-btn"
+                    title="Zoom Out"
+                  >
+                    <FiZoomOut size={18} />
+                  </button>
+                  <span className="zoom-level">{Math.round(zoomLevel * 100)}%</span>
+                  <button
+                    onClick={handleZoomIn}
+                    disabled={zoomLevel >= 3}
+                    className="zoom-btn"
+                    title="Zoom In"
+                  >
+                    <FiZoomIn size={18} />
+                  </button>
+                  <button
+                    onClick={handleZoomReset}
+                    className="zoom-btn reset"
+                    title="Reset Zoom"
+                  >
+                    <FiMaximize size={16} />
+                    <span>Reset</span>
+                  </button>
+                </div>
 
-            {/* Excel Viewer */}
-            {fileType === 'excel' && (
-              <div
-                className="protected-view-container excel-viewer-container"
-                onContextMenu={(e) => e.preventDefault()}
-                style={{
-                  height: '70vh',
-                  position: 'relative'
-                }}
-              >
-                <iframe
-                  src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewDoc.url)}&wdStartOn=1`}
-                  width="100%"
-                  height="100%"
-                  frameBorder="0"
-                  scrolling="yes"
-                  style={{
-                    border: 'none',
-                    display: 'block'
-                  }}
-                  title={`Excel Viewer - ${previewDoc.fileName}`}
+                <div
+                  className={`protected-view-container image-viewer-container ${isDragging ? 'dragging' : ''}`}
                   onContextMenu={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     return false;
                   }}
-                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
-                />
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                  style={{
+                    overflow: 'auto',
+                    maxHeight: '70vh',
+                    textAlign: 'center',
+                    backgroundColor: '#f5f5f5',
+                    position: 'relative',
+                    cursor: zoomLevel > 1 ? 'grab' : 'default'
+                  }}
+                >
+                  <div
+                    style={{
+                      transform: `scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`,
+                      transformOrigin: 'center',
+                      transition: isDragging ? 'none' : 'transform 0.1s ease',
+                      display: 'inline-block',
+                      padding: '20px',
+                      minWidth: '100%',
+                      minHeight: '100%'
+                    }}
+                  >
+                    <img
+                      src={previewDoc.url}
+                      alt={previewDoc.fileName}
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '100%',
+                        pointerEvents: 'none',
+                        userSelect: 'none',
+                        WebkitUserSelect: 'none',
+                        MozUserSelect: 'none',
+                        msUserSelect: 'none',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        return false;
+                      }}
+                      onDragStart={(e) => e.preventDefault()}
+                    />
+                  </div>
+
+                  {/* Protection overlay */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      pointerEvents: 'none',
+                      zIndex: 10
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Excel Viewer with Zoom Controls */}
+            {fileType === 'excel' && (
+              <div className="excel-viewer-wrapper">
+                {/* Zoom Controls */}
+                <div className="zoom-controls">
+                  <button
+                    onClick={handleZoomOut}
+                    disabled={zoomLevel <= 0.5}
+                    className="zoom-btn"
+                    title="Zoom Out"
+                  >
+                    <FiZoomOut size={18} />
+                  </button>
+                  <span className="zoom-level">{Math.round(zoomLevel * 100)}%</span>
+                  <button
+                    onClick={handleZoomIn}
+                    disabled={zoomLevel >= 3}
+                    className="zoom-btn"
+                    title="Zoom In"
+                  >
+                    <FiZoomIn size={18} />
+                  </button>
+                  <button
+                    onClick={handleZoomReset}
+                    className="zoom-btn reset"
+                    title="Reset Zoom"
+                  >
+                    <FiMaximize size={16} />
+                    <span>Reset</span>
+                  </button>
+                </div>
+
+                <div
+                  className="protected-view-container excel-viewer-container"
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                  }}
+                  style={{
+                    height: '70vh',
+                    position: 'relative',
+                    overflow: 'auto',
+                    backgroundColor: '#ffffff'
+                  }}
+                >
+                  <div
+                    style={{
+                      transform: `scale(${zoomLevel})`,
+                      transformOrigin: 'top left',
+                      transition: 'transform 0.1s ease',
+                      width: `${100 / zoomLevel}%`,
+                      height: `${100 / zoomLevel}%`,
+                      minWidth: '100%',
+                      minHeight: '100%'
+                    }}
+                  >
+                    <iframe
+                      src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewDoc.url)}&wdStartOn=1`}
+                      width="100%"
+                      height="100%"
+                      frameBorder="0"
+                      scrolling="no"
+                      style={{
+                        border: 'none',
+                        display: 'block'
+                      }}
+                      title={`Excel Viewer - ${previewDoc.fileName}`}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return false;
+                      }}
+                      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+                    />
+                  </div>
+                </div>
 
                 <div className="viewer-info" style={{
                   padding: '10px',
@@ -1866,8 +2010,6 @@ const EmployeeAssignedClients = () => {
                 <div className="clients-list">
                   {clientList.map((client) => {
                     // CONSOLE LOG - See the ENTIRE client object
-
-
 
                     return (
                       <div

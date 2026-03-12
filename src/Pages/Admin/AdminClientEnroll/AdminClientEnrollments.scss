@@ -2183,3 +2183,15 @@
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
   }
 }
+
+
+
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}

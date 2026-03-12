@@ -35,6 +35,9 @@ import {
     FiGrid,
     FiImage,
     FiEyeOff,
+    FiZoomIn,
+    FiZoomOut,
+    FiMaximize
 } from "react-icons/fi";
 
 const ClientFilesUpload = () => {
@@ -82,6 +85,12 @@ const ClientFilesUpload = () => {
     // State for document preview
     const [previewDoc, setPreviewDoc] = useState(null);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+    /* ================= ZOOM AND PAN STATES ================= */
+    const [zoomLevel, setZoomLevel] = useState(1);
+    const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
     // State for deleted files audit trail
     const [deletedFiles, setDeletedFiles] = useState([]);
@@ -142,6 +151,44 @@ const ClientFilesUpload = () => {
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
     ];
+
+    /* ================= ZOOM FUNCTIONS ================= */
+    const handleZoomIn = () => {
+        setZoomLevel(prev => Math.min(prev + 0.25, 3));
+    };
+
+    const handleZoomOut = () => {
+        setZoomLevel(prev => Math.max(prev - 0.25, 0.5));
+    };
+
+    const handleZoomReset = () => {
+        setZoomLevel(1);
+        setImagePosition({ x: 0, y: 0 });
+    };
+
+    /* ================= PAN FUNCTIONS FOR IMAGES ================= */
+    const handleMouseDown = (e) => {
+        if (zoomLevel > 1) {
+            setIsDragging(true);
+            setDragStart({
+                x: e.clientX - imagePosition.x,
+                y: e.clientY - imagePosition.y
+            });
+        }
+    };
+
+    const handleMouseMove = (e) => {
+        if (isDragging && zoomLevel > 1) {
+            setImagePosition({
+                x: e.clientX - dragStart.x,
+                y: e.clientY - dragStart.y
+            });
+        }
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+    };
 
     // ===== Load Google Identity Services Script =====
     useEffect(() => {
@@ -276,9 +323,14 @@ const ClientFilesUpload = () => {
         }
     };
 
-    /* ================= OPEN DOCUMENT PREVIEW ================= */
+    /* ================= OPEN DOCUMENT PREVIEW (UPDATED WITH ZOOM RESET) ================= */
     const openDocumentPreview = (document) => {
         if (!document || !document.url) return;
+
+        // Reset zoom and position when opening new document
+        setZoomLevel(1);
+        setImagePosition({ x: 0, y: 0 });
+        setIsDragging(false);
 
         const fileType = getFileType(document.fileName);
         setPreviewDoc({ ...document, fileType });
@@ -289,11 +341,14 @@ const ClientFilesUpload = () => {
         }, 100);
     };
 
-    /* ================= CLOSE DOCUMENT PREVIEW ================= */
+    /* ================= CLOSE DOCUMENT PREVIEW (UPDATED WITH ZOOM RESET) ================= */
     const closeDocumentPreview = () => {
         cleanupProtection();
         setIsPreviewOpen(false);
         setPreviewDoc(null);
+        setZoomLevel(1);
+        setImagePosition({ x: 0, y: 0 });
+        setIsDragging(false);
     };
 
     /* ================= OPEN VIEW ALL MODAL ================= */
@@ -1724,7 +1779,7 @@ const ClientFilesUpload = () => {
         );
     };
 
-    /* ================= RENDER DOCUMENT PREVIEW ================= */
+    /* ================= RENDER DOCUMENT PREVIEW (UPDATED WITH ZOOM) ================= */
     const renderDocumentPreview = () => {
         if (!previewDoc || !isPreviewOpen) return null;
 
@@ -1782,11 +1837,12 @@ const ClientFilesUpload = () => {
                             <span className="protection-text">
                                 SECURE VIEW: Downloading and right-click disabled
                             </span>
-                            <span className="scroll-hint">
-                                (Scroll to view full content)
+                            <span className="zoom-hint">
+                                <FiZoomIn size={14} /> Use zoom controls or Ctrl+Mouse Wheel to zoom
                             </span>
                         </div>
 
+                        {/* PDF Viewer - Native browser zoom works with Ctrl+Mouse Wheel */}
                         {fileType === 'pdf' && (
                             <div className="protected-view-container pdf-viewer-container">
                                 <iframe
@@ -1810,78 +1866,185 @@ const ClientFilesUpload = () => {
                             </div>
                         )}
 
+                        {/* Image Viewer with Zoom and Pan */}
                         {fileType === 'image' && (
-                            <div
-                                className="protected-view-container image-viewer-container"
-                                onContextMenu={(e) => e.preventDefault()}
-                                style={{
-                                    overflow: 'auto',
-                                    maxHeight: '70vh',
-                                    textAlign: 'center',
-                                    backgroundColor: '#f5f5f5'
-                                }}
-                            >
-                                <img
-                                    src={previewDoc.url}
-                                    alt={previewDoc.fileName}
-                                    style={{
-                                        maxWidth: '100%',
-                                        maxHeight: '100%',
-                                        pointerEvents: 'none',
-                                        userSelect: 'none',
-                                        WebkitUserSelect: 'none',
-                                        MozUserSelect: 'none',
-                                        msUserSelect: 'none',
-                                        draggable: 'false'
-                                    }}
-                                    onContextMenu={(e) => {
-                                        e.preventDefault();
-                                        return false;
-                                    }}
-                                    onDragStart={(e) => e.preventDefault()}
-                                />
-                                <div
-                                    className="image-protection-overlay"
-                                    style={{
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: 0,
-                                        width: '100%',
-                                        height: '100%',
-                                        pointerEvents: 'none',
-                                        zIndex: 10
-                                    }}
-                                ></div>
-                            </div>
-                        )}
+                            <div className="image-viewer-wrapper">
+                                {/* Zoom Controls */}
+                                <div className="zoom-controls">
+                                    <button 
+                                        onClick={handleZoomOut}
+                                        disabled={zoomLevel <= 0.5}
+                                        className="zoom-btn"
+                                        title="Zoom Out"
+                                    >
+                                        <FiZoomOut size={18} />
+                                    </button>
+                                    <span className="zoom-level">{Math.round(zoomLevel * 100)}%</span>
+                                    <button 
+                                        onClick={handleZoomIn}
+                                        disabled={zoomLevel >= 3}
+                                        className="zoom-btn"
+                                        title="Zoom In"
+                                    >
+                                        <FiZoomIn size={18} />
+                                    </button>
+                                    <button 
+                                        onClick={handleZoomReset}
+                                        className="zoom-btn reset"
+                                        title="Reset Zoom"
+                                    >
+                                        <FiMaximize size={16} />
+                                        <span>Reset</span>
+                                    </button>
+                                </div>
 
-                        {fileType === 'excel' && (
-                            <div
-                                className="protected-view-container excel-viewer-container"
-                                onContextMenu={(e) => e.preventDefault()}
-                                style={{
-                                    height: '70vh',
-                                    position: 'relative'
-                                }}
-                            >
-                                <iframe
-                                    src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewDoc.url)}&wdStartOn=1`}
-                                    width="100%"
-                                    height="100%"
-                                    frameBorder="0"
-                                    scrolling="yes"
-                                    style={{
-                                        border: 'none',
-                                        display: 'block'
-                                    }}
-                                    title={`Excel Viewer - ${previewDoc.fileName}`}
+                                <div
+                                    className={`protected-view-container image-viewer-container ${isDragging ? 'dragging' : ''}`}
                                     onContextMenu={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
                                         return false;
                                     }}
-                                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
-                                />
+                                    onMouseDown={handleMouseDown}
+                                    onMouseMove={handleMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onMouseLeave={handleMouseUp}
+                                    style={{
+                                        overflow: 'auto',
+                                        maxHeight: '70vh',
+                                        textAlign: 'center',
+                                        backgroundColor: '#f5f5f5',
+                                        position: 'relative',
+                                        cursor: zoomLevel > 1 ? 'grab' : 'default'
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            transform: `scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`,
+                                            transformOrigin: 'center',
+                                            transition: isDragging ? 'none' : 'transform 0.1s ease',
+                                            display: 'inline-block',
+                                            padding: '20px',
+                                            minWidth: '100%',
+                                            minHeight: '100%'
+                                        }}
+                                    >
+                                        <img
+                                            src={previewDoc.url}
+                                            alt={previewDoc.fileName}
+                                            style={{
+                                                maxWidth: '100%',
+                                                maxHeight: '100%',
+                                                pointerEvents: 'none',
+                                                userSelect: 'none',
+                                                WebkitUserSelect: 'none',
+                                                MozUserSelect: 'none',
+                                                msUserSelect: 'none',
+                                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                                draggable: 'false'
+                                            }}
+                                            onContextMenu={(e) => {
+                                                e.preventDefault();
+                                                return false;
+                                            }}
+                                            onDragStart={(e) => e.preventDefault()}
+                                        />
+                                    </div>
+                                    
+                                    {/* Protection overlay */}
+                                    <div
+                                        className="image-protection-overlay"
+                                        style={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: '100%',
+                                            height: '100%',
+                                            pointerEvents: 'none',
+                                            zIndex: 10
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Excel Viewer with Zoom Controls */}
+                        {fileType === 'excel' && (
+                            <div className="excel-viewer-wrapper">
+                                {/* Zoom Controls */}
+                                <div className="zoom-controls">
+                                    <button 
+                                        onClick={handleZoomOut}
+                                        disabled={zoomLevel <= 0.5}
+                                        className="zoom-btn"
+                                        title="Zoom Out"
+                                    >
+                                        <FiZoomOut size={18} />
+                                    </button>
+                                    <span className="zoom-level">{Math.round(zoomLevel * 100)}%</span>
+                                    <button 
+                                        onClick={handleZoomIn}
+                                        disabled={zoomLevel >= 3}
+                                        className="zoom-btn"
+                                        title="Zoom In"
+                                    >
+                                        <FiZoomIn size={18} />
+                                    </button>
+                                    <button 
+                                        onClick={handleZoomReset}
+                                        className="zoom-btn reset"
+                                        title="Reset Zoom"
+                                    >
+                                        <FiMaximize size={16} />
+                                        <span>Reset</span>
+                                    </button>
+                                </div>
+                                
+                                <div
+                                    className="protected-view-container excel-viewer-container"
+                                    onContextMenu={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        return false;
+                                    }}
+                                    style={{
+                                        height: '70vh',
+                                        position: 'relative',
+                                        overflow: 'auto',
+                                        backgroundColor: '#ffffff'
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            transform: `scale(${zoomLevel})`,
+                                            transformOrigin: 'top left',
+                                            transition: 'transform 0.1s ease',
+                                            width: `${100 / zoomLevel}%`,
+                                            height: `${100 / zoomLevel}%`,
+                                            minWidth: '100%',
+                                            minHeight: '100%'
+                                        }}
+                                    >
+                                        <iframe
+                                            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewDoc.url)}&wdStartOn=1`}
+                                            width="100%"
+                                            height="100%"
+                                            frameBorder="0"
+                                            scrolling="no"
+                                            style={{
+                                                border: 'none',
+                                                display: 'block'
+                                            }}
+                                            title={`Excel Viewer - ${previewDoc.fileName}`}
+                                            onContextMenu={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                return false;
+                                            }}
+                                            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+                                        />
+                                    </div>
+                                </div>
 
                                 <div className="viewer-info" style={{
                                     padding: '10px',
@@ -1897,6 +2060,7 @@ const ClientFilesUpload = () => {
                             </div>
                         )}
 
+                        {/* Other Files */}
                         {fileType === 'other' && (
                             <div
                                 className="protected-view-container other-file-container"

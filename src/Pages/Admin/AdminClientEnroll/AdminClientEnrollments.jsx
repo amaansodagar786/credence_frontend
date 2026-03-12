@@ -98,6 +98,9 @@ const AdminClientEnrollments = () => {
   const [activeTaskTab, setActiveTaskTab] = useState("assigned"); // 'assigned', 'pending', 'completed', 'payment'
   const [taskInfoSearchTerm, setTaskInfoSearchTerm] = useState("");
 
+  // Add this new state
+  const [togglingClientId, setTogglingClientId] = useState(null);
+
   // ADD THIS HELPER FUNCTION after your other state declarations:
   const formatDateRange = (fromDate, toDate) => {
     if (!fromDate || !toDate) return 'Invalid date';
@@ -247,6 +250,8 @@ const AdminClientEnrollments = () => {
   // Toggle client active status
   const toggleClientStatus = async (clientId, currentStatus) => {
     try {
+      setTogglingClientId(clientId); // Set loading state BEFORE API call
+
       const newStatus = !currentStatus;
       await axios.patch(
         `${import.meta.env.VITE_API_URL}/client-management/toggle-status/${clientId}`,
@@ -264,6 +269,8 @@ const AdminClientEnrollments = () => {
     } catch (error) {
       console.error("Error toggling client status:", error);
       showToast("Failed to update client status", "error");
+    } finally {
+      setTogglingClientId(null); // Clear loading state AFTER API call (success or error)
     }
   };
 
@@ -867,16 +874,17 @@ const AdminClientEnrollments = () => {
                         <button
                           className={`action-btn ${client.isActive ? 'deactivate-btn' : 'activate-btn'}`}
                           onClick={() => toggleClientStatus(client.clientId, client.isActive)}
+                          disabled={togglingClientId === client.clientId} // Disable while loading
                         >
-                          {client.isActive ? (
+                          {togglingClientId === client.clientId ? (
                             <>
-                              <FiUserX />
-                              <span>Deactivate</span>
+                              <div className="spinner-small" style={{ marginRight: '6px' }}></div>
+                              <span>{client.isActive ? 'Deactivating...' : 'Activating...'}</span>
                             </>
                           ) : (
                             <>
-                              <FiUserCheck />
-                              <span>Activate</span>
+                              {client.isActive ? <FiUserX /> : <FiUserCheck />}
+                              <span>{client.isActive ? 'Deactivate' : 'Activate'}</span>
                             </>
                           )}
                         </button>
