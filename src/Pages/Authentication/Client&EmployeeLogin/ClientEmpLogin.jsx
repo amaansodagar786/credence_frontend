@@ -19,7 +19,7 @@ import {
   FiX
 } from "react-icons/fi";
 import "./ClientEmpLogin.scss";
-import { useModal } from "../../Home/Model/ModalProvider"; // Import the modal provider
+import { useModal } from "../../Home/Model/ModalProvider";
 
 
 // Validation Schemas
@@ -58,16 +58,12 @@ const ClientEmpLogin = () => {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [verifyToken, setVerifyToken] = useState("");
 
-
   const { openAgreementModal } = useModal();
 
-
-
   const handleEnrollNowClick = (e) => {
-    e.preventDefault(); // Prevent default link behavior
-    openAgreementModal(); // Open the agreement modal
+    e.preventDefault();
+    openAgreementModal();
   };
-
 
   // Formik initialization for Employee
   const employeeFormik = useFormik({
@@ -77,6 +73,14 @@ const ClientEmpLogin = () => {
       try {
         setLoading(true);
         setServerError("");
+
+        // Call employee logout first to clear any stale httpOnly cookies from backend
+        await axios.post(
+          `${import.meta.env.VITE_API_URL}/employee/logout`,
+          {},
+          { withCredentials: true }
+        ).catch(() => { }); // silently ignore if logout fails
+
         await axios.post(
           `${import.meta.env.VITE_API_URL}/employee/login`,
           values,
@@ -103,6 +107,14 @@ const ClientEmpLogin = () => {
       try {
         setLoading(true);
         setServerError("");
+
+        // Call client logout first to clear any stale httpOnly cookies from backend
+        await axios.post(
+          `${import.meta.env.VITE_API_URL}/client/logout`,
+          {},
+          { withCredentials: true }
+        ).catch(() => { }); // silently ignore if logout fails
+
         await axios.post(
           `${import.meta.env.VITE_API_URL}/client/login`,
           values,
@@ -145,7 +157,6 @@ const ClientEmpLogin = () => {
     setForgotPasswordSuccess("");
 
     if (step === 1) {
-      // Step 1: Send OTP
       if (!forgotEmail) {
         setForgotPasswordError("Please enter your email");
         return;
@@ -171,7 +182,6 @@ const ClientEmpLogin = () => {
       }
 
     } else if (step === 2) {
-      // Step 2: Verify OTP
       if (!forgotOtp || forgotOtp.length !== 4) {
         setForgotPasswordError("Please enter a valid 4-digit OTP");
         return;
@@ -198,7 +208,6 @@ const ClientEmpLogin = () => {
       }
 
     } else if (step === 3) {
-      // Step 3: Reset Password
       if (!newPassword || !confirmPassword) {
         setForgotPasswordError("Please enter and confirm your new password");
         return;
@@ -238,7 +247,6 @@ const ClientEmpLogin = () => {
     }
   };
 
-  // Function to reset the form
   const resetForgotPasswordForm = () => {
     setForgotPasswordStep(1);
     setForgotEmail("");
