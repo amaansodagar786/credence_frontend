@@ -716,101 +716,139 @@ const ClientFilesUpload = () => {
     };
 
     /* ================= UPLOAD FILES ================= */
-    const uploadFiles = async (type, files, categoryName = null, isReplacement = false, replacedFileName = null, lockAfterUpload = false) => {
-        // ✅ Check if month is active before uploading
-        if (!isMonthActive) {
-            showError("Cannot upload files - Client was inactive during this period.");
-            return;
-        }
+const uploadFiles = async (type, files, categoryName = null, isReplacement = false, replacedFileName = null, lockAfterUpload = false) => {
+    // ✅ Check if month is active before uploading
+    if (!isMonthActive) {
+        showError("Cannot upload files - Client was inactive during this period.");
+        return;
+    }
 
-        if (!files || files.length === 0) return;
+    if (!files || files.length === 0) return;
 
-        const noteRequired = isNoteRequired(type, categoryName);
+    // ✅ CHECK TOTAL SIZE BEFORE UPLOADING (10MB TOTAL LIMIT)
+    const MAX_TOTAL_SIZE = 10 * 1024 * 1024; // 10MB total for all files
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+    
+    if (totalSize > MAX_TOTAL_SIZE) {
+        const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+        showError(`❌ Total file size (${totalSizeMB}MB) exceeds the maximum allowed of 10MB for all files combined. Please reduce file sizes.`);
+        return;
+    }
 
-        if (noteRequired && !categoryName && !categoryNotes[type]) {
+    // ✅ CHECK INDIVIDUAL FILE SIZE (already in handleFilesChange, but double-check)
+    const oversizedFiles = files.filter(file => file.size > 10 * 1024 * 1024);
+    if (oversizedFiles.length > 0) {
+        showError(`❌ File(s) too large: ${oversizedFiles.map(f => f.name).join(', ')}. Maximum size is 10MB per file.`);
+        return;
+    }
+
+    const noteRequired = isNoteRequired(type, categoryName);
+
+    if (noteRequired && !categoryName && !categoryNotes[type]) {
+        showError("Note is required when updating files after unlock");
+        return;
+    }
+
+    if (noteRequired && categoryName) {
+        const cat = otherCategories.find(c => c.categoryName === categoryName);
+        if (cat && !cat.note) {
             showError("Note is required when updating files after unlock");
             return;
         }
+    }
 
-        if (noteRequired && categoryName) {
-            const cat = otherCategories.find(c => c.categoryName === categoryName);
-            if (cat && !cat.note) {
-                showError("Note is required when updating files after unlock");
-                return;
+    const formData = new FormData();
+
+    files.forEach((file, index) => {
+        formData.append("files", file);
+    });
+
+    formData.append("year", year);
+    formData.append("month", month);
+    formData.append("type", type);
+
+    if (categoryName) {
+        formData.append("categoryName", categoryName);
+    }
+
+    if (isReplacement && replacedFileName) {
+        formData.append("replacedFile", replacedFileName);
+        formData.append("deleteNote", "Replaced with new file");
+    }
+
+    if (noteRequired) {
+        const note = categoryName
+            ? otherCategories.find(c => c.categoryName === categoryName)?.note
+            : categoryNotes[type];
+        formData.append("note", note || "");
+    }
+
+    if (lockAfterUpload) {
+        formData.append("lockAfterUpload", "true");
+    }
+
+    setLoading(true);
+
+    try {
+        const endpoint = lockAfterUpload
+            ? `${import.meta.env.VITE_API_URL}/clientupload/upload-and-lock`
+            : `${import.meta.env.VITE_API_URL}/clientupload/upload`;
+
+        const response = await axios.post(
+            endpoint,
+            formData,
+            {
+                withCredentials: true,
+                headers: { "Content-Type": "multipart/form-data" },
+                maxContentLength: 50 * 1024 * 1024, // Allow up to 50MB in axios
+                maxBodyLength: 50 * 1024 * 1024
             }
-        }
+        );
 
-        const formData = new FormData();
+        showSuccess(response.data.message || `${files.length} file(s) uploaded successfully!`);
 
-        files.forEach((file, index) => {
-            formData.append("files", file);
-        });
-
-        formData.append("year", year);
-        formData.append("month", month);
-        formData.append("type", type);
+        fetchMonthData(year, month);
+        fetchDeletedFiles();
 
         if (categoryName) {
-            formData.append("categoryName", categoryName);
-        }
-
-        if (isReplacement && replacedFileName) {
-            formData.append("replacedFile", replacedFileName);
-            formData.append("deleteNote", "Replaced with new file");
-        }
-
-        if (noteRequired) {
-            const note = categoryName
-                ? otherCategories.find(c => c.categoryName === categoryName)?.note
-                : categoryNotes[type];
-            formData.append("note", note || "");
-        }
-
-        if (lockAfterUpload) {
-            formData.append("lockAfterUpload", "true");
-        }
-
-        setLoading(true);
-
-        try {
-            const endpoint = lockAfterUpload
-                ? `${import.meta.env.VITE_API_URL}/clientupload/upload-and-lock`
-                : `${import.meta.env.VITE_API_URL}/clientupload/upload`;
-
-            const response = await axios.post(
-                endpoint,
-                formData,
-                {
-                    withCredentials: true,
-                    headers: { "Content-Type": "multipart/form-data" }
-                }
+            const updatedCategories = otherCategories.map(cat =>
+                cat.categoryName === categoryName
+                    ? { ...cat, newFiles: [], note: "" }
+                    : cat
             );
-
-            showSuccess(response.data.message || `${files.length} file(s) uploaded successfully!`);
-
-            fetchMonthData(year, month);
-            fetchDeletedFiles();
-
-            if (categoryName) {
-                const updatedCategories = otherCategories.map(cat =>
-                    cat.categoryName === categoryName
-                        ? { ...cat, newFiles: [], note: "" }
-                        : cat
-                );
-                setOtherCategories(updatedCategories);
-            } else {
-                setNewFiles(prev => ({ ...prev, [type]: [] }));
-                setCategoryNotes(prev => ({ ...prev, [type]: "" }));
-            }
-
-        } catch (error) {
-            console.error("Upload error:", error);
-            // Show the exact error message from backend
-            showError(error.response?.data?.message || "Upload failed");
-        } finally {
-            setLoading(false);
+            setOtherCategories(updatedCategories);
+        } else {
+            setNewFiles(prev => ({ ...prev, [type]: [] }));
+            setCategoryNotes(prev => ({ ...prev, [type]: "" }));
         }
-    };
+
+    } catch (error) {
+        console.error("Upload error:", error);
+        
+        // ✅ CHECK FOR 413 STATUS CODE (Request Entity Too Large)
+        if (error.response?.status === 413) {
+            showError("❌ File too large! Maximum total size is 10MB for all files combined. Your hosting server rejected the upload. Please reduce file sizes.");
+        } 
+        // ✅ CHECK FOR NETWORK ERRORS (common with large files)
+        else if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
+            showError("❌ Upload failed - file too large or network issue. Maximum total size is 10MB. Please reduce file sizes.");
+        }
+        // ✅ CHECK FOR TIMEOUT ERRORS
+        else if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+            showError("❌ Upload timeout - file too large. Maximum total size is 10MB. Please reduce file sizes.");
+        }
+        // ✅ BACKEND ERROR MESSAGE (your custom JSON error)
+        else if (error.response?.data?.message) {
+            showError(error.response.data.message);
+        }
+        // ✅ FALLBACK
+        else {
+            showError("❌ Upload failed. Please check that total file size is under 10MB and try again.");
+        }
+    } finally {
+        setLoading(false);
+    }
+};
 
     /* ================= SAVE & LOCK MONTH ================= */
     const saveAndLock = async () => {
