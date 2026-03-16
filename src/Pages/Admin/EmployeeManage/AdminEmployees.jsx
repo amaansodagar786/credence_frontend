@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -28,7 +28,8 @@ import {
   FiXCircle,
   FiArchive,
   FiFileText,
-  FiInfo
+  FiInfo,
+  FiChevronDown
 } from "react-icons/fi";
 import "./AdminEmployees.scss";
 
@@ -58,15 +59,9 @@ const assignSchema = Yup.object().shape({
     .min(1, "Month must be between 1-12")
     .max(12, "Month must be between 1-12")
     .required("Month is required"),
-  task: Yup.string()
-    .oneOf([
-      "Bookkeeping",
-      "VAT Filing Computation",
-      "VAT Filing",
-      "Financial Statement Generation",
-      "Audit"
-    ], "Please select a valid task")
-    .required("Task is required")
+  tasks: Yup.array()
+    .min(1, "Select at least one task")
+    .required("Select at least one task")
 });
 
 const AdminEmployees = () => {
@@ -92,9 +87,14 @@ const AdminEmployees = () => {
   const [confirmMessage, setConfirmMessage] = useState("");
   const [assignmentToRemove, setAssignmentToRemove] = useState(null);
 
-  // Client task status state (NEW)
+  // Client task status state
   const [clientTaskStatus, setClientTaskStatus] = useState(null);
   const [loadingTaskStatus, setLoadingTaskStatus] = useState(false);
+
+  // Mobile search states for client dropdown
+  const [clientSearchTerm, setClientSearchTerm] = useState("");
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const dropdownRef = useRef(null);
 
   // Task options
   const taskOptions = [
@@ -156,7 +156,7 @@ const AdminEmployees = () => {
             theme: "dark"
           });
         } else {
-          // Create new employee (password required)
+          // Create new employee
           if (!values.password) {
             toast.error("Password is required for new employees", {
               position: "top-right",
@@ -195,20 +195,20 @@ const AdminEmployees = () => {
     }
   });
 
-  // Formik for Assign Client (UPDATED WITH TASK)
+  // Formik for Assign Client (UPDATED WITH MULTIPLE TASKS)
   const assignFormik = useFormik({
     initialValues: {
       clientId: "",
       year: currentMonth.year,
       month: currentMonth.month,
-      task: ""
+      tasks: []  // Changed from single task to array
     },
     validationSchema: assignSchema,
     onSubmit: async (values) => {
       try {
         setLoading(true);
 
-        // NEW: First check if client has documents
+        // Check if client has documents
         const documentCheck = await checkClientDocuments(
           values.clientId,
           values.year,
@@ -225,7 +225,7 @@ const AdminEmployees = () => {
           return;
         }
 
-        // If documents exist, proceed with assignment
+        // Proceed with multiple tasks assignment
         const response = await axios.post(
           `${import.meta.env.VITE_API_URL}/admin-employee/assign-client`,
           {
@@ -233,12 +233,12 @@ const AdminEmployees = () => {
             clientId: values.clientId,
             year: Number(values.year),
             month: Number(values.month),
-            task: values.task
+            tasks: values.tasks  // Send array of tasks
           },
           { withCredentials: true }
         );
 
-        toast.success(response.data.message || "Task assigned successfully!", {
+        toast.success(response.data.message || "Tasks assigned successfully!", {
           position: "top-right",
           autoClose: 3000,
           theme: "dark"
@@ -252,7 +252,7 @@ const AdminEmployees = () => {
           loadClientTaskStatus(values.clientId, values.year, values.month);
         }
       } catch (error) {
-        console.error("Error assigning task:", error);
+        console.error("Error assigning tasks:", error);
         toast.error(error.response?.data?.message || "An error occurred", {
           position: "top-right",
           autoClose: 5000,
@@ -300,8 +300,6 @@ const AdminEmployees = () => {
   const loadClientTaskStatus = async (clientId, year, month) => {
     try {
       setLoadingTaskStatus(true);
-
-      // Clear any previous data
       setClientTaskStatus(null);
 
       console.log("📡 Loading task status for:", { clientId, year, month });
@@ -313,13 +311,11 @@ const AdminEmployees = () => {
 
       console.log("✅ Task status received:", res.data);
 
-      // FIX: Convert to numbers for comparison
       const expectedYear = Number(year);
       const expectedMonth = Number(month);
       const receivedYear = Number(res.data.year);
       const receivedMonth = Number(res.data.month);
 
-      // VERIFY: Make sure response matches current selection (with number conversion)
       if (res.data.clientId === clientId &&
         receivedYear === expectedYear &&
         receivedMonth === expectedMonth) {
@@ -334,9 +330,7 @@ const AdminEmployees = () => {
             month: receivedMonth
           }
         });
-        // Still set state even if mismatch? Let's set it anyway
         setClientTaskStatus(res.data);
-        console.log("⚠️ Mismatch but setting state anyway");
       }
 
     } catch (error) {
@@ -347,14 +341,14 @@ const AdminEmployees = () => {
     }
   };
 
-  // NEW: Check if client has documents for month
+  // Check if client has documents for month
   const checkClientDocuments = async (clientId, year, month) => {
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_API_URL}/admin-employee/check-client-documents/${clientId}?year=${year}&month=${month}`,
         { withCredentials: true }
       );
-      return res.data; // { hasDocuments: true/false, message: "...", details: {...} }
+      return res.data;
     } catch (error) {
       console.error("Error checking documents:", error);
       return { hasDocuments: false, message: "Error checking documents" };
@@ -366,11 +360,24 @@ const AdminEmployees = () => {
     loadClients();
   }, []);
 
-  // FIX 1: useEffect to handle client/date changes
+  // Handle click outside dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowClientDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Load task status when client/date changes
   useEffect(() => {
     if (!showAssignModal) return;
 
-    // Clear old data immediately when client or date changes
     setClientTaskStatus(null);
 
     const { clientId, year, month } = assignFormik.values;
@@ -379,7 +386,6 @@ const AdminEmployees = () => {
       return;
     }
 
-    // Add a small delay to prevent rapid API calls
     const timer = setTimeout(() => {
       loadClientTaskStatus(clientId, year, month);
     }, 300);
@@ -406,9 +412,11 @@ const AdminEmployees = () => {
       clientId: "",
       year: currentMonth.year,
       month: currentMonth.month,
-      task: ""
+      tasks: []  // Initialize empty array
     });
-    setClientTaskStatus(null); // Reset task status
+    setClientTaskStatus(null);
+    setClientSearchTerm(""); // Reset client search
+    setShowClientDropdown(false);
     setShowAssignModal(true);
   };
 
@@ -434,7 +442,7 @@ const AdminEmployees = () => {
     setShowRemoveConfirmModal(true);
   };
 
-  // Handle Remove Assignment (UPDATED FOR TASK-SPECIFIC REMOVAL)
+  // Handle Remove Assignment
   const handleRemoveAssignment = async () => {
     if (!assignmentToRemove || !assigningEmployee) return;
 
@@ -449,7 +457,7 @@ const AdminEmployees = () => {
             employeeId: assigningEmployee.employeeId,
             year: assignmentToRemove.year,
             month: assignmentToRemove.month,
-            task: assignmentToRemove.task // ADDED: Task is now required
+            task: assignmentToRemove.task
           },
           withCredentials: true
         }
@@ -464,7 +472,6 @@ const AdminEmployees = () => {
       loadEmployees();
       closeRemoveConfirmModal();
 
-      // Refresh client task status after removal
       if (assignmentToRemove.clientId && assignmentToRemove.year && assignmentToRemove.month) {
         loadClientTaskStatus(assignmentToRemove.clientId, assignmentToRemove.year, assignmentToRemove.month);
       }
@@ -527,6 +534,40 @@ const AdminEmployees = () => {
     }
   };
 
+  // Handle task selection (checkbox)
+  const handleTaskToggle = (taskValue) => {
+    const currentTasks = assignFormik.values.tasks;
+    let newTasks;
+
+    if (currentTasks.includes(taskValue)) {
+      // Remove task if already selected
+      newTasks = currentTasks.filter(t => t !== taskValue);
+    } else {
+      // Add task if not selected
+      newTasks = [...currentTasks, taskValue];
+    }
+
+    assignFormik.setFieldValue('tasks', newTasks);
+  };
+
+  // Handle select all tasks
+  const handleSelectAllTasks = () => {
+    const availableTasks = getAvailableTasks().map(t => t.value);
+    assignFormik.setFieldValue('tasks', availableTasks);
+  };
+
+  // Handle clear all tasks
+  const handleClearAllTasks = () => {
+    assignFormik.setFieldValue('tasks', []);
+  };
+
+  // Handle client selection from dropdown
+  const handleClientSelect = (clientId) => {
+    assignFormik.setFieldValue('clientId', clientId);
+    setShowClientDropdown(false);
+    setClientSearchTerm("");
+  };
+
   // Close modals
   const closeConfirmModal = () => {
     setShowConfirmModal(false);
@@ -555,11 +596,13 @@ const AdminEmployees = () => {
         clientId: "",
         year: currentMonth.year,
         month: currentMonth.month,
-        task: ""
+        tasks: []
       }
     });
     setAssigningEmployee(null);
     setClientTaskStatus(null);
+    setClientSearchTerm("");
+    setShowClientDropdown(false);
     setShowAssignModal(false);
   };
 
@@ -586,7 +629,7 @@ const AdminEmployees = () => {
     return phone;
   };
 
-  // Get assigned clients count (UPDATED: Now counts tasks, not clients)
+  // Get assigned tasks count
   const getAssignedCount = (employee) => {
     return employee.assignedClients?.filter(ac => !ac.isRemoved).length || 0;
   };
@@ -595,6 +638,12 @@ const AdminEmployees = () => {
   const filteredEmployees = employees.filter(emp =>
     emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     emp.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Filtered clients based on search (for mobile dropdown)
+  const filteredClients = clients.filter(client =>
+    client.name.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
+    (client.email && client.email.toLowerCase().includes(clientSearchTerm.toLowerCase()))
   );
 
   // Get current month assignments
@@ -609,11 +658,10 @@ const AdminEmployees = () => {
     ) || [];
   };
 
-  // Get past assignments for display (filter out removed)
+  // Get past assignments for display
   const getPastAssignments = (employee) => {
     if (!employee?.assignedClients) return [];
 
-    // Filter out removed assignments and sort by year and month
     return [...employee.assignedClients]
       .filter(assignment => !assignment.isRemoved)
       .sort((a, b) => {
@@ -621,8 +669,6 @@ const AdminEmployees = () => {
         return b.month - a.month;
       });
   };
-
-  // REMOVED: handleClientChange and handleDateChange functions
 
   // Get available tasks (filter out already assigned tasks)
   const getAvailableTasks = () => {
@@ -645,6 +691,13 @@ const AdminEmployees = () => {
 
     const taskStatus = clientTaskStatus.taskStatus.find(t => t.task === task);
     return taskStatus ? taskStatus.isAssigned : false;
+  };
+
+  // Get selected client name
+  const getSelectedClientName = () => {
+    if (!assignFormik.values.clientId) return "Select a client";
+    const client = clients.find(c => c.clientId === assignFormik.values.clientId);
+    return client ? client.name : "Select a client";
   };
 
   return (
@@ -807,11 +860,11 @@ const AdminEmployees = () => {
                                 <button
                                   className="assign-btn"
                                   onClick={() => openAssignModal(employee)}
-                                  title="Assign task to client"
+                                  title="Assign tasks to client"
                                   disabled={loading}
                                 >
                                   <FiBriefcase size={16} />
-                                  <span>Assign Task</span>
+                                  <span>Assign Tasks</span>
                                 </button>
                                 <button
                                   className="delete-btn"
@@ -845,7 +898,7 @@ const AdminEmployees = () => {
           )}
         </div>
 
-        {/* Add Employee Modal - NO CHANGES */}
+        {/* Add/Edit Employee Modal - NO CHANGES */}
         {(showAddModal || showEditModal) && (
           <div className="modal-overlay">
             <div className="modal">
@@ -1026,13 +1079,14 @@ const AdminEmployees = () => {
           </div>
         )}
 
+        {/* Assign Tasks Modal - UPDATED WITH MULTIPLE TASKS AND MOBILE SEARCH */}
         {showAssignModal && assigningEmployee && (
           <div className="modal-overlay">
             <div className="modal assign-modal">
               <div className="modal-header">
                 <h3>
                   <FiBriefcase size={24} />
-                  Assign Task to {assigningEmployee.name}
+                  Assign Tasks to {assigningEmployee.name}
                 </h3>
                 <button
                   className="close-modal"
@@ -1058,31 +1112,56 @@ const AdminEmployees = () => {
                 </div>
 
                 <form onSubmit={assignFormik.handleSubmit} className="modal-form">
-                  {/* Client Selection */}
+                  {/* Client Selection with Mobile Search */}
                   <div className="form-group">
                     <label htmlFor="clientId">
                       <FiBriefcase size={16} /> Select Client *
                     </label>
-                    <select
-                      id="clientId"
-                      name="clientId"
-                      value={assignFormik.values.clientId}
-                      onChange={assignFormik.handleChange}
-                      onBlur={assignFormik.handleBlur}
-                      className={
-                        assignFormik.touched.clientId && assignFormik.errors.clientId
-                          ? "error"
-                          : ""
-                      }
-                      disabled={loading}
-                    >
-                      <option value="">-- Select a client --</option>
-                      {clients.map((client) => (
-                        <option key={client.clientId} value={client.clientId}>
-                          {client.name} {client.email ? `(${client.email})` : ''}
-                        </option>
-                      ))}
-                    </select>
+
+                    {/* Custom dropdown with search for all devices */}
+                    <div className="custom-dropdown" ref={dropdownRef}>
+                      <div
+                        className={`dropdown-selected ${assignFormik.touched.clientId && assignFormik.errors.clientId ? 'error' : ''}`}
+                        onClick={() => setShowClientDropdown(!showClientDropdown)}
+                      >
+                        <span>{getSelectedClientName()}</span>
+                        <FiChevronDown size={18} />
+                      </div>
+
+                      {showClientDropdown && (
+                        <div className="dropdown-options">
+                          <div className="dropdown-search">
+                            <FiSearch size={16} />
+                            <input
+                              type="text"
+                              placeholder="Search clients by name or email..."
+                              value={clientSearchTerm}
+                              onChange={(e) => setClientSearchTerm(e.target.value)}
+                              autoFocus
+                            />
+                          </div>
+                          <div className="dropdown-list">
+                            {filteredClients.length === 0 ? (
+                              <div className="dropdown-no-results">
+                                No clients found
+                              </div>
+                            ) : (
+                              filteredClients.map((client) => (
+                                <div
+                                  key={client.clientId}
+                                  className={`dropdown-item ${assignFormik.values.clientId === client.clientId ? 'selected' : ''}`}
+                                  onClick={() => handleClientSelect(client.clientId)}
+                                >
+                                  <div className="client-name">{client.name}</div>
+                                  <div className="client-email">{client.email}</div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
                     {assignFormik.touched.clientId && assignFormik.errors.clientId && (
                       <div className="error-text">{assignFormik.errors.clientId}</div>
                     )}
@@ -1146,11 +1225,11 @@ const AdminEmployees = () => {
                     </div>
                   </div>
 
-                  {/* Task Selection with status info */}
-                  <div className="form-group">
+                  {/* Multiple Tasks Selection with Checkboxes */}
+                  <div className="form-group tasks-selection">
                     <div className="task-selection-header">
-                      <label htmlFor="task">
-                        <FiFileText size={16} /> Select Task *
+                      <label>
+                        <FiFileText size={16} /> Select Tasks *
                       </label>
                       {clientTaskStatus && (
                         <div className="task-status-info">
@@ -1160,32 +1239,83 @@ const AdminEmployees = () => {
                       )}
                     </div>
 
-                    <select
-                      id="task"
-                      name="task"
-                      value={assignFormik.values.task}
-                      onChange={assignFormik.handleChange}
-                      onBlur={assignFormik.handleBlur}
-                      className={
-                        assignFormik.touched.task && assignFormik.errors.task
-                          ? "error"
-                          : ""
-                      }
-                      disabled={loading || loadingTaskStatus}
-                    >
-                      <option value="">-- Select task to assign --</option>
-                      {getAvailableTasks().map((task) => (
-                        <option
-                          key={task.value}
-                          value={task.value}
-                          disabled={isTaskAlreadyAssigned(task.value)}
+                    {/* Bulk Actions */}
+                    {getAvailableTasks().length > 0 && (
+                      <div className="bulk-actions">
+                        <button
+                          type="button"
+                          className="bulk-btn"
+                          onClick={handleSelectAllTasks}
+                          disabled={loading || loadingTaskStatus}
                         >
-                          {task.label} {isTaskAlreadyAssigned(task.value) ? "(Already assigned)" : ""}
-                        </option>
-                      ))}
-                    </select>
-                    {assignFormik.touched.task && assignFormik.errors.task && (
-                      <div className="error-text">{assignFormik.errors.task}</div>
+                          Select All Available
+                        </button>
+                        <button
+                          type="button"
+                          className="bulk-btn"
+                          onClick={handleClearAllTasks}
+                          disabled={loading || loadingTaskStatus || assignFormik.values.tasks.length === 0}
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Tasks Checkbox List */}
+                    <div className="tasks-checkbox-list">
+                      {loadingTaskStatus ? (
+                        <div className="tasks-loading">
+                          <span className="spinner-small"></span>
+                          <span>Loading task status...</span>
+                        </div>
+                      ) : getAvailableTasks().length === 0 ? (
+                        <div className="no-tasks-available">
+                          <FiInfo size={20} />
+                          <p>No tasks available for assignment. All tasks are already assigned for this period.</p>
+                        </div>
+                      ) : (
+                        getAvailableTasks().map((task) => (
+                          <div key={task.value} className="task-checkbox-item">
+                            <label className="checkbox-label">
+                              <input
+                                type="checkbox"
+                                checked={assignFormik.values.tasks.includes(task.value)}
+                                onChange={() => handleTaskToggle(task.value)}
+                                disabled={loading}
+                              />
+                              <span className="task-label">{task.label}</span>
+                            </label>
+                            {isTaskAlreadyAssigned(task.value) && (
+                              <span className="task-already-assigned">Already assigned</span>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Selected Tasks Summary */}
+                    {assignFormik.values.tasks.length > 0 && (
+                      <div className="selected-tasks-summary">
+                        <strong>Selected ({assignFormik.values.tasks.length}):</strong>
+                        <div className="selected-tasks-list">
+                          {assignFormik.values.tasks.map(task => (
+                            <span key={task} className="selected-task-tag">
+                              {task}
+                              <button
+                                type="button"
+                                onClick={() => handleTaskToggle(task)}
+                                className="remove-task-tag"
+                              >
+                                <FiX size={14} />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {assignFormik.touched.tasks && assignFormik.errors.tasks && (
+                      <div className="error-text">{assignFormik.errors.tasks}</div>
                     )}
 
                     {/* Task Status Display */}
@@ -1200,7 +1330,7 @@ const AdminEmployees = () => {
                                 {task.isAssigned ? (
                                   <>
                                     <span className="assigned-to">
-                                      {task.accountingDone ? '✓ Completed' : '🔄 In Progress'} by {task.assignedTo.employeeName}
+                                      {task.accountingDone ? '✓ Completed' : '🔄 In Progress'} by {task.assignedTo?.employeeName}
                                     </span>
                                   </>
                                 ) : (
@@ -1228,9 +1358,10 @@ const AdminEmployees = () => {
                           : "Select month and year"
                         }
                       </p>
-                      {assignFormik.values.task && (
+                      {assignFormik.values.tasks.length > 0 && (
                         <p>
-                          <strong>Task:</strong> {assignFormik.values.task}
+                          <strong>Tasks ({assignFormik.values.tasks.length}):</strong>{" "}
+                          {assignFormik.values.tasks.join(', ')}
                         </p>
                       )}
                       {assignFormik.values.clientId && (
@@ -1244,11 +1375,9 @@ const AdminEmployees = () => {
                         </p>
                       )}
                     </div>
-
-
                   </div>
 
-                  {/* ===== DOCUMENT STATUS CHECK ===== */}
+                  {/* Document Status Check */}
                   {clientTaskStatus && assignFormik.values.clientId && assignFormik.values.year && assignFormik.values.month && (
                     <div className="document-status-check">
                       <button
@@ -1285,7 +1414,7 @@ const AdminEmployees = () => {
                     </div>
                   )}
 
-                  {/* ===== BUTTONS ===== */}
+                  {/* Buttons */}
                   <div className="modal-actions">
                     <button
                       type="button"
@@ -1298,13 +1427,19 @@ const AdminEmployees = () => {
                     <button
                       type="submit"
                       className="primary-btn"
-                      disabled={loading || loadingTaskStatus || !assignFormik.isValid}
+                      disabled={
+                        loading ||
+                        loadingTaskStatus ||
+                        !assignFormik.isValid ||
+                        assignFormik.values.tasks.length === 0
+                      }
                     >
                       {loading || loadingTaskStatus ? (
                         <span className="spinner"></span>
                       ) : (
                         <>
-                          <FiBriefcase size={18} /> Assign Task
+                          <FiBriefcase size={18} />
+                          Assign {assignFormik.values.tasks.length} Task{assignFormik.values.tasks.length !== 1 ? 's' : ''}
                         </>
                       )}
                     </button>
