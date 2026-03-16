@@ -75,6 +75,7 @@ const AdminClients = () => {
   const [previewDoc, setPreviewDoc] = useState(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const previewRef = useRef(null);
+  const imageScrollRef = useRef(null); // ✅ ADDED
 
   // Zoom and Pan States
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -289,6 +290,33 @@ const AdminClients = () => {
     setIsDragging(false);
   };
 
+  // ✅ ADDED - useEffect to handle wheel and pinch zoom on image container
+  useEffect(() => {
+    const el = imageScrollRef.current;
+    if (!el || !isPreviewOpen) return;
+
+    const handleWheel = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      setZoomLevel(prev => Math.min(Math.max(prev + delta, 0.5), 3));
+    };
+
+    const blockPinch = (e) => {
+      if (e.ctrlKey || e.touches?.length > 1) {
+        e.preventDefault();
+      }
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    el.addEventListener('touchmove', blockPinch, { passive: false });
+
+    return () => {
+      el.removeEventListener('wheel', handleWheel);
+      el.removeEventListener('touchmove', blockPinch);
+    };
+  }, [isPreviewOpen]);
+
   /* ================= RENDER DOCUMENT PREVIEW (COMPLETELY UPDATED WITH ZOOM) ================= */
   const renderDocumentPreview = () => {
     if (!previewDoc || !isPreviewOpen) return null;
@@ -353,7 +381,7 @@ const AdminClients = () => {
                 SECURE VIEW: Downloading and right-click disabled
               </span>
               <span className="zoom-hint">
-                <FiZoomIn size={14} /> Use zoom controls or Ctrl+Mouse Wheel to zoom
+                <FiZoomIn size={14} /> Use zoom controls or Mouse Wheel to zoom
               </span>
             </div>
 
@@ -381,10 +409,9 @@ const AdminClients = () => {
               </div>
             )}
 
-            {/* Image Viewer with Zoom and Pan */}
+            {/* ✅ IMAGE VIEWER - onWheel removed, ref added */}
             {fileType === 'image' && (
               <div className="image-viewer-wrapper">
-                {/* Zoom Controls */}
                 <div className="zoom-controls">
                   <button
                     onClick={handleZoomOut}
@@ -414,69 +441,38 @@ const AdminClients = () => {
                 </div>
 
                 <div
-                  className={`protected-view-container image-viewer-container ${isDragging ? 'dragging' : ''}`}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
+                  className="image-scroll-container"
+                  ref={imageScrollRef}
+                  onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); return false; }}
+                  onMouseDown={(e) => {
+                    if (zoomLevel > 1) {
+                      setIsDragging(true);
+                      setDragStart({ x: e.clientX - imagePosition.x, y: e.clientY - imagePosition.y });
+                    }
                   }}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseUp}
-                  style={{
-                    overflow: 'auto',
-                    maxHeight: '70vh',
-                    textAlign: 'center',
-                    backgroundColor: '#f5f5f5',
-                    position: 'relative',
-                    cursor: zoomLevel > 1 ? 'grab' : 'default'
+                  onMouseMove={(e) => {
+                    if (isDragging && zoomLevel > 1) {
+                      setImagePosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+                    }
                   }}
+                  onMouseUp={() => setIsDragging(false)}
+                  onMouseLeave={() => setIsDragging(false)}
                 >
                   <div
+                    className="image-transform-wrapper"
                     style={{
                       transform: `scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`,
-                      transformOrigin: 'center',
-                      transition: isDragging ? 'none' : 'transform 0.1s ease',
-                      display: 'inline-block',
-                      padding: '20px',
-                      minWidth: '100%',
-                      minHeight: '100%'
+                      cursor: isDragging ? 'grabbing' : (zoomLevel > 1 ? 'grab' : 'default'),
                     }}
                   >
                     <img
                       src={previewDoc.url}
                       alt={previewDoc.fileName}
-                      style={{
-                        maxWidth: '100%',
-                        maxHeight: '100%',
-                        pointerEvents: 'none',
-                        userSelect: 'none',
-                        WebkitUserSelect: 'none',
-                        MozUserSelect: 'none',
-                        msUserSelect: 'none',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                      }}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        return false;
-                      }}
+                      draggable={false}
+                      onContextMenu={(e) => { e.preventDefault(); return false; }}
                       onDragStart={(e) => e.preventDefault()}
                     />
                   </div>
-
-                  {/* Protection overlay */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      pointerEvents: 'none',
-                      zIndex: 10
-                    }}
-                  />
                 </div>
               </div>
             )}
@@ -1789,16 +1785,6 @@ const AdminClients = () => {
                     </h4>
                     <div className="payment-status-display">
                       {getPaymentBadge()}
-                      {/* {paymentHistory.length > 0 && (
-                        <button
-                          className="history-toggle-btn"
-                          onClick={() => setShowPaymentHistory(!showPaymentHistory)}
-                          title="View payment history"
-                        >
-                          <FiClock size={14} />
-                          History
-                        </button>
-                      )} */}
                     </div>
                   </div>
 
@@ -1834,35 +1820,6 @@ const AdminClients = () => {
                         )}
                       </button>
                     </div>
-
-                    {/* Payment History */}
-                    {/* {showPaymentHistory && paymentHistory.length > 0 && (
-                      <div className="payment-history">
-                        <h5>Payment History</h5>
-                        <div className="history-list">
-                          {paymentHistory.map((entry, index) => (
-                            <div key={index} className="history-item">
-                              <div className="history-header">
-                                <span className={`history-status ${entry.status ? 'paid' : 'pending'}`}>
-                                  {entry.status ? 'PAID' : 'PENDING'}
-                                </span>
-                                <span className="history-date">
-                                  {new Date(entry.changedAt).toLocaleString()}
-                                </span>
-                              </div>
-                              <div className="history-details">
-                                <span className="history-user">
-                                  <FiUser size={12} /> {entry.changedByName || 'Unknown'}
-                                </span>
-                                {entry.notes && (
-                                  <span className="history-notes">{entry.notes}</span>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )} */}
                   </div>
                 </div>
 
