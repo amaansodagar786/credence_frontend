@@ -3,6 +3,8 @@ import ClientLayout from "../Layout/ClientLayout";
 import "./ClientFilesUpload.scss";
 import axios from "axios";
 import { FaGoogleDrive } from "react-icons/fa";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // Icons
 import {
@@ -49,8 +51,6 @@ const ClientFilesUpload = () => {
     // State for month/year selection
     const [year, setYear] = useState(currentYear.toString());
     const [month, setMonth] = useState(currentMonth.toString());
-
-    // ✅ REMOVED: isMonthTooOld state - now handled by backend
 
     // ✅ State to track if month is active for this client
     const [isMonthActive, setIsMonthActive] = useState(true);
@@ -113,9 +113,7 @@ const ClientFilesUpload = () => {
         deleteNote: ""
     });
 
-    // Messages
-    const [successMessage, setSuccessMessage] = useState("");
-    const [errorMessage, setErrorMessage] = useState("");
+    // ❌ REMOVED: successMessage and errorMessage states - using toast instead
 
     // State for employee assignment
     const [employeeAssignments, setEmployeeAssignments] = useState([]);
@@ -132,7 +130,6 @@ const ClientFilesUpload = () => {
 
     // ===== Google Drive State =====
     const [driveAccessToken, setDriveAccessToken] = useState(null);
-    // ⬇️ REMOVED: driveUser state - no longer needed
     const [isDriveAuthenticated, setIsDriveAuthenticated] = useState(false);
     const [driveModalOpen, setDriveModalOpen] = useState(false);
     const [activeDriveCategory, setActiveDriveCategory] = useState(null);
@@ -151,6 +148,55 @@ const ClientFilesUpload = () => {
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
     ];
+
+    // ===== Toast Configuration =====
+    const showSuccess = (message) => {
+        toast.success(message, {
+            position: "top-center",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: "light",
+        });
+    };
+
+    const showError = (message) => {
+        toast.error(message, {
+            position: "top-center",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: "light",
+        });
+    };
+
+    const showInfo = (message) => {
+        toast.info(message, {
+            position: "top-center",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: "light",
+        });
+    };
+
+    const showWarning = (message) => {
+        toast.warning(message, {
+            position: "top-center",
+            autoClose: 4000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: "light",
+        });
+    };
 
     /* ================= ZOOM FUNCTIONS ================= */
     const handleZoomIn = () => {
@@ -209,13 +255,11 @@ const ClientFilesUpload = () => {
         return 'other';
     };
 
-    // ===== REMOVED: calculateIsMonthTooOld function - no longer needed =====
-
     /* ================= DELETE MODAL FUNCTIONS ================= */
     const openDeleteModal = (type, fileName, categoryName = null) => {
         // ✅ Check if month is active
         if (!isMonthActive) {
-            setErrorMessage("Cannot delete files - Client was inactive during this period.");
+            showError("Cannot delete files - Client was inactive during this period.");
             return;
         }
 
@@ -241,7 +285,7 @@ const ClientFilesUpload = () => {
     const confirmDelete = async () => {
         // ✅ Check if month is active
         if (!isMonthActive) {
-            setErrorMessage("Cannot delete files - Client was inactive during this period.");
+            showError("Cannot delete files - Client was inactive during this period.");
             closeDeleteModal();
             return;
         }
@@ -249,12 +293,11 @@ const ClientFilesUpload = () => {
         const { fileName, fileType, categoryName, deleteNote } = deleteModal;
 
         if (!deleteNote.trim()) {
-            setErrorMessage("Please provide a reason for deletion");
+            showError("Please provide a reason for deletion");
             return;
         }
 
         setLoading(true);
-        setErrorMessage("");
 
         try {
             const response = await axios.delete(
@@ -272,8 +315,7 @@ const ClientFilesUpload = () => {
                 }
             );
 
-            setSuccessMessage(`File "${fileName}" deleted successfully.`);
-            setTimeout(() => setSuccessMessage(""), 3000);
+            showSuccess(`File "${fileName}" deleted successfully.`);
 
             fetchMonthData(year, month);
             fetchDeletedFiles();
@@ -281,7 +323,8 @@ const ClientFilesUpload = () => {
 
         } catch (error) {
             console.error("Delete error:", error);
-            setErrorMessage(error.response?.data?.message || "Failed to delete file");
+            // Show the exact error message from backend
+            showError(error.response?.data?.message || "Failed to delete file");
         } finally {
             setLoading(false);
         }
@@ -391,11 +434,8 @@ const ClientFilesUpload = () => {
         if (!y || !m) return;
 
         setLoading(true);
-        setErrorMessage("");
 
         try {
-            // ✅ REMOVED: monthTooOld calculation
-
             // Get month data
             const monthResponse = await axios.get(
                 `${import.meta.env.VITE_API_URL}/clientupload/month-data`,
@@ -464,7 +504,7 @@ const ClientFilesUpload = () => {
             console.error("❌ FETCH MONTH DATA ERROR:", error);
 
             if (error.response?.status !== 404) {
-                setErrorMessage(error.response?.data?.message || "Failed to load month data");
+                showError(error.response?.data?.message || "Failed to load month data");
             }
 
             setMonthData({
@@ -518,8 +558,6 @@ const ClientFilesUpload = () => {
             return false; // Month is inactive, no updates allowed
         }
 
-        // ✅ REMOVED: isMonthTooOld check - now handled by backend locking
-
         // Original lock check
         if (!monthData) return true;
 
@@ -567,13 +605,30 @@ const ClientFilesUpload = () => {
     const handleFilesChange = (type, files, categoryName = null) => {
         // ✅ Check if month is active before allowing file selection
         if (!isMonthActive) {
-            setErrorMessage("Cannot upload files - Client was inactive during this period.");
+            showError("Cannot upload files - Client was inactive during this period.");
             return;
         }
 
-        // ✅ REMOVED: isMonthTooOld check
-
         const fileArray = Array.from(files);
+
+        // Check file size
+        const oversizedFiles = fileArray.filter(file => file.size > 10 * 1024 * 1024);
+        if (oversizedFiles.length > 0) {
+            showError(`File(s) too large: ${oversizedFiles.map(f => f.name).join(', ')}. Maximum size is 10MB per file.`);
+            return;
+        }
+
+        // Check file types (basic check - backend will do full check)
+        const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'xls', 'xlsx', 'csv'];
+        const invalidFiles = fileArray.filter(file => {
+            const ext = file.name.split('.').pop().toLowerCase();
+            return !allowedExtensions.includes(ext);
+        });
+
+        if (invalidFiles.length > 0) {
+            showError(`Invalid file type(s): ${invalidFiles.map(f => f.name).join(', ')}. Allowed: PDF, Images (JPG, PNG, GIF, WEBP, HEIC/HEIF), Excel (XLS, XLSX, CSV)`);
+            return;
+        }
 
         if (categoryName) {
             const updatedCategories = [...otherCategories];
@@ -585,12 +640,15 @@ const ClientFilesUpload = () => {
                     ...fileArray
                 ];
                 setOtherCategories(updatedCategories);
+                showInfo(`${fileArray.length} file(s) added to ${categoryName}`);
             }
         } else {
             setNewFiles(prev => ({
                 ...prev,
                 [type]: [...(prev[type] || []), ...fileArray]
             }));
+            const typeNames = { sales: 'Sales', purchase: 'Purchase', bank: 'Bank' };
+            showInfo(`${fileArray.length} file(s) added to ${typeNames[type] || type}`);
         }
     };
 
@@ -598,26 +656,31 @@ const ClientFilesUpload = () => {
     const removeNewFile = (type, index, categoryName = null) => {
         // ✅ Check if month is active
         if (!isMonthActive) {
-            setErrorMessage("Cannot modify files - Client was inactive during this period.");
+            showError("Cannot modify files - Client was inactive during this period.");
             return;
         }
-
-        // ✅ REMOVED: isMonthTooOld check
 
         if (categoryName) {
             const updatedCategories = [...otherCategories];
             const catIndex = updatedCategories.findIndex(cat => cat.categoryName === categoryName);
 
             if (catIndex !== -1) {
+                const removedFile = updatedCategories[catIndex].newFiles[index];
                 updatedCategories[catIndex].newFiles =
                     updatedCategories[catIndex].newFiles.filter((_, i) => i !== index);
                 setOtherCategories(updatedCategories);
+                showInfo(`Removed: ${removedFile.name}`);
             }
         } else {
-            setNewFiles(prev => ({
-                ...prev,
-                [type]: prev[type].filter((_, i) => i !== index)
-            }));
+            setNewFiles(prev => {
+                const removedFile = prev[type][index];
+                const updated = {
+                    ...prev,
+                    [type]: prev[type].filter((_, i) => i !== index)
+                };
+                showInfo(`Removed: ${removedFile.name}`);
+                return updated;
+            });
         }
     };
 
@@ -625,13 +688,20 @@ const ClientFilesUpload = () => {
     const addOtherCategory = () => {
         // ✅ Check if month is active
         if (!isMonthActive) {
-            setErrorMessage("Cannot add categories - Client was inactive during this period.");
+            showError("Cannot add categories - Client was inactive during this period.");
             return;
         }
 
-        // ✅ REMOVED: isMonthTooOld check
+        if (!newOtherCategory.trim()) {
+            showWarning("Please enter a category name");
+            return;
+        }
 
-        if (!newOtherCategory.trim()) return;
+        // Check if category already exists
+        if (otherCategories.some(cat => cat.categoryName.toLowerCase() === newOtherCategory.trim().toLowerCase())) {
+            showError(`Category "${newOtherCategory.trim()}" already exists`);
+            return;
+        }
 
         const newCat = {
             categoryName: newOtherCategory.trim(),
@@ -642,31 +712,30 @@ const ClientFilesUpload = () => {
 
         setOtherCategories(prev => [...prev, newCat]);
         setNewOtherCategory("");
+        showSuccess(`Category "${newCat.categoryName}" added successfully`);
     };
 
     /* ================= UPLOAD FILES ================= */
     const uploadFiles = async (type, files, categoryName = null, isReplacement = false, replacedFileName = null, lockAfterUpload = false) => {
         // ✅ Check if month is active before uploading
         if (!isMonthActive) {
-            setErrorMessage("Cannot upload files - Client was inactive during this period.");
+            showError("Cannot upload files - Client was inactive during this period.");
             return;
         }
-
-        // ✅ REMOVED: isMonthTooOld check
 
         if (!files || files.length === 0) return;
 
         const noteRequired = isNoteRequired(type, categoryName);
 
         if (noteRequired && !categoryName && !categoryNotes[type]) {
-            setErrorMessage("Note is required when updating files after unlock");
+            showError("Note is required when updating files after unlock");
             return;
         }
 
         if (noteRequired && categoryName) {
             const cat = otherCategories.find(c => c.categoryName === categoryName);
             if (cat && !cat.note) {
-                setErrorMessage("Note is required when updating files after unlock");
+                showError("Note is required when updating files after unlock");
                 return;
             }
         }
@@ -702,7 +771,6 @@ const ClientFilesUpload = () => {
         }
 
         setLoading(true);
-        setErrorMessage("");
 
         try {
             const endpoint = lockAfterUpload
@@ -718,8 +786,7 @@ const ClientFilesUpload = () => {
                 }
             );
 
-            setSuccessMessage(response.data.message || `${files.length} file(s) uploaded successfully!`);
-            setTimeout(() => setSuccessMessage(""), 3000);
+            showSuccess(response.data.message || `${files.length} file(s) uploaded successfully!`);
 
             fetchMonthData(year, month);
             fetchDeletedFiles();
@@ -738,7 +805,8 @@ const ClientFilesUpload = () => {
 
         } catch (error) {
             console.error("Upload error:", error);
-            setErrorMessage(error.response?.data?.message || "Upload failed");
+            // Show the exact error message from backend
+            showError(error.response?.data?.message || "Upload failed");
         } finally {
             setLoading(false);
         }
@@ -748,14 +816,12 @@ const ClientFilesUpload = () => {
     const saveAndLock = async () => {
         // ✅ Check if month is active before saving & locking
         if (!isMonthActive) {
-            setErrorMessage("Cannot lock month - Client was inactive during this period.");
+            showError("Cannot lock month - Client was inactive during this period.");
             return;
         }
 
-        // ✅ REMOVED: isMonthTooOld check
-
         if (!year || !month) {
-            setErrorMessage("Please select year and month");
+            showError("Please select year and month");
             return;
         }
 
@@ -763,12 +829,11 @@ const ClientFilesUpload = () => {
             otherCategories.some(c => c.newFiles.length > 0);
 
         if (hasUpdates && monthData?.wasLockedOnce && !monthNote.trim()) {
-            setErrorMessage("Month note is required when updating files after unlock");
+            showError("Month note is required when updating files after unlock");
             return;
         }
 
         setLoading(true);
-        setErrorMessage("");
 
         try {
             await axios.post(
@@ -777,15 +842,14 @@ const ClientFilesUpload = () => {
                 { withCredentials: true }
             );
 
-            setSuccessMessage("Month saved and locked successfully!");
-            setTimeout(() => setSuccessMessage(""), 3000);
+            showSuccess("Month saved and locked successfully!");
 
             fetchMonthData(year, month);
             setMonthNote("");
 
         } catch (error) {
             console.error("Save & lock error:", error);
-            setErrorMessage(error.response?.data?.message || "Failed to save and lock month");
+            showError(error.response?.data?.message || "Failed to save and lock month");
         } finally {
             setLoading(false);
         }
@@ -819,24 +883,22 @@ const ClientFilesUpload = () => {
     // ================= GOOGLE DRIVE FUNCTIONS =================
     const authenticateDrive = (categoryInfo) => {
         if (!window.google || !window.google.accounts) {
-            setErrorMessage("Google Identity Services not loaded. Please refresh.");
+            showError("Google Identity Services not loaded. Please refresh.");
             return;
         }
 
         const tokenClient = window.google.accounts.oauth2.initTokenClient({
             client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-            scope: "https://www.googleapis.com/auth/drive.file", // ✅ FIXED: Only drive.file scope
+            scope: "https://www.googleapis.com/auth/drive.file",
             prompt: "select_account consent",
             callback: async (response) => {
                 if (response.error) {
-                    setErrorMessage("Google Drive authentication failed: " + response.error);
+                    showError("Google Drive authentication failed: " + response.error);
                     return;
                 }
 
                 setDriveAccessToken(response.access_token);
                 setIsDriveAuthenticated(true);
-
-                // 🚫 REMOVED: User info fetch - no longer needed
 
                 openDriveModalAfterAuth(categoryInfo, response.access_token);
             },
@@ -905,7 +967,7 @@ const ClientFilesUpload = () => {
             setDriveItems([...folders, ...nonFolders]);
         } catch (err) {
             console.error("Drive fetch error:", err);
-            setErrorMessage("Failed to fetch Google Drive contents");
+            showError("Failed to fetch Google Drive contents");
         }
         setDriveLoading(false);
     };
@@ -964,7 +1026,7 @@ const ClientFilesUpload = () => {
                     downloadedFiles.push(file);
                 } catch (err) {
                     console.error("Download failed for", item.name, err);
-                    setErrorMessage(`Failed to download ${item.name}`);
+                    showError(`Failed to download ${item.name}`);
                 }
             }
 
@@ -986,14 +1048,13 @@ const ClientFilesUpload = () => {
                         [type]: [...(prev[type] || []), ...downloadedFiles]
                     }));
                 }
-                setSuccessMessage(`${downloadedFiles.length} file(s) added from Google Drive`);
-                setTimeout(() => setSuccessMessage(""), 3000);
+                showSuccess(`${downloadedFiles.length} file(s) added from Google Drive`);
             }
 
             closeDriveModal();
         } catch (error) {
             console.error("Drive download error:", error);
-            setErrorMessage("Failed to download selected files");
+            showError("Failed to download selected files");
         } finally {
             setDriveDownloading(false);
         }
@@ -1182,7 +1243,7 @@ const ClientFilesUpload = () => {
                         className="btn-clear-all"
                         onClick={() => {
                             if (!isMonthActive) {
-                                setErrorMessage("Cannot modify files - Client was inactive during this period.");
+                                showError("Cannot modify files - Client was inactive during this period.");
                                 return;
                             }
 
@@ -1408,7 +1469,6 @@ const ClientFilesUpload = () => {
                         <div className="drive-modal-header">
                             <h3>
                                 <FaGoogleDrive size={20} /> Select Files from Google Drive
-                                {/* 🚫 REMOVED: driveUser email display */}
                             </h3>
                             <button className="drive-modal-close-btn" onClick={closeDriveModal}>
                                 <FiX size={20} />
@@ -1560,7 +1620,6 @@ const ClientFilesUpload = () => {
                         <button
                             className="drive-icon-btn"
                             onClick={() => openDriveModal({ type, categoryName: null })}
-                            // ✅ FIX: Apply SAME disabled conditions as the file input
                             disabled={!canUpload || loading || monthInactive}
                             title={!canUpload || monthInactive ? "Cannot add files - Category locked or month inactive" : "Add files from Google Drive"}
                         >
@@ -1696,7 +1755,6 @@ const ClientFilesUpload = () => {
                         <button
                             className="drive-icon-btn"
                             onClick={() => openDriveModal({ type: "other", categoryName: cat.categoryName })}
-                            // ✅ FIX: Apply SAME disabled conditions as the file input
                             disabled={!canUploadCat || loading || monthInactive}
                             title={!canUploadCat || monthInactive ? "Cannot add files - Category locked or month inactive" : "Add files from Google Drive"}
                         >
@@ -1726,7 +1784,7 @@ const ClientFilesUpload = () => {
                             value={cat.note || ""}
                             onChange={(e) => {
                                 if (!isMonthActive) {
-                                    setErrorMessage("Cannot modify files - Client was inactive during this period.");
+                                    showError("Cannot modify files - Client was inactive during this period.");
                                     return;
                                 }
 
@@ -1871,7 +1929,7 @@ const ClientFilesUpload = () => {
                             <div className="image-viewer-wrapper">
                                 {/* Zoom Controls */}
                                 <div className="zoom-controls">
-                                    <button 
+                                    <button
                                         onClick={handleZoomOut}
                                         disabled={zoomLevel <= 0.5}
                                         className="zoom-btn"
@@ -1880,7 +1938,7 @@ const ClientFilesUpload = () => {
                                         <FiZoomOut size={18} />
                                     </button>
                                     <span className="zoom-level">{Math.round(zoomLevel * 100)}%</span>
-                                    <button 
+                                    <button
                                         onClick={handleZoomIn}
                                         disabled={zoomLevel >= 3}
                                         className="zoom-btn"
@@ -1888,7 +1946,7 @@ const ClientFilesUpload = () => {
                                     >
                                         <FiZoomIn size={18} />
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={handleZoomReset}
                                         className="zoom-btn reset"
                                         title="Reset Zoom"
@@ -1950,7 +2008,7 @@ const ClientFilesUpload = () => {
                                             onDragStart={(e) => e.preventDefault()}
                                         />
                                     </div>
-                                    
+
                                     {/* Protection overlay */}
                                     <div
                                         className="image-protection-overlay"
@@ -1973,7 +2031,7 @@ const ClientFilesUpload = () => {
                             <div className="excel-viewer-wrapper">
                                 {/* Zoom Controls */}
                                 <div className="zoom-controls">
-                                    <button 
+                                    <button
                                         onClick={handleZoomOut}
                                         disabled={zoomLevel <= 0.5}
                                         className="zoom-btn"
@@ -1982,7 +2040,7 @@ const ClientFilesUpload = () => {
                                         <FiZoomOut size={18} />
                                     </button>
                                     <span className="zoom-level">{Math.round(zoomLevel * 100)}%</span>
-                                    <button 
+                                    <button
                                         onClick={handleZoomIn}
                                         disabled={zoomLevel >= 3}
                                         className="zoom-btn"
@@ -1990,7 +2048,7 @@ const ClientFilesUpload = () => {
                                     >
                                         <FiZoomIn size={18} />
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={handleZoomReset}
                                         className="zoom-btn reset"
                                         title="Reset Zoom"
@@ -1999,7 +2057,7 @@ const ClientFilesUpload = () => {
                                         <span>Reset</span>
                                     </button>
                                 </div>
-                                
+
                                 <div
                                     className="protected-view-container excel-viewer-container"
                                     onContextMenu={(e) => {
@@ -2120,6 +2178,21 @@ const ClientFilesUpload = () => {
 
     return (
         <ClientLayout>
+            {/* ✅ Toast Container - Add this at the top */}
+            <ToastContainer
+                position="top-center"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+                limit={3}
+            />
+
             <div className="client-files-upload">
                 {/* Header */}
                 <div className="upload-header">
@@ -2148,18 +2221,7 @@ const ClientFilesUpload = () => {
                     </div>
                 </div>
 
-                {/* Messages */}
-                {successMessage && (
-                    <div className="success-message">
-                        <FiCheckCircle /> {successMessage}
-                    </div>
-                )}
-
-                {errorMessage && (
-                    <div className="error-message">
-                        <FiAlertCircle /> {errorMessage}
-                    </div>
-                )}
+                {/* ❌ REMOVED: successMessage and errorMessage divs */}
 
                 <div className="main-content">
                     {/* Left Sidebar - Month Selection */}
@@ -2178,8 +2240,6 @@ const ClientFilesUpload = () => {
                                     value={year}
                                     onChange={(e) => {
                                         setYear(e.target.value);
-                                        setErrorMessage("");
-                                        setSuccessMessage("");
                                     }}
                                     disabled={loading}
                                 >
@@ -2198,8 +2258,6 @@ const ClientFilesUpload = () => {
                                     value={month}
                                     onChange={(e) => {
                                         setMonth(e.target.value);
-                                        setErrorMessage("");
-                                        setSuccessMessage("");
                                     }}
                                     disabled={loading}
                                 >
@@ -2429,7 +2487,7 @@ const ClientFilesUpload = () => {
                                                     value={newOtherCategory}
                                                     onChange={(e) => {
                                                         if (!isMonthActive) {
-                                                            setErrorMessage("Cannot add categories - Client was inactive during this period.");
+                                                            showError("Cannot add categories - Client was inactive during this period.");
                                                             return;
                                                         }
                                                         setNewOtherCategory(e.target.value);

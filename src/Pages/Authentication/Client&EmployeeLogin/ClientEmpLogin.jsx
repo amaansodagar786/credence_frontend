@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
   FiMail,
   FiLock,
@@ -20,7 +22,6 @@ import {
 } from "react-icons/fi";
 import "./ClientEmpLogin.scss";
 import { useModal } from "../../Home/Model/ModalProvider";
-
 
 // Validation Schemas
 const employeeLoginSchema = Yup.object().shape({
@@ -44,11 +45,11 @@ const ClientEmpLogin = () => {
   const [loginType, setLoginType] = useState("client");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [serverError, setServerError] = useState("");
+  const [serverError, setServerError] = useState(""); // optional, can be removed if you want only toasts
 
   // Forgot Password States
   const [forgotPasswordModal, setForgotPasswordModal] = useState(false);
-  const [forgotPasswordStep, setForgotPasswordStep] = useState(1); // 1: Email, 2: OTP, 3: New Password
+  const [forgotPasswordStep, setForgotPasswordStep] = useState(1);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotOtp, setForgotOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -65,7 +66,7 @@ const ClientEmpLogin = () => {
     openAgreementModal();
   };
 
-  // Formik initialization for Employee
+  // Employee Login
   const employeeFormik = useFormik({
     initialValues: { email: "", password: "" },
     validationSchema: employeeLoginSchema,
@@ -74,13 +75,6 @@ const ClientEmpLogin = () => {
         setLoading(true);
         setServerError("");
 
-        // Call employee logout first to clear any stale httpOnly cookies from backend
-        await axios.post(
-          `${import.meta.env.VITE_API_URL}/employee/logout`,
-          {},
-          { withCredentials: true }
-        ).catch(() => { }); // silently ignore if logout fails
-
         await axios.post(
           `${import.meta.env.VITE_API_URL}/employee/login`,
           values,
@@ -88,10 +82,8 @@ const ClientEmpLogin = () => {
         );
         window.location.href = "/employee/dashboard";
       } catch (error) {
-        setServerError(
-          error.response?.data?.message ||
-          "Invalid email or password. Please try again."
-        );
+        const msg = error.response?.data?.message || "Login failed. Please try again.";
+        toast.error(msg);
         resetForm();
       } finally {
         setLoading(false);
@@ -99,7 +91,7 @@ const ClientEmpLogin = () => {
     }
   });
 
-  // Formik initialization for Client
+  // Client Login
   const clientFormik = useFormik({
     initialValues: { email: "", password: "" },
     validationSchema: clientLoginSchema,
@@ -108,13 +100,6 @@ const ClientEmpLogin = () => {
         setLoading(true);
         setServerError("");
 
-        // Call client logout first to clear any stale httpOnly cookies from backend
-        await axios.post(
-          `${import.meta.env.VITE_API_URL}/client/logout`,
-          {},
-          { withCredentials: true }
-        ).catch(() => { }); // silently ignore if logout fails
-
         await axios.post(
           `${import.meta.env.VITE_API_URL}/client/login`,
           values,
@@ -122,11 +107,9 @@ const ClientEmpLogin = () => {
         );
         window.location.href = "/client/dashboard";
       } catch (error) {
-        if (error.response?.data?.enrollRequired) {
-          setServerError("Account not found. Please enroll first.");
-        } else {
-          setServerError("Invalid email or password");
-        }
+        // Use the specific message from backend
+        const msg = error.response?.data?.message || "Login failed. Please try again.";
+        toast.error(msg);
         resetForm();
       } finally {
         setLoading(false);
@@ -151,7 +134,7 @@ const ClientEmpLogin = () => {
     }
   };
 
-  // Forgot Password Functions
+  // Forgot Password Functions (unchanged)
   const handleForgotPassword = async (step) => {
     setForgotPasswordError("");
     setForgotPasswordSuccess("");
@@ -260,6 +243,19 @@ const ClientEmpLogin = () => {
 
   return (
     <div className="client-emp-login">
+      {/* Toast Container */}
+      <ToastContainer
+        position="top-center"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+
       <div className="login-container">
         {/* Login Form Card - Left Side */}
         <div className="login-card">
@@ -302,7 +298,7 @@ const ClientEmpLogin = () => {
             </div>
           </div>
 
-          {/* Server Error Message */}
+          {/* Server Error Message (optional, you can remove it if you want only toasts) */}
           {serverError && (
             <div className="server-error">
               <FiAlertCircle size={18} />
@@ -413,18 +409,10 @@ const ClientEmpLogin = () => {
             )}
           </form>
 
-          {/* Footer */}
-          {/* <div className="login-footer">
-            <p className="help-text">
-              Need assistance? Contact support
-            </p>
-            <div className="version-info">
-              <span>v2.0.0 | Secure Portal</span>
-            </div>
-          </div> */}
+          {/* Footer - commented out as in original */}
         </div>
 
-        {/* Info Side - Right Side (Hidden on Mobile) */}
+        {/* Info Side - Right Side */}
         <div className="login-info-side">
           <div className="info-content">
             <h2>
@@ -468,7 +456,7 @@ const ClientEmpLogin = () => {
         </div>
       </div>
 
-      {/* Forgot Password Modal */}
+      {/* Forgot Password Modal (unchanged) */}
       {forgotPasswordModal && (
         <div className="forgot-password-modal-overlay">
           <div className="forgot-password-modal">
