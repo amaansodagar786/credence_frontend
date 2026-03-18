@@ -113,8 +113,6 @@ const ClientFilesUpload = () => {
         deleteNote: ""
     });
 
-    // ❌ REMOVED: successMessage and errorMessage states - using toast instead
-
     // State for employee assignment
     const [employeeAssignments, setEmployeeAssignments] = useState([]);
     const [selectedTask, setSelectedTask] = useState(null);
@@ -128,17 +126,8 @@ const ClientFilesUpload = () => {
         files: []
     });
 
-    // ===== Google Drive State =====
+    // ===== Google Drive State (only access token needed now) =====
     const [driveAccessToken, setDriveAccessToken] = useState(null);
-    const [isDriveAuthenticated, setIsDriveAuthenticated] = useState(false);
-    const [driveModalOpen, setDriveModalOpen] = useState(false);
-    const [activeDriveCategory, setActiveDriveCategory] = useState(null);
-    const [driveItems, setDriveItems] = useState([]);
-    const [driveCurrentFolderId, setDriveCurrentFolderId] = useState("root");
-    const [driveFolderHistory, setDriveFolderHistory] = useState([]);
-    const [driveSelectedIds, setDriveSelectedIds] = useState([]);
-    const [driveLoading, setDriveLoading] = useState(false);
-    const [driveDownloading, setDriveDownloading] = useState(false);
     const [clientData, setClientData] = useState(null);
 
     // Ref for protection
@@ -236,13 +225,24 @@ const ClientFilesUpload = () => {
         setIsDragging(false);
     };
 
-    // ===== Load Google Identity Services Script =====
+    // ===== Load Google Identity Services + Google Picker Script =====
     useEffect(() => {
-        const script = document.createElement("script");
-        script.src = "https://accounts.google.com/gsi/client";
-        script.async = true;
-        script.onload = () => console.log("Google Identity Services loaded");
-        document.body.appendChild(script);
+        // Load GIS
+        const gisScript = document.createElement("script");
+        gisScript.src = "https://accounts.google.com/gsi/client";
+        gisScript.async = true;
+        gisScript.onload = () => console.log("Google Identity Services loaded");
+        document.body.appendChild(gisScript);
+
+        // Load Google API (for Picker)
+        const gapiScript = document.createElement("script");
+        gapiScript.src = "https://apis.google.com/js/api.js";
+        gapiScript.onload = () => {
+            window.gapi.load("picker", () => {
+                console.log("Google Picker API loaded");
+            });
+        };
+        document.body.appendChild(gapiScript);
     }, []);
 
     // ===== Helper function to get file type =====
@@ -257,7 +257,6 @@ const ClientFilesUpload = () => {
 
     /* ================= DELETE MODAL FUNCTIONS ================= */
     const openDeleteModal = (type, fileName, categoryName = null) => {
-        // ✅ Check if month is active
         if (!isMonthActive) {
             showError("Cannot delete files - Client was inactive during this period.");
             return;
@@ -283,7 +282,6 @@ const ClientFilesUpload = () => {
     };
 
     const confirmDelete = async () => {
-        // ✅ Check if month is active
         if (!isMonthActive) {
             showError("Cannot delete files - Client was inactive during this period.");
             closeDeleteModal();
@@ -323,7 +321,6 @@ const ClientFilesUpload = () => {
 
         } catch (error) {
             console.error("Delete error:", error);
-            // Show the exact error message from backend
             showError(error.response?.data?.message || "Failed to delete file");
         } finally {
             setLoading(false);
@@ -366,11 +363,10 @@ const ClientFilesUpload = () => {
         }
     };
 
-    /* ================= OPEN DOCUMENT PREVIEW (UPDATED WITH ZOOM RESET) ================= */
+    /* ================= OPEN DOCUMENT PREVIEW ================= */
     const openDocumentPreview = (document) => {
         if (!document || !document.url) return;
 
-        // Reset zoom and position when opening new document
         setZoomLevel(1);
         setImagePosition({ x: 0, y: 0 });
         setIsDragging(false);
@@ -384,7 +380,7 @@ const ClientFilesUpload = () => {
         }, 100);
     };
 
-    /* ================= CLOSE DOCUMENT PREVIEW (UPDATED WITH ZOOM RESET) ================= */
+    /* ================= CLOSE DOCUMENT PREVIEW ================= */
     const closeDocumentPreview = () => {
         cleanupProtection();
         setIsPreviewOpen(false);
@@ -436,7 +432,6 @@ const ClientFilesUpload = () => {
         setLoading(true);
 
         try {
-            // Get month data
             const monthResponse = await axios.get(
                 `${import.meta.env.VITE_API_URL}/clientupload/month-data`,
                 {
@@ -448,7 +443,6 @@ const ClientFilesUpload = () => {
             const data = monthResponse.data || {};
             console.log("✅ MONTH DATA RESPONSE:", data);
 
-            // Get client info for plan and active status
             try {
                 const clientResponse = await axios.get(
                     `${import.meta.env.VITE_API_URL}/client/me`,
@@ -456,27 +450,19 @@ const ClientFilesUpload = () => {
                 );
 
                 console.log("✅ CLIENT DATA FROM PROFILE ENDPOINT:", clientResponse.data);
-                console.log("✅ IS ACTIVE:", clientResponse.data?.isActive);
-                console.log("✅ PLAN SELECTED:", clientResponse.data?.planSelected);
-
                 setClientData(clientResponse.data);
 
                 if (clientResponse.data?.planSelected) {
                     data.clientPlan = clientResponse.data.planSelected;
-                    console.log("✅ PLAN ADDED TO MONTH DATA:", data.clientPlan);
                 }
 
             } catch (clientError) {
                 console.error("❌ ERROR FETCHING CLIENT INFO:", clientError);
             }
 
-            console.log("✅ FINAL DATA WITH PLAN:", data);
             setMonthData(data);
-
-            // Set month active status from response
             setIsMonthActive(data.monthActiveStatus !== 'inactive');
 
-            // Handle other categories
             const existingOtherCategories = data.other || [];
             setOtherCategories(existingOtherCategories.map(cat => ({
                 ...cat,
@@ -484,7 +470,6 @@ const ClientFilesUpload = () => {
                 note: ""
             })));
 
-            // Get employee assignments
             const employeeResponse = await axios.get(
                 `${import.meta.env.VITE_API_URL}/clientupload/employee-assignment`,
                 {
@@ -553,12 +538,8 @@ const ClientFilesUpload = () => {
 
     /* ================= CHECK IF CATEGORY CAN BE UPDATED ================= */
     const canUpdateCategory = (categoryType, categoryName = null) => {
-        // ✅ Check if month is active FIRST
-        if (!isMonthActive) {
-            return false; // Month is inactive, no updates allowed
-        }
+        if (!isMonthActive) return false;
 
-        // Original lock check
         if (!monthData) return true;
 
         if (monthData.isLocked) {
@@ -603,7 +584,6 @@ const ClientFilesUpload = () => {
 
     /* ================= HANDLE FILES CHANGE ================= */
     const handleFilesChange = (type, files, categoryName = null) => {
-        // ✅ Check if month is active before allowing file selection
         if (!isMonthActive) {
             showError("Cannot upload files - Client was inactive during this period.");
             return;
@@ -611,14 +591,12 @@ const ClientFilesUpload = () => {
 
         const fileArray = Array.from(files);
 
-        // Check file size
         const oversizedFiles = fileArray.filter(file => file.size > 10 * 1024 * 1024);
         if (oversizedFiles.length > 0) {
             showError(`File(s) too large: ${oversizedFiles.map(f => f.name).join(', ')}. Maximum size is 10MB per file.`);
             return;
         }
 
-        // Check file types (basic check - backend will do full check)
         const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'xls', 'xlsx', 'csv'];
         const invalidFiles = fileArray.filter(file => {
             const ext = file.name.split('.').pop().toLowerCase();
@@ -654,7 +632,6 @@ const ClientFilesUpload = () => {
 
     /* ================= REMOVE FILE FROM SELECTION ================= */
     const removeNewFile = (type, index, categoryName = null) => {
-        // ✅ Check if month is active
         if (!isMonthActive) {
             showError("Cannot modify files - Client was inactive during this period.");
             return;
@@ -686,7 +663,6 @@ const ClientFilesUpload = () => {
 
     /* ================= ADD NEW OTHER CATEGORY ================= */
     const addOtherCategory = () => {
-        // ✅ Check if month is active
         if (!isMonthActive) {
             showError("Cannot add categories - Client was inactive during this period.");
             return;
@@ -697,7 +673,6 @@ const ClientFilesUpload = () => {
             return;
         }
 
-        // Check if category already exists
         if (otherCategories.some(cat => cat.categoryName.toLowerCase() === newOtherCategory.trim().toLowerCase())) {
             showError(`Category "${newOtherCategory.trim()}" already exists`);
             return;
@@ -716,143 +691,130 @@ const ClientFilesUpload = () => {
     };
 
     /* ================= UPLOAD FILES ================= */
-const uploadFiles = async (type, files, categoryName = null, isReplacement = false, replacedFileName = null, lockAfterUpload = false) => {
-    // ✅ Check if month is active before uploading
-    if (!isMonthActive) {
-        showError("Cannot upload files - Client was inactive during this period.");
-        return;
-    }
+    const uploadFiles = async (type, files, categoryName = null, isReplacement = false, replacedFileName = null, lockAfterUpload = false) => {
+        if (!isMonthActive) {
+            showError("Cannot upload files - Client was inactive during this period.");
+            return;
+        }
 
-    if (!files || files.length === 0) return;
+        if (!files || files.length === 0) return;
 
-    // ✅ CHECK TOTAL SIZE BEFORE UPLOADING (10MB TOTAL LIMIT)
-    const MAX_TOTAL_SIZE = 10 * 1024 * 1024; // 10MB total for all files
-    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-    
-    if (totalSize > MAX_TOTAL_SIZE) {
-        const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(2);
-        showError(`❌ Total file size (${totalSizeMB}MB) exceeds the maximum allowed of 10MB for all files combined. Please reduce file sizes.`);
-        return;
-    }
+        const MAX_TOTAL_SIZE = 10 * 1024 * 1024;
+        const totalSize = files.reduce((sum, file) => sum + file.size, 0);
 
-    // ✅ CHECK INDIVIDUAL FILE SIZE (already in handleFilesChange, but double-check)
-    const oversizedFiles = files.filter(file => file.size > 10 * 1024 * 1024);
-    if (oversizedFiles.length > 0) {
-        showError(`❌ File(s) too large: ${oversizedFiles.map(f => f.name).join(', ')}. Maximum size is 10MB per file.`);
-        return;
-    }
+        if (totalSize > MAX_TOTAL_SIZE) {
+            const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+            showError(`❌ Total file size (${totalSizeMB}MB) exceeds the maximum allowed of 10MB for all files combined. Please reduce file sizes.`);
+            return;
+        }
 
-    const noteRequired = isNoteRequired(type, categoryName);
+        const oversizedFiles = files.filter(file => file.size > 10 * 1024 * 1024);
+        if (oversizedFiles.length > 0) {
+            showError(`❌ File(s) too large: ${oversizedFiles.map(f => f.name).join(', ')}. Maximum size is 10MB per file.`);
+            return;
+        }
 
-    if (noteRequired && !categoryName && !categoryNotes[type]) {
-        showError("Note is required when updating files after unlock");
-        return;
-    }
+        const noteRequired = isNoteRequired(type, categoryName);
 
-    if (noteRequired && categoryName) {
-        const cat = otherCategories.find(c => c.categoryName === categoryName);
-        if (cat && !cat.note) {
+        if (noteRequired && !categoryName && !categoryNotes[type]) {
             showError("Note is required when updating files after unlock");
             return;
         }
-    }
 
-    const formData = new FormData();
-
-    files.forEach((file, index) => {
-        formData.append("files", file);
-    });
-
-    formData.append("year", year);
-    formData.append("month", month);
-    formData.append("type", type);
-
-    if (categoryName) {
-        formData.append("categoryName", categoryName);
-    }
-
-    if (isReplacement && replacedFileName) {
-        formData.append("replacedFile", replacedFileName);
-        formData.append("deleteNote", "Replaced with new file");
-    }
-
-    if (noteRequired) {
-        const note = categoryName
-            ? otherCategories.find(c => c.categoryName === categoryName)?.note
-            : categoryNotes[type];
-        formData.append("note", note || "");
-    }
-
-    if (lockAfterUpload) {
-        formData.append("lockAfterUpload", "true");
-    }
-
-    setLoading(true);
-
-    try {
-        const endpoint = lockAfterUpload
-            ? `${import.meta.env.VITE_API_URL}/clientupload/upload-and-lock`
-            : `${import.meta.env.VITE_API_URL}/clientupload/upload`;
-
-        const response = await axios.post(
-            endpoint,
-            formData,
-            {
-                withCredentials: true,
-                headers: { "Content-Type": "multipart/form-data" },
-                maxContentLength: 50 * 1024 * 1024, // Allow up to 50MB in axios
-                maxBodyLength: 50 * 1024 * 1024
+        if (noteRequired && categoryName) {
+            const cat = otherCategories.find(c => c.categoryName === categoryName);
+            if (cat && !cat.note) {
+                showError("Note is required when updating files after unlock");
+                return;
             }
-        );
+        }
 
-        showSuccess(response.data.message || `${files.length} file(s) uploaded successfully!`);
+        const formData = new FormData();
 
-        fetchMonthData(year, month);
-        fetchDeletedFiles();
+        files.forEach((file, index) => {
+            formData.append("files", file);
+        });
+
+        formData.append("year", year);
+        formData.append("month", month);
+        formData.append("type", type);
 
         if (categoryName) {
-            const updatedCategories = otherCategories.map(cat =>
-                cat.categoryName === categoryName
-                    ? { ...cat, newFiles: [], note: "" }
-                    : cat
-            );
-            setOtherCategories(updatedCategories);
-        } else {
-            setNewFiles(prev => ({ ...prev, [type]: [] }));
-            setCategoryNotes(prev => ({ ...prev, [type]: "" }));
+            formData.append("categoryName", categoryName);
         }
 
-    } catch (error) {
-        console.error("Upload error:", error);
-        
-        // ✅ CHECK FOR 413 STATUS CODE (Request Entity Too Large)
-        if (error.response?.status === 413) {
-            showError("❌ File too large! Maximum total size is 10MB for all files combined. Your hosting server rejected the upload. Please reduce file sizes.");
-        } 
-        // ✅ CHECK FOR NETWORK ERRORS (common with large files)
-        else if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
-            showError("❌ Upload failed - file too large or network issue. Maximum total size is 10MB. Please reduce file sizes.");
+        if (isReplacement && replacedFileName) {
+            formData.append("replacedFile", replacedFileName);
+            formData.append("deleteNote", "Replaced with new file");
         }
-        // ✅ CHECK FOR TIMEOUT ERRORS
-        else if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-            showError("❌ Upload timeout - file too large. Maximum total size is 10MB. Please reduce file sizes.");
+
+        if (noteRequired) {
+            const note = categoryName
+                ? otherCategories.find(c => c.categoryName === categoryName)?.note
+                : categoryNotes[type];
+            formData.append("note", note || "");
         }
-        // ✅ BACKEND ERROR MESSAGE (your custom JSON error)
-        else if (error.response?.data?.message) {
-            showError(error.response.data.message);
+
+        if (lockAfterUpload) {
+            formData.append("lockAfterUpload", "true");
         }
-        // ✅ FALLBACK
-        else {
-            showError("❌ Upload failed. Please check that total file size is under 10MB and try again.");
+
+        setLoading(true);
+
+        try {
+            const endpoint = lockAfterUpload
+                ? `${import.meta.env.VITE_API_URL}/clientupload/upload-and-lock`
+                : `${import.meta.env.VITE_API_URL}/clientupload/upload`;
+
+            const response = await axios.post(
+                endpoint,
+                formData,
+                {
+                    withCredentials: true,
+                    headers: { "Content-Type": "multipart/form-data" },
+                    maxContentLength: 50 * 1024 * 1024,
+                    maxBodyLength: 50 * 1024 * 1024
+                }
+            );
+
+            showSuccess(response.data.message || `${files.length} file(s) uploaded successfully!`);
+
+            fetchMonthData(year, month);
+            fetchDeletedFiles();
+
+            if (categoryName) {
+                const updatedCategories = otherCategories.map(cat =>
+                    cat.categoryName === categoryName
+                        ? { ...cat, newFiles: [], note: "" }
+                        : cat
+                );
+                setOtherCategories(updatedCategories);
+            } else {
+                setNewFiles(prev => ({ ...prev, [type]: [] }));
+                setCategoryNotes(prev => ({ ...prev, [type]: "" }));
+            }
+
+        } catch (error) {
+            console.error("Upload error:", error);
+
+            if (error.response?.status === 413) {
+                showError("❌ File too large! Maximum total size is 10MB for all files combined.");
+            } else if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
+                showError("❌ Upload failed - file too large or network issue. Maximum total size is 10MB.");
+            } else if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+                showError("❌ Upload timeout - file too large. Maximum total size is 10MB.");
+            } else if (error.response?.data?.message) {
+                showError(error.response.data.message);
+            } else {
+                showError("❌ Upload failed. Please check that total file size is under 10MB and try again.");
+            }
+        } finally {
+            setLoading(false);
         }
-    } finally {
-        setLoading(false);
-    }
-};
+    };
 
     /* ================= SAVE & LOCK MONTH ================= */
     const saveAndLock = async () => {
-        // ✅ Check if month is active before saving & locking
         if (!isMonthActive) {
             showError("Cannot lock month - Client was inactive during this period.");
             return;
@@ -918,7 +880,30 @@ const uploadFiles = async (type, files, categoryName = null, isReplacement = fal
         </span>
     );
 
-    // ================= GOOGLE DRIVE FUNCTIONS =================
+    // ================= GOOGLE PICKER FUNCTIONS =================
+
+    /* Step 1: Open Picker with access token */
+    const openGooglePicker = (accessToken, categoryInfo) => {
+        if (!window.google || !window.google.picker) {
+            showError("Google Picker not loaded. Please refresh and try again.");
+            return;
+        }
+
+        const view = new window.google.picker.DocsView()
+            .setIncludeFolders(true)
+            .setSelectFolderEnabled(false);
+
+        const picker = new window.google.picker.PickerBuilder()
+            .addView(view)
+            .setOAuthToken(accessToken)
+            .setDeveloperKey(import.meta.env.VITE_GOOGLE_API_KEY)
+            .setCallback((data) => pickerCallback(data, accessToken, categoryInfo))
+            .build();
+
+        picker.setVisible(true);
+    };
+
+    /* Step 2: Authenticate then open Picker */
     const authenticateDrive = (categoryInfo) => {
         if (!window.google || !window.google.accounts) {
             showError("Google Identity Services not loaded. Please refresh.");
@@ -928,173 +913,75 @@ const uploadFiles = async (type, files, categoryName = null, isReplacement = fal
         const tokenClient = window.google.accounts.oauth2.initTokenClient({
             client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
             scope: "https://www.googleapis.com/auth/drive.file",
-            prompt: "select_account consent",
-            callback: async (response) => {
+            callback: (response) => {
                 if (response.error) {
                     showError("Google Drive authentication failed: " + response.error);
                     return;
                 }
 
                 setDriveAccessToken(response.access_token);
-                setIsDriveAuthenticated(true);
-
-                openDriveModalAfterAuth(categoryInfo, response.access_token);
+                openGooglePicker(response.access_token, categoryInfo);
             },
         });
 
         tokenClient.requestAccessToken();
     };
 
-    const openDriveModalAfterAuth = async (categoryInfo, token) => {
-        setActiveDriveCategory(categoryInfo);
-        setDriveModalOpen(true);
-        setDriveCurrentFolderId("root");
-        setDriveFolderHistory([]);
-        setDriveSelectedIds([]);
-        await fetchDriveFolderContents("root", token);
-    };
+    /* Step 3: Handle Picker selection and download files */
+    const pickerCallback = async (data, accessToken, categoryInfo) => {
+        if (data.action !== window.google.picker.Action.PICKED) return;
 
-    const openDriveModal = (categoryInfo) => {
-        if (isDriveAuthenticated && driveAccessToken) {
-            setActiveDriveCategory(categoryInfo);
-            setDriveModalOpen(true);
-            setDriveCurrentFolderId("root");
-            setDriveFolderHistory([]);
-            setDriveSelectedIds([]);
-            fetchDriveFolderContents("root", driveAccessToken);
-        } else {
-            authenticateDrive(categoryInfo);
-        }
-    };
+        const files = data.docs;
+        if (!files || files.length === 0) return;
 
-    const closeDriveModal = () => {
-        setDriveModalOpen(false);
-        setActiveDriveCategory(null);
-        setDriveItems([]);
-        setDriveCurrentFolderId("root");
-        setDriveFolderHistory([]);
-        setDriveSelectedIds([]);
-    };
-
-    const fetchDriveFolderContents = async (folderId, token) => {
-        if (!token) return;
-
-        setDriveLoading(true);
-        try {
-            const query = folderId === "root"
-                ? "'root' in parents and trashed = false"
-                : `'${folderId}' in parents and trashed = false`;
-
-            const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&pageSize=100&fields=files(id,name,mimeType,size,thumbnailLink)`;
-
-            const response = await fetch(url, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-
-            const data = await response.json();
-            const files = data.files || [];
-            const folders = files.filter(f => f.mimeType === 'application/vnd.google-apps.folder');
-            const nonFolders = files.filter(f => f.mimeType !== 'application/vnd.google-apps.folder');
-            setDriveItems([...folders, ...nonFolders]);
-        } catch (err) {
-            console.error("Drive fetch error:", err);
-            showError("Failed to fetch Google Drive contents");
-        }
-        setDriveLoading(false);
-    };
-
-    const openDriveFolder = (folderId) => {
-        setDriveFolderHistory([...driveFolderHistory, driveCurrentFolderId]);
-        setDriveCurrentFolderId(folderId);
-        fetchDriveFolderContents(folderId, driveAccessToken);
-        setDriveSelectedIds([]);
-    };
-
-    const goBackDrive = () => {
-        if (driveFolderHistory.length === 0) return;
-        const prevFolder = driveFolderHistory[driveFolderHistory.length - 1];
-        setDriveFolderHistory(driveFolderHistory.slice(0, -1));
-        setDriveCurrentFolderId(prevFolder);
-        fetchDriveFolderContents(prevFolder, driveAccessToken);
-        setDriveSelectedIds([]);
-    };
-
-    const toggleDriveSelect = (id) => {
-        setDriveSelectedIds((prev) =>
-            prev.includes(id) ? prev.filter((fileId) => fileId !== id) : [...prev, id]
-        );
-    };
-
-    const downloadDriveFiles = async () => {
-        if (!driveAccessToken || driveSelectedIds.length === 0 || !activeDriveCategory) return;
-
-        setDriveDownloading(true);
         const downloadedFiles = [];
 
         try {
-            for (const id of driveSelectedIds) {
-                const item = driveItems.find((i) => i.id === id);
-                if (item.mimeType === 'application/vnd.google-apps.folder') continue;
-
-                try {
-                    const response = await fetch(
-                        `${import.meta.env.VITE_API_URL}/api/google-drive-proxy`,
-                        {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                fileId: item.id,
-                                accessToken: driveAccessToken,
-                            }),
-                        }
-                    );
-
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const blob = await response.blob();
-                    const file = new File([blob], item.name, {
-                        type: blob.type || item.mimeType,
-                    });
-                    downloadedFiles.push(file);
-                } catch (err) {
-                    console.error("Download failed for", item.name, err);
-                    showError(`Failed to download ${item.name}`);
-                }
-            }
-
-            if (downloadedFiles.length > 0) {
-                const { type, categoryName } = activeDriveCategory;
-                if (categoryName) {
-                    const updatedCategories = [...otherCategories];
-                    const catIndex = updatedCategories.findIndex(cat => cat.categoryName === categoryName);
-                    if (catIndex !== -1) {
-                        updatedCategories[catIndex].newFiles = [
-                            ...(updatedCategories[catIndex].newFiles || []),
-                            ...downloadedFiles
-                        ];
-                        setOtherCategories(updatedCategories);
+            for (const file of files) {
+                const response = await fetch(
+                    `${import.meta.env.VITE_API_URL}/api/google-drive-proxy`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            fileId: file.id,
+                            accessToken: accessToken,
+                        }),
                     }
-                } else {
-                    setNewFiles(prev => ({
-                        ...prev,
-                        [type]: [...(prev[type] || []), ...downloadedFiles]
-                    }));
-                }
-                showSuccess(`${downloadedFiles.length} file(s) added from Google Drive`);
+                );
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const blob = await response.blob();
+                const newFile = new File([blob], file.name, {
+                    type: blob.type,
+                });
+
+                downloadedFiles.push(newFile);
             }
 
-            closeDriveModal();
-        } catch (error) {
-            console.error("Drive download error:", error);
-            showError("Failed to download selected files");
-        } finally {
-            setDriveDownloading(false);
+            const { type, categoryName } = categoryInfo;
+
+            if (categoryName) {
+                const updated = [...otherCategories];
+                const idx = updated.findIndex(c => c.categoryName === categoryName);
+
+                if (idx !== -1) {
+                    updated[idx].newFiles.push(...downloadedFiles);
+                    setOtherCategories(updated);
+                }
+            } else {
+                setNewFiles(prev => ({
+                    ...prev,
+                    [type]: [...prev[type], ...downloadedFiles],
+                }));
+            }
+
+            showSuccess(`${downloadedFiles.length} file(s) added from Google Drive`);
+
+        } catch (err) {
+            console.error("Picker download error:", err);
+            showError("Failed to download files from Google Drive");
         }
     };
 
@@ -1495,109 +1382,6 @@ const uploadFiles = async (type, files, categoryName = null, isReplacement = fal
         );
     };
 
-    /* ================= RENDER GOOGLE DRIVE MODAL ================= */
-    const renderDriveModal = () => {
-        if (!driveModalOpen) return null;
-
-        return (
-            <>
-                <div className="drive-modal-overlay" onClick={closeDriveModal}></div>
-                <div className="drive-modal-container">
-                    <div className="drive-modal-content">
-                        <div className="drive-modal-header">
-                            <h3>
-                                <FaGoogleDrive size={20} /> Select Files from Google Drive
-                            </h3>
-                            <button className="drive-modal-close-btn" onClick={closeDriveModal}>
-                                <FiX size={20} />
-                            </button>
-                        </div>
-
-                        <div className="drive-modal-body">
-                            <div className="drive-toolbar">
-                                {driveFolderHistory.length > 0 && (
-                                    <button className="drive-back-btn" onClick={goBackDrive}>
-                                        ⬅ Back
-                                    </button>
-                                )}
-                            </div>
-
-                            {driveLoading && (
-                                <div className="drive-loading-state">
-                                    <div className="drive-spinner"></div>
-                                    <p>Loading folder contents...</p>
-                                </div>
-                            )}
-
-                            {!driveLoading && driveItems.length === 0 && (
-                                <div className="drive-empty-state">This folder is empty.</div>
-                            )}
-
-                            {!driveLoading && driveItems.length > 0 && (
-                                <div className="drive-items-container">
-                                    {driveItems.map((item) => {
-                                        const isFolder = item.mimeType === 'application/vnd.google-apps.folder';
-                                        return (
-                                            <div
-                                                key={item.id}
-                                                className={`drive-item-row ${isFolder ? 'folder-item' : ''}`}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={driveSelectedIds.includes(item.id)}
-                                                    onChange={() => toggleDriveSelect(item.id)}
-                                                    disabled={isFolder}
-                                                />
-                                                <div
-                                                    className="drive-item-info"
-                                                    onClick={() => isFolder && openDriveFolder(item.id)}
-                                                >
-                                                    <span className="drive-item-icon">
-                                                        {isFolder ? '📁' : '📄'}
-                                                    </span>
-                                                    <span className="drive-item-name">{item.name}</span>
-                                                    {!isFolder && item.size && (
-                                                        <span className="drive-item-size">
-                                                            {(item.size / 1024).toFixed(0)} KB
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="drive-modal-footer">
-                            <div className="drive-selected-count">
-                                {driveSelectedIds.length} file(s) selected
-                            </div>
-                            <div className="drive-footer-actions">
-                                <button className="drive-cancel-btn" onClick={closeDriveModal}>
-                                    Cancel
-                                </button>
-                                <button
-                                    className="drive-add-btn"
-                                    onClick={downloadDriveFiles}
-                                    disabled={driveSelectedIds.length === 0 || driveDownloading}
-                                >
-                                    {driveDownloading ? (
-                                        <>
-                                            <span className="drive-spinner-small"></span> Downloading...
-                                        </>
-                                    ) : (
-                                        `Add ${driveSelectedIds.length} File(s)`
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </>
-        );
-    };
-
     /* ================= RENDER FILE UPLOAD SECTION ================= */
     const renderFileSection = (type, label) => {
         const category = monthData?.[type];
@@ -1657,7 +1441,7 @@ const uploadFiles = async (type, files, categoryName = null, isReplacement = fal
 
                         <button
                             className="drive-icon-btn"
-                            onClick={() => openDriveModal({ type, categoryName: null })}
+                            onClick={() => authenticateDrive({ type, categoryName: null })}
                             disabled={!canUpload || loading || monthInactive}
                             title={!canUpload || monthInactive ? "Cannot add files - Category locked or month inactive" : "Add files from Google Drive"}
                         >
@@ -1792,7 +1576,7 @@ const uploadFiles = async (type, files, categoryName = null, isReplacement = fal
 
                         <button
                             className="drive-icon-btn"
-                            onClick={() => openDriveModal({ type: "other", categoryName: cat.categoryName })}
+                            onClick={() => authenticateDrive({ type: "other", categoryName: cat.categoryName })}
                             disabled={!canUploadCat || loading || monthInactive}
                             title={!canUploadCat || monthInactive ? "Cannot add files - Category locked or month inactive" : "Add files from Google Drive"}
                         >
@@ -1875,7 +1659,7 @@ const uploadFiles = async (type, files, categoryName = null, isReplacement = fal
         );
     };
 
-    /* ================= RENDER DOCUMENT PREVIEW (UPDATED WITH ZOOM) ================= */
+    /* ================= RENDER DOCUMENT PREVIEW ================= */
     const renderDocumentPreview = () => {
         if (!previewDoc || !isPreviewOpen) return null;
 
@@ -1938,7 +1722,6 @@ const uploadFiles = async (type, files, categoryName = null, isReplacement = fal
                             </span>
                         </div>
 
-                        {/* PDF Viewer - Native browser zoom works with Ctrl+Mouse Wheel */}
                         {fileType === 'pdf' && (
                             <div className="protected-view-container pdf-viewer-container">
                                 <iframe
@@ -1949,10 +1732,7 @@ const uploadFiles = async (type, files, categoryName = null, isReplacement = fal
                                     frameBorder="0"
                                     className="pdf-iframe"
                                     scrolling="yes"
-                                    style={{
-                                        display: 'block',
-                                        border: 'none'
-                                    }}
+                                    style={{ display: 'block', border: 'none' }}
                                     onContextMenu={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
@@ -1962,10 +1742,8 @@ const uploadFiles = async (type, files, categoryName = null, isReplacement = fal
                             </div>
                         )}
 
-                        {/* Image Viewer with Zoom and Pan */}
                         {fileType === 'image' && (
                             <div className="image-viewer-wrapper">
-                                {/* Zoom Controls */}
                                 <div className="zoom-controls">
                                     <button
                                         onClick={handleZoomOut}
@@ -2047,7 +1825,6 @@ const uploadFiles = async (type, files, categoryName = null, isReplacement = fal
                                         />
                                     </div>
 
-                                    {/* Protection overlay */}
                                     <div
                                         className="image-protection-overlay"
                                         style={{
@@ -2064,10 +1841,8 @@ const uploadFiles = async (type, files, categoryName = null, isReplacement = fal
                             </div>
                         )}
 
-                        {/* Excel Viewer with Zoom Controls */}
                         {fileType === 'excel' && (
                             <div className="excel-viewer-wrapper">
-                                {/* Zoom Controls */}
                                 <div className="zoom-controls">
                                     <button
                                         onClick={handleZoomOut}
@@ -2127,10 +1902,7 @@ const uploadFiles = async (type, files, categoryName = null, isReplacement = fal
                                             height="100%"
                                             frameBorder="0"
                                             scrolling="no"
-                                            style={{
-                                                border: 'none',
-                                                display: 'block'
-                                            }}
+                                            style={{ border: 'none', display: 'block' }}
                                             title={`Excel Viewer - ${previewDoc.fileName}`}
                                             onContextMenu={(e) => {
                                                 e.preventDefault();
@@ -2156,7 +1928,6 @@ const uploadFiles = async (type, files, categoryName = null, isReplacement = fal
                             </div>
                         )}
 
-                        {/* Other Files */}
                         {fileType === 'other' && (
                             <div
                                 className="protected-view-container other-file-container"
@@ -2216,7 +1987,6 @@ const uploadFiles = async (type, files, categoryName = null, isReplacement = fal
 
     return (
         <ClientLayout>
-            {/* ✅ Toast Container - Add this at the top */}
             <ToastContainer
                 position="top-center"
                 autoClose={3000}
@@ -2241,7 +2011,6 @@ const uploadFiles = async (type, files, categoryName = null, isReplacement = fal
                         </p>
                     </div>
 
-                    {/* Show plan or inactive status */}
                     <div className="header-right">
                         {!clientData?.isActive ? (
                             <div className="active-plan-badge inactive">
@@ -2259,8 +2028,6 @@ const uploadFiles = async (type, files, categoryName = null, isReplacement = fal
                     </div>
                 </div>
 
-                {/* ❌ REMOVED: successMessage and errorMessage divs */}
-
                 <div className="main-content">
                     {/* Left Sidebar - Month Selection */}
                     <div className="upload-sidebar">
@@ -2276,9 +2043,7 @@ const uploadFiles = async (type, files, categoryName = null, isReplacement = fal
                                 <select
                                     className="form-control"
                                     value={year}
-                                    onChange={(e) => {
-                                        setYear(e.target.value);
-                                    }}
+                                    onChange={(e) => setYear(e.target.value)}
                                     disabled={loading}
                                 >
                                     <option value="">Choose Year</option>
@@ -2294,9 +2059,7 @@ const uploadFiles = async (type, files, categoryName = null, isReplacement = fal
                                 <select
                                     className="form-control"
                                     value={month}
-                                    onChange={(e) => {
-                                        setMonth(e.target.value);
-                                    }}
+                                    onChange={(e) => setMonth(e.target.value)}
                                     disabled={loading}
                                 >
                                     <option value="">Choose Month</option>
@@ -2362,7 +2125,6 @@ const uploadFiles = async (type, files, categoryName = null, isReplacement = fal
                                                 </div>
                                             )}
 
-                                            {/* Show client active status */}
                                             <div className="info-item">
                                                 <span className="label">Client Status:</span>
                                                 <span className={`value ${isMonthActive ? 'active' : 'inactive'}`}>
@@ -2618,8 +2380,7 @@ const uploadFiles = async (type, files, categoryName = null, isReplacement = fal
                 {/* View All Files Modal */}
                 {renderViewAllModal()}
 
-                {/* Google Drive Modal */}
-                {renderDriveModal()}
+                {/* ✅ Google Drive Modal REMOVED - Using Google Picker popup instead */}
             </div>
         </ClientLayout>
     );

@@ -442,12 +442,18 @@ const AdminEmployees = () => {
     setShowRemoveConfirmModal(true);
   };
 
+
   // Handle Remove Assignment
   const handleRemoveAssignment = async () => {
     if (!assignmentToRemove || !assigningEmployee) return;
 
     try {
       setLoading(true);
+
+      // Store these values before they get cleared
+      const clientId = assignmentToRemove.clientId;
+      const year = assignmentToRemove.year;
+      const month = assignmentToRemove.month;
 
       const response = await axios.delete(
         `${import.meta.env.VITE_API_URL}/admin-employee/remove-assignment`,
@@ -469,11 +475,22 @@ const AdminEmployees = () => {
         theme: "dark"
       });
 
-      loadEmployees();
+      // Close modal first
       closeRemoveConfirmModal();
 
-      if (assignmentToRemove.clientId && assignmentToRemove.year && assignmentToRemove.month) {
-        loadClientTaskStatus(assignmentToRemove.clientId, assignmentToRemove.year, assignmentToRemove.month);
+      // Then refresh data
+      await loadEmployees(); // Wait for employees to load
+
+      // IMPORTANT: Update the assigningEmployee with the latest data
+      // Find the updated employee from the newly loaded employees list
+      const updatedEmployee = employees.find(emp => emp.employeeId === assigningEmployee.employeeId);
+      if (updatedEmployee) {
+        setAssigningEmployee(updatedEmployee);
+      }
+
+      // Refresh task status with the stored values
+      if (clientId && year && month) {
+        await loadClientTaskStatus(clientId, year, month);
       }
     } catch (error) {
       console.error("Error removing assignment:", error);
