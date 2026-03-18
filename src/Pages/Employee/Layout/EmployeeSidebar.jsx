@@ -10,7 +10,8 @@ import {
   FiHome,
   FiUsers,
   FiCheckSquare,
-  FiShield
+  FiShield ,
+  FiDollarSign  
 } from "react-icons/fi";
 import { MdOutlineDashboard } from "react-icons/md";
 
@@ -63,6 +64,7 @@ const EmployeeSidebar = ({ children }) => {
   const menuData = [
     { icon: <MdOutlineDashboard />, title: "Dashboard", path: "/employee/dashboard" },
     { icon: <FiUsers />, title: "Clients", path: "/employee/assigned" },
+    { icon: <FiDollarSign   />, title: "Clients Payment", path: "/employee/clientpayment" },
     // { icon: <FiCheckSquare />, title: "Notes", path: "/employee/notes" },  
   ];
 

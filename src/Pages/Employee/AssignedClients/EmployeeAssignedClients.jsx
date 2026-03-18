@@ -78,6 +78,7 @@ const EmployeeAssignedClients = () => {
   const [currentCategoryFiles, setCurrentCategoryFiles] = useState([]);
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const previewRef = useRef(null);
+  const imageScrollRef = useRef(null); // ✅ ADDED
 
   /* ================= ZOOM AND PAN STATES ================= */
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -153,7 +154,7 @@ const EmployeeAssignedClients = () => {
         { withCredentials: true }
       );
 
-      const data = res.data; // Don't filter here! 
+      const data = res.data;
 
       setAssignments(data);
 
@@ -292,7 +293,6 @@ const EmployeeAssignedClients = () => {
 
       console.log("Loading viewed status for ALL files in current assignment...");
 
-      // Check all categories
       const categories = [
         { type: 'sales', files: activeFilesData.categories?.sales?.files },
         { type: 'purchase', files: activeFilesData.categories?.purchase?.files },
@@ -304,7 +304,6 @@ const EmployeeAssignedClients = () => {
         })) || [])
       ];
 
-      // Check each file
       for (const category of categories) {
         if (!category.files) continue;
 
@@ -377,7 +376,6 @@ const EmployeeAssignedClients = () => {
         }
       );
 
-      // Create unique key for this file
       const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}`;
 
       setFileViewedStatus(prev => ({
@@ -399,7 +397,6 @@ const EmployeeAssignedClients = () => {
   const toggleFileViewed = async (fileData) => {
     if (!fileData || !activeAssignment || checkingViewed) return;
 
-    // FIX: Get clientId from activeAssignment.client.clientId
     if (!activeAssignment.client?.clientId) {
       console.error("No clientId found in activeAssignment");
       return null;
@@ -408,7 +405,6 @@ const EmployeeAssignedClients = () => {
     try {
       setCheckingViewed(true);
 
-      // FIX: Get clientId correctly
       const clientId = activeAssignment.client.clientId;
       const { year, month, task } = activeAssignment;
       const { categoryType, categoryName, fileName, url } = fileData;
@@ -416,7 +412,7 @@ const EmployeeAssignedClients = () => {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/employee/toggle-file-viewed`,
         {
-          clientId, // This is now correct
+          clientId,
           year,
           month,
           categoryType,
@@ -428,10 +424,8 @@ const EmployeeAssignedClients = () => {
         { withCredentials: true }
       );
 
-      // Create unique key for this file
       const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}`;
 
-      // Update local state
       setFileViewedStatus(prev => ({
         ...prev,
         [fileKey]: response.data.isViewed
@@ -451,7 +445,7 @@ const EmployeeAssignedClients = () => {
   const getFileViewedStatus = (fileData) => {
     if (!fileData || !activeAssignment) return false;
 
-    const clientId = activeAssignment.client.clientId; // FIX: Get from client object
+    const clientId = activeAssignment.client.clientId;
     const { year, month } = activeAssignment;
     const { categoryType, categoryName, fileName } = fileData;
 
@@ -512,6 +506,33 @@ const EmployeeAssignedClients = () => {
     }
   };
 
+  /* ================= ✅ ADDED - useEffect for image wheel/pinch zoom ================= */
+  useEffect(() => {
+    const el = imageScrollRef.current;
+    if (!el || !isPreviewOpen) return;
+
+    const handleWheel = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      setZoomLevel(prev => Math.min(Math.max(prev + delta, 0.5), 3));
+    };
+
+    const blockPinch = (e) => {
+      if (e.ctrlKey || e.touches?.length > 1) {
+        e.preventDefault();
+      }
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    el.addEventListener('touchmove', blockPinch, { passive: false });
+
+    return () => {
+      el.removeEventListener('wheel', handleWheel);
+      el.removeEventListener('touchmove', blockPinch);
+    };
+  }, [isPreviewOpen]);
+
   /* ================= GET FILES FROM CATEGORY ================= */
   const getFilesFromCategory = (fileName, categoryType, categoryName = null) => {
     if (!activeFilesData || !activeFilesData.categories) return [];
@@ -535,21 +556,16 @@ const EmployeeAssignedClients = () => {
   const openDocumentPreview = async (document, categoryType = null, categoryName = null) => {
     if (!document || !document.url) return;
 
-    // Reset zoom and position when opening new document
     setZoomLevel(1);
     setImagePosition({ x: 0, y: 0 });
     setIsDragging(false);
 
-    // Determine file type
     const fileType = getFileType(document.fileName);
 
-    // Get category info
     let actualCategoryType = categoryType;
     let actualCategoryName = categoryName;
 
-    // If category not provided, try to determine from activeFilesData
     if (!categoryType && activeFilesData?.categories) {
-      // Search through all categories to find where this file belongs
       if (activeFilesData.categories.sales?.files?.some(f => f.fileName === document.fileName)) {
         actualCategoryType = 'sales';
         actualCategoryName = 'Sales';
@@ -570,10 +586,8 @@ const EmployeeAssignedClients = () => {
       }
     }
 
-    // Get all files from this category
     const categoryFiles = getFilesFromCategory(document.fileName, actualCategoryType, actualCategoryName);
 
-    // Find current file index
     const currentIndex = categoryFiles.findIndex(f =>
       f.fileName === document.fileName &&
       f.uploadedAt === document.uploadedAt
@@ -585,7 +599,6 @@ const EmployeeAssignedClients = () => {
     setPreviewDoc({ ...document, fileType, categoryType: actualCategoryType });
     setIsPreviewOpen(true);
 
-    // Check file viewed status
     await checkFileViewedStatus({
       categoryType: actualCategoryType,
       categoryName: actualCategoryName,
@@ -609,11 +622,9 @@ const EmployeeAssignedClients = () => {
         categoryType: previewDoc?.categoryType
       });
 
-      // Reset zoom for new file
       setZoomLevel(1);
       setImagePosition({ x: 0, y: 0 });
 
-      // Check file viewed status for the new file
       await checkFileViewedStatus({
         categoryType: previewDoc?.categoryType,
         categoryName: previewCategoryName === 'Sales' || previewCategoryName === 'Purchase' || previewCategoryName === 'Bank'
@@ -623,7 +634,6 @@ const EmployeeAssignedClients = () => {
         url: nextFile.url
       });
 
-      // Reapply protection for new document
       setTimeout(() => {
         applyProtection();
       }, 100);
@@ -640,11 +650,9 @@ const EmployeeAssignedClients = () => {
         categoryType: previewDoc?.categoryType
       });
 
-      // Reset zoom for new file
       setZoomLevel(1);
       setImagePosition({ x: 0, y: 0 });
 
-      // Check file viewed status for the new file
       await checkFileViewedStatus({
         categoryType: previewDoc?.categoryType,
         categoryName: previewCategoryName === 'Sales' || previewCategoryName === 'Purchase' || previewCategoryName === 'Bank'
@@ -654,7 +662,6 @@ const EmployeeAssignedClients = () => {
         url: prevFile.url
       });
 
-      // Reapply protection for new document
       setTimeout(() => {
         applyProtection();
       }, 100);
@@ -808,7 +815,6 @@ const EmployeeAssignedClients = () => {
         { withCredentials: true }
       );
 
-      // Update local state
       setActiveAssignment(prev => ({
         ...prev,
         accountingDone: newStatus,
@@ -816,7 +822,6 @@ const EmployeeAssignedClients = () => {
         accountingDoneBy: "current-user"
       }));
 
-      // Update assignments array
       setAssignments(prev => prev.map(item =>
         item.client.clientId === activeAssignment.client.clientId &&
           item.year === activeAssignment.year &&
@@ -831,7 +836,6 @@ const EmployeeAssignedClients = () => {
           : item
       ));
 
-      // Update grouped assignments
       const updatedGrouped = { ...groupedAssignments };
       if (updatedGrouped[activeAssignment.client.clientId] &&
         updatedGrouped[activeAssignment.client.clientId][`${activeAssignment.year}-${activeAssignment.month}`]) {
@@ -1043,7 +1047,6 @@ const EmployeeAssignedClients = () => {
         {files && files.length > 0 ? (
           <div className="files-list">
             {files.map((file, index) => {
-              // Get viewed status for this file
               const isViewed = getFileViewedStatus({
                 categoryType: categoryName ? 'other' : title.toLowerCase().split(' ')[0],
                 categoryName: categoryName || null,
@@ -1143,7 +1146,6 @@ const EmployeeAssignedClients = () => {
                         <FiPlus size={16} />
                       </button>
 
-                      {/* Notes count badge - attached to + button */}
                       {file.notes && file.notes.length > 0 && (
                         <span className="notes-count-badge">
                           {file.notes.length}
@@ -1151,7 +1153,6 @@ const EmployeeAssignedClients = () => {
                       )}
                     </div>
 
-                    {/* Checkmark for file viewed status - AFTER notes section */}
                     <button
                       className={`action-btn check-btn ${isViewed ? 'checked' : ''}`}
                       onClick={async (e) => {
@@ -1178,7 +1179,6 @@ const EmployeeAssignedClients = () => {
                       title="Audit Icon"
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Toggle ONLY the audit icon state (completely independent)
                         setAuditIconStatus(prev => ({
                           ...prev,
                           [file.fileName]: !prev[file.fileName]
@@ -1396,7 +1396,6 @@ const EmployeeAssignedClients = () => {
     const isFirstFile = currentFileIndex === 0;
     const isLastFile = currentFileIndex === totalFilesInCategory - 1;
 
-    // Get viewed status for current file
     const isFileViewed = getFileViewedStatus({
       categoryType: previewDoc.categoryType,
       categoryName: previewCategoryName === 'Sales' || previewCategoryName === 'Purchase' || previewCategoryName === 'Bank'
@@ -1436,7 +1435,6 @@ const EmployeeAssignedClients = () => {
                   {fileType === 'other' && <FiFile size={18} />}
                 </span>
 
-                {/* Category and file name */}
                 <div className="category-file-name">
                   <span className="category-label">{previewCategoryName}</span>
                   <FiChevronRight size={12} className="separator-icon" />
@@ -1448,7 +1446,6 @@ const EmployeeAssignedClients = () => {
                 </span>
               </h3>
 
-              {/* File counter in header */}
               {totalFilesInCategory > 1 && (
                 <div className="file-counter">
                   {currentFileIndex + 1} of {totalFilesInCategory}
@@ -1457,7 +1454,6 @@ const EmployeeAssignedClients = () => {
             </div>
 
             <div className="preview-header-right">
-              {/* Checkmark button */}
               <button
                 className={`checkmark-btn ${isFileViewed ? 'checked' : ''}`}
                 onClick={async () => {
@@ -1488,7 +1484,6 @@ const EmployeeAssignedClients = () => {
                 title="Audit Icon"
                 onClick={(e) => {
                   e.stopPropagation();
-                  // Toggle ONLY the audit icon state
                   if (previewDoc?.fileName) {
                     setAuditIconStatus(prev => ({
                       ...prev,
@@ -1504,7 +1499,6 @@ const EmployeeAssignedClients = () => {
                 />
               </div>
 
-              {/* Close button */}
               <button
                 className="close-preview-btn"
                 onClick={closeDocumentPreview}
@@ -1525,11 +1519,11 @@ const EmployeeAssignedClients = () => {
                 SECURE VIEW: Downloading and right-click disabled
               </span>
               <span className="zoom-hint">
-                <FiZoomIn size={14} /> Use zoom controls or Ctrl+Mouse Wheel to zoom
+                <FiZoomIn size={14} /> Use zoom controls or Mouse Wheel to zoom
               </span>
             </div>
 
-            {/* PDF Viewer - Native browser zoom works with Ctrl+Mouse Wheel */}
+            {/* PDF Viewer */}
             {fileType === 'pdf' && (
               <div className="protected-view-container pdf-viewer-container">
                 <iframe
@@ -1553,10 +1547,9 @@ const EmployeeAssignedClients = () => {
               </div>
             )}
 
-            {/* Image Viewer with Zoom and Pan */}
+            {/* ✅ IMAGE VIEWER - ref added, onWheel removed */}
             {fileType === 'image' && (
               <div className="image-viewer-wrapper">
-                {/* Zoom Controls */}
                 <div className="zoom-controls">
                   <button
                     onClick={handleZoomOut}
@@ -1586,69 +1579,42 @@ const EmployeeAssignedClients = () => {
                 </div>
 
                 <div
-                  className={`protected-view-container image-viewer-container ${isDragging ? 'dragging' : ''}`}
+                  className="image-scroll-container"
+                  ref={imageScrollRef}
                   onContextMenu={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     return false;
                   }}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseUp}
-                  style={{
-                    overflow: 'auto',
-                    maxHeight: '70vh',
-                    textAlign: 'center',
-                    backgroundColor: '#f5f5f5',
-                    position: 'relative',
-                    cursor: zoomLevel > 1 ? 'grab' : 'default'
+                  onMouseDown={(e) => {
+                    if (zoomLevel > 1) {
+                      setIsDragging(true);
+                      setDragStart({ x: e.clientX - imagePosition.x, y: e.clientY - imagePosition.y });
+                    }
                   }}
+                  onMouseMove={(e) => {
+                    if (isDragging && zoomLevel > 1) {
+                      setImagePosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+                    }
+                  }}
+                  onMouseUp={() => setIsDragging(false)}
+                  onMouseLeave={() => setIsDragging(false)}
                 >
                   <div
+                    className="image-transform-wrapper"
                     style={{
                       transform: `scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`,
-                      transformOrigin: 'center',
-                      transition: isDragging ? 'none' : 'transform 0.1s ease',
-                      display: 'inline-block',
-                      padding: '20px',
-                      minWidth: '100%',
-                      minHeight: '100%'
+                      cursor: isDragging ? 'grabbing' : (zoomLevel > 1 ? 'grab' : 'default'),
                     }}
                   >
                     <img
                       src={previewDoc.url}
                       alt={previewDoc.fileName}
-                      style={{
-                        maxWidth: '100%',
-                        maxHeight: '100%',
-                        pointerEvents: 'none',
-                        userSelect: 'none',
-                        WebkitUserSelect: 'none',
-                        MozUserSelect: 'none',
-                        msUserSelect: 'none',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                      }}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        return false;
-                      }}
+                      draggable={false}
+                      onContextMenu={(e) => { e.preventDefault(); return false; }}
                       onDragStart={(e) => e.preventDefault()}
                     />
                   </div>
-
-                  {/* Protection overlay */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      pointerEvents: 'none',
-                      zIndex: 10
-                    }}
-                  />
                 </div>
               </div>
             )}
@@ -1656,7 +1622,6 @@ const EmployeeAssignedClients = () => {
             {/* Excel Viewer with Zoom Controls */}
             {fileType === 'excel' && (
               <div className="excel-viewer-wrapper">
-                {/* Zoom Controls */}
                 <div className="zoom-controls">
                   <button
                     onClick={handleZoomOut}
@@ -1797,7 +1762,6 @@ const EmployeeAssignedClients = () => {
               )}
             </div>
 
-            {/* Navigation buttons at bottom */}
             {totalFilesInCategory > 1 && (
               <div className="file-navigation-bottom">
                 <button
@@ -2009,8 +1973,6 @@ const EmployeeAssignedClients = () => {
               ) : (
                 <div className="clients-list">
                   {clientList.map((client) => {
-                    // CONSOLE LOG - See the ENTIRE client object
-
                     return (
                       <div
                         key={client.clientId}
@@ -2027,8 +1989,6 @@ const EmployeeAssignedClients = () => {
                               <FiCalendar />
                               {client.assignmentCount} task{client.assignmentCount !== 1 ? 's' : ''}
                             </span>
-
-                            {/* ADD THIS LINE - Show plan with a briefcase icon */}
                             <span className="client-plan-badge">
                               <FiBriefcase />
                               {client.currentPlan || client.planSelected || client.nextMonthPlan || 'No Plan'}
@@ -2131,7 +2091,6 @@ const EmployeeAssignedClients = () => {
                             </div>
                           </div>
 
-                          {/* Task List (shown when expanded) */}
                           {isExpanded && (
                             <div className="month-tasks-list">
                               {monthAssignments.map((assignment, index) => {
@@ -2216,11 +2175,9 @@ const EmployeeAssignedClients = () => {
                     </div>
                   </div>
 
-                  {/* Task Selection Dropdown (if multiple tasks for this month) */}
                   {renderTaskSelection()}
 
                   <div className="details-content">
-                    {/* Client Information */}
                     <div className="info-card">
                       <h4>
                         <FiUser /> Client Information
@@ -2245,7 +2202,6 @@ const EmployeeAssignedClients = () => {
                       </div>
                     </div>
 
-                    {/* Assignment Information */}
                     <div className="info-card">
                       <h4>
                         <FiCalendar /> Assignment Information
@@ -2276,7 +2232,6 @@ const EmployeeAssignedClients = () => {
                       </div>
                     </div>
 
-                    {/* Files Summary */}
                     <div className="info-card">
                       <h4>
                         <FiFile /> Files Summary
@@ -2305,7 +2260,6 @@ const EmployeeAssignedClients = () => {
                       </div>
                     </div>
 
-                    {/* Accounting Action */}
                     <div className="info-card accounting-action-card">
                       <div className="accounting-header">
                         <h4>

@@ -29,6 +29,8 @@ import AdminNotesPanel from './Pages/Admin/Dashboard/Notes/AdminNotesPanel';
 import EmployeeNotesPanel from './Pages/Employee/Dashboard/EmpNotes/EmployeeNotesPanel';
 import PrivacyPolicy from './Pages/PrivacyPolicy/PrivacyPolicy';
 import NotFound from './Pages/NotFound/NotFound';
+import GoogleDrivePicker from './Pages/Testing/GoogleDrivePicker';
+import ClientPaymentInfo from './Pages/Employee/ClientPayment/ClientPaymentInfo';
 
 function App() {
   return (
@@ -39,6 +41,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/terms" element={<TermsAndCondition />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/drive" element={<GoogleDrivePicker />} />
           <Route path="*" element={<NotFound />} />
 
           {/* ADMIN ROUTES  */}
@@ -65,6 +68,7 @@ function App() {
           {/* <Route path="/employee/login" element={<EmployeeLogin />} /> */}
           <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
           <Route path="/employee/assigned" element={<EmployeeAssignedClients />} />
+          <Route path="/employee/clientpayment" element={<ClientPaymentInfo />} />
           <Route path="/employee/tasks" element={<EmployeeTaskLogs />} />
           <Route path="/employee/notes" element={<EmployeeNotesPanel />} />
 
