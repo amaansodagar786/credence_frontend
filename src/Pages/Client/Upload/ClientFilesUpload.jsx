@@ -39,8 +39,7 @@ import {
     FiEyeOff,
     FiZoomIn,
     FiZoomOut,
-    FiMaximize,
-    FiChevronRight
+    FiMaximize
 } from "react-icons/fi";
 
 const ClientFilesUpload = () => {
@@ -128,28 +127,14 @@ const ClientFilesUpload = () => {
     });
 
     // ===== Google Drive State =====
+    // We no longer need driveAccessToken state – token is passed directly
     const [clientData, setClientData] = useState(null);
 
     // ===== Google Drive loading state =====
     const [driveLoading, setDriveLoading] = useState(false);
 
-    // ===== NEW: Custom Drive Browser State =====
-    const [driveBrowser, setDriveBrowser] = useState({
-        isOpen: false,
-        categoryInfo: null,
-        accessToken: null,
-        currentFolderId: "root",
-        currentFolderName: "My Drive",
-        breadcrumbs: [{ id: "root", name: "My Drive" }],
-        items: [],
-        selectedFiles: [],
-        loading: false,
-        error: null
-    });
-
     // Ref for protection
     const previewRef = useRef(null);
-    const imageScrollRef = useRef(null); // ✅ ADDED
 
     const monthNames = [
         "January", "February", "March", "April", "May", "June",
@@ -243,13 +228,24 @@ const ClientFilesUpload = () => {
         setIsDragging(false);
     };
 
-    // ===== Load Google Identity Services only =====
+    // ===== Load Google Identity Services + Google Picker Script =====
     useEffect(() => {
+        // Load GIS
         const gisScript = document.createElement("script");
         gisScript.src = "https://accounts.google.com/gsi/client";
         gisScript.async = true;
         gisScript.onload = () => console.log("Google Identity Services loaded");
         document.body.appendChild(gisScript);
+
+        // Load Google API (for Picker)
+        const gapiScript = document.createElement("script");
+        gapiScript.src = "https://apis.google.com/js/api.js";
+        gapiScript.onload = () => {
+            window.gapi.load("picker", () => {
+                console.log("Google Picker API loaded");
+            });
+        };
+        document.body.appendChild(gapiScript);
     }, []);
 
     // ===== Helper function to get file type =====
@@ -396,33 +392,6 @@ const ClientFilesUpload = () => {
         setImagePosition({ x: 0, y: 0 });
         setIsDragging(false);
     };
-
-    // ✅ ADDED - useEffect to handle wheel and pinch zoom on image container
-    useEffect(() => {
-        const el = imageScrollRef.current;
-        if (!el || !isPreviewOpen) return;
-
-        const handleWheel = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const delta = e.deltaY > 0 ? -0.1 : 0.1;
-            setZoomLevel(prev => Math.min(Math.max(prev + delta, 0.5), 3));
-        };
-
-        const blockPinch = (e) => {
-            if (e.ctrlKey || e.touches?.length > 1) {
-                e.preventDefault();
-            }
-        };
-
-        el.addEventListener('wheel', handleWheel, { passive: false });
-        el.addEventListener('touchmove', blockPinch, { passive: false });
-
-        return () => {
-            el.removeEventListener('wheel', handleWheel);
-            el.removeEventListener('touchmove', blockPinch);
-        };
-    }, [isPreviewOpen]);
 
     /* ================= OPEN VIEW ALL MODAL ================= */
     const openViewAllModal = (categoryType, categoryName = null, categoryLabel) => {
@@ -914,9 +883,8 @@ const ClientFilesUpload = () => {
         </span>
     );
 
-    // ================= CUSTOM DRIVE BROWSER FUNCTIONS =================
+    // ================= NEW DRIVE FUNCTIONS (REPLACED) =================
 
-    /* ================= AUTHENTICATE DRIVE ================= */
     const authenticateDrive = (categoryInfo) => {
         if (!window.google || !window.google.accounts) {
             showError("Google Identity Services not loaded. Please refresh.");
@@ -931,140 +899,61 @@ const ClientFilesUpload = () => {
                     showError("Google Drive authentication failed: " + tokenResponse.error);
                     return;
                 }
-                openDriveBrowser(tokenResponse.access_token, categoryInfo);
+                // Open picker with the obtained token
+                openGooglePicker(tokenResponse.access_token, categoryInfo);
             },
         });
 
         tokenClient.requestAccessToken();
     };
 
-    /* ================= FETCH DRIVE ITEMS ================= */
-    const fetchDriveItems = async (folderId, accessToken) => {
-        setDriveBrowser(prev => ({ ...prev, loading: true, error: null, items: [] }));
-
-        try {
-            const query = `'${folderId}' in parents and trashed = false`;
-            const fields = "files(id,name,mimeType,size,modifiedTime)";
-            const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=${encodeURIComponent(fields)}&orderBy=folder,name&pageSize=200`;
-
-            const response = await fetch(url, {
-                headers: { Authorization: `Bearer ${accessToken}` }
-            });
-
-            if (!response.ok) throw new Error("Failed to fetch Drive files");
-
-            const data = await response.json();
-            setDriveBrowser(prev => ({ ...prev, items: data.files || [], loading: false }));
-
-        } catch (err) {
-            console.error("Drive fetch error:", err);
-            setDriveBrowser(prev => ({
-                ...prev,
-                loading: false,
-                error: "Failed to load files. Please try again."
-            }));
+    const openGooglePicker = (accessToken, categoryInfo) => {
+        if (!window.google || !window.google.picker) {
+            showError("Google Picker not loaded. Please refresh.");
+            return;
         }
+
+        // Scroll to top so picker opens in the right place
+        window.scrollTo(0, 0);
+
+        // Create the view - this shows files in a grid with checkboxes
+        const view = new window.google.picker.DocsView()
+            .setIncludeFolders(true)
+            .setMode(window.google.picker.DocsViewMode.GRID); // GRID mode shows thumbnails with checkboxes
+
+        const picker = new window.google.picker.PickerBuilder()
+            .addView(view)
+            .setOAuthToken(accessToken)
+            .setDeveloperKey(import.meta.env.VITE_GOOGLE_API_KEY)
+            .setAppId(import.meta.env.VITE_GOOGLE_APP_ID)
+            // This is the KEY feature for multi-select
+            .enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED)
+            .setCallback((data) => pickerCallback(data, accessToken, categoryInfo))
+            .build();
+
+        // Show the picker
+        picker.setVisible(true);
     };
 
-    /* ================= OPEN DRIVE BROWSER ================= */
-    const openDriveBrowser = (accessToken, categoryInfo) => {
-        setDriveBrowser({
-            isOpen: true,
-            categoryInfo,
-            accessToken,
-            currentFolderId: "root",
-            currentFolderName: "My Drive",
-            breadcrumbs: [{ id: "root", name: "My Drive" }],
-            items: [],
-            selectedFiles: [],
-            loading: false,
-            error: null
-        });
+    const pickerCallback = async (data, accessToken, categoryInfo) => {
+        if (data.action !== window.google.picker.Action.PICKED) {
+            return;
+        }
 
-        fetchDriveItems("root", accessToken);
-    };
+        const files = data.docs;
+        if (!files || files.length === 0) return;
 
-    /* ================= NAVIGATE TO FOLDER ================= */
-    const navigateToFolder = (folderId, folderName) => {
-        setDriveBrowser(prev => ({
-            ...prev,
-            currentFolderId: folderId,
-            currentFolderName: folderName,
-            breadcrumbs: [...prev.breadcrumbs, { id: folderId, name: folderName }],
-            selectedFiles: []
-        }));
-        fetchDriveItems(folderId, driveBrowser.accessToken);
-    };
-
-    /* ================= NAVIGATE TO BREADCRUMB ================= */
-    const navigateToBreadcrumb = (index) => {
-        const crumb = driveBrowser.breadcrumbs[index];
-        setDriveBrowser(prev => ({
-            ...prev,
-            currentFolderId: crumb.id,
-            currentFolderName: crumb.name,
-            breadcrumbs: prev.breadcrumbs.slice(0, index + 1),
-            selectedFiles: []
-        }));
-        fetchDriveItems(crumb.id, driveBrowser.accessToken);
-    };
-
-    /* ================= TOGGLE FILE SELECTION ================= */
-    const toggleFileSelection = (file) => {
-        setDriveBrowser(prev => {
-            const isSelected = prev.selectedFiles.some(f => f.id === file.id);
-            return {
-                ...prev,
-                selectedFiles: isSelected
-                    ? prev.selectedFiles.filter(f => f.id !== file.id)
-                    : [...prev.selectedFiles, file]
-            };
-        });
-    };
-
-    /* ================= TOGGLE SELECT ALL ================= */
-    const toggleSelectAll = () => {
-        const files = driveBrowser.items.filter(
-            item => item.mimeType !== "application/vnd.google-apps.folder"
-        );
-        const allSelected = files.length > 0 && files.every(f =>
-            driveBrowser.selectedFiles.some(sf => sf.id === f.id)
-        );
-        setDriveBrowser(prev => ({
-            ...prev,
-            selectedFiles: allSelected ? [] : files
-        }));
-    };
-
-    /* ================= CLOSE DRIVE BROWSER ================= */
-    const closeDriveBrowser = () => {
-        setDriveBrowser(prev => ({ ...prev, isOpen: false }));
-    };
-
-    /* ================= GET DRIVE FILE EMOJI ICON ================= */
-    const getDriveFileIcon = (mimeType) => {
-        if (!mimeType) return "📎";
-        if (mimeType.includes("pdf")) return "📄";
-        if (mimeType.includes("image")) return "🖼️";
-        if (mimeType.includes("spreadsheet") || mimeType.includes("excel") || mimeType.includes("csv")) return "📊";
-        if (mimeType.includes("document") || mimeType.includes("word")) return "📝";
-        return "📎";
-    };
-
-    /* ================= DOWNLOAD SELECTED DRIVE FILES ================= */
-    const downloadSelectedDriveFiles = async () => {
-        const { selectedFiles, accessToken, categoryInfo } = driveBrowser;
-        if (!selectedFiles.length) return;
-
-        closeDriveBrowser();
+        // Show loading overlay
         setDriveLoading(true);
-        showInfo(`Downloading ${selectedFiles.length} file(s) from Google Drive...`);
+        showInfo(`Processing ${files.length} file(s) from Google Drive...`);
 
         const downloadedFiles = [];
+        let successCount = 0;
         let errorCount = 0;
 
-        for (const file of selectedFiles) {
+        for (const file of files) {
             try {
+                // Call backend proxy
                 const response = await fetch(
                     `${import.meta.env.VITE_API_URL}/api/google-drive-proxy`,
                     {
@@ -1072,70 +961,81 @@ const ClientFilesUpload = () => {
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
                             fileId: file.id,
-                            accessToken,
+                            accessToken: accessToken,
                         }),
                     }
                 );
 
                 if (!response.ok) {
-                    console.error(`Failed to download ${file.name}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error(`Failed to download ${file.name}:`, errorData);
                     errorCount++;
                     continue;
                 }
 
+                // Get filename from header or use original name
                 const contentDisposition = response.headers.get("Content-Disposition");
                 let filename = file.name;
                 if (contentDisposition) {
                     const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
                     if (match && match[1]) {
                         filename = match[1].replace(/['"]/g, "");
-                        try { filename = decodeURIComponent(filename); } catch (e) { }
+                        try {
+                            filename = decodeURIComponent(filename);
+                        } catch (e) { }
                     }
                 }
 
                 const blob = await response.blob();
                 const newFile = new File([blob], filename, { type: blob.type });
-                downloadedFiles.push(newFile);
 
+                downloadedFiles.push(newFile);
+                successCount++;
             } catch (err) {
                 console.error("Download error:", err);
                 errorCount++;
             }
         }
 
+        // Hide loading overlay
         setDriveLoading(false);
 
-        if (downloadedFiles.length > 0) {
-            showSuccess(`Successfully downloaded ${downloadedFiles.length} file(s) from Google Drive.`);
-
-            const { type, categoryName } = categoryInfo;
-
-            if (categoryName) {
-                setOtherCategories(prev => {
-                    const updated = [...prev];
-                    const idx = updated.findIndex(c => c.categoryName === categoryName);
-                    if (idx !== -1) {
-                        updated[idx] = {
-                            ...updated[idx],
-                            newFiles: [...(updated[idx].newFiles || []), ...downloadedFiles],
-                        };
-                    }
-                    return updated;
-                });
-            } else {
-                setNewFiles(prev => ({
-                    ...prev,
-                    [type]: [...(prev[type] || []), ...downloadedFiles],
-                }));
-            }
+        // Show summary toast
+        if (successCount > 0) {
+            showSuccess(`Successfully downloaded ${successCount} file(s) from Google Drive.`);
         }
-
         if (errorCount > 0) {
             showError(`Failed to download ${errorCount} file(s). Check console for details.`);
         }
+
+        if (downloadedFiles.length === 0) return;
+
+        // Add files to the appropriate category state
+        const { type, categoryName } = categoryInfo;
+
+        if (categoryName) {
+            // Other category
+            setOtherCategories(prev => {
+                const updated = [...prev];
+                const idx = updated.findIndex(c => c.categoryName === categoryName);
+                if (idx !== -1) {
+                    updated[idx] = {
+                        ...updated[idx],
+                        newFiles: [...(updated[idx].newFiles || []), ...downloadedFiles],
+                    };
+                }
+                return updated;
+            });
+        } else {
+            // Main category (sales, purchase, bank)
+            setNewFiles(prev => ({
+                ...prev,
+                [type]: [...(prev[type] || []), ...downloadedFiles],
+            }));
+        }
     };
 
-    // ================= END CUSTOM DRIVE BROWSER FUNCTIONS =================
+    // ================= END NEW DRIVE FUNCTIONS =================
 
     /* ================= RENDER EXISTING FILES INFO ================= */
     const renderExistingFilesInfo = (category, categoryType, categoryName = null) => {
@@ -1567,11 +1467,6 @@ const ClientFilesUpload = () => {
                     )}
                 </div>
 
-                <div className="upload-size-note">
-                    <FiInfo size={13} />
-                    <span>Max upload limit: <strong>10MB</strong> per submission (single or multiple files combined)</span>
-                </div>
-
                 {category && renderExistingFilesInfo(category, type)}
 
                 {monthInactive && (
@@ -1707,11 +1602,6 @@ const ClientFilesUpload = () => {
                     )}
                 </div>
 
-                <div className="upload-size-note">
-                    <FiInfo size={13} />
-                    <span>Max upload limit: <strong>10MB</strong> per submission (single or multiple files combined)</span>
-                </div>
-
                 {category && renderExistingFilesInfo(category, "other", cat.categoryName)}
 
                 {monthInactive && (
@@ -1821,174 +1711,6 @@ const ClientFilesUpload = () => {
         );
     };
 
-    /* ================= RENDER CUSTOM DRIVE BROWSER MODAL ================= */
-    const renderDriveBrowser = () => {
-        if (!driveBrowser.isOpen) return null;
-
-        const folders = driveBrowser.items.filter(
-            item => item.mimeType === "application/vnd.google-apps.folder"
-        );
-        const files = driveBrowser.items.filter(
-            item => item.mimeType !== "application/vnd.google-apps.folder"
-        );
-        const allFilesSelected =
-            files.length > 0 &&
-            files.every(f => driveBrowser.selectedFiles.some(sf => sf.id === f.id));
-
-        const handleOverlayClick = (e) => {
-            if (e.target === e.currentTarget) {
-                closeDriveBrowser();
-            }
-        };
-
-        return (
-            <div className="drive-browser-modal" onClick={handleOverlayClick}>
-                <div className="drive-browser-content">
-
-                    {/* Header */}
-                    <div className="drive-browser-header">
-                        <div className="drive-header-left">
-                            <FaGoogleDrive size={20} className="drive-logo-icon" />
-                            <h3>Google Drive</h3>
-                        </div>
-                        <button className="close-modal-btn" onClick={closeDriveBrowser}>
-                            <FiX size={20} />
-                        </button>
-                    </div>
-
-                    {/* Breadcrumb */}
-                    <div className="drive-breadcrumb">
-                        {driveBrowser.breadcrumbs.map((crumb, index) => (
-                            <span key={crumb.id} className="breadcrumb-item">
-                                {index > 0 && (
-                                    <FiChevronRight size={13} className="breadcrumb-sep" />
-                                )}
-                                <button
-                                    className={`breadcrumb-btn ${index === driveBrowser.breadcrumbs.length - 1 ? "active" : ""}`}
-                                    onClick={() => navigateToBreadcrumb(index)}
-                                    disabled={index === driveBrowser.breadcrumbs.length - 1}
-                                >
-                                    {crumb.name}
-                                </button>
-                            </span>
-                        ))}
-                    </div>
-
-                    {/* Select All bar */}
-                    {!driveBrowser.loading && files.length > 0 && (
-                        <div className="drive-select-all-bar">
-                            <label className="drive-checkbox-label">
-                                <input
-                                    type="checkbox"
-                                    checked={allFilesSelected}
-                                    onChange={toggleSelectAll}
-                                />
-                                <span>Select all files ({files.length})</span>
-                            </label>
-                            {driveBrowser.selectedFiles.length > 0 && (
-                                <span className="drive-selected-badge">
-                                    {driveBrowser.selectedFiles.length} selected
-                                </span>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Body */}
-                    <div className="drive-browser-body">
-                        {driveBrowser.loading ? (
-                            <div className="drive-loading-state">
-                                <div className="drive-spin"></div>
-                                <p>Loading files...</p>
-                            </div>
-                        ) : driveBrowser.error ? (
-                            <div className="drive-error-state">
-                                <FiAlertCircle size={32} />
-                                <p>{driveBrowser.error}</p>
-                            </div>
-                        ) : driveBrowser.items.length === 0 ? (
-                            <div className="drive-empty-state">
-                                <FiFolder size={32} />
-                                <p>This folder is empty</p>
-                            </div>
-                        ) : (
-                            <div className="drive-items-list">
-
-                                {/* Folders */}
-                                {folders.map(folder => (
-                                    <div
-                                        key={folder.id}
-                                        className="drive-item drive-folder-item"
-                                        onClick={() => navigateToFolder(folder.id, folder.name)}
-                                    >
-                                        <span className="drive-item-icon">📁</span>
-                                        <span className="drive-item-name" title={folder.name}>
-                                            {folder.name}
-                                        </span>
-                                        <FiChevronRight size={16} className="drive-folder-arrow" />
-                                    </div>
-                                ))}
-
-                                {/* Files with checkboxes */}
-                                {files.map(file => {
-                                    const isSelected = driveBrowser.selectedFiles.some(f => f.id === file.id);
-                                    return (
-                                        <div
-                                            key={file.id}
-                                            className={`drive-item drive-file-item ${isSelected ? "drive-file-selected" : ""}`}
-                                            onClick={() => toggleFileSelection(file)}
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                className="drive-file-checkbox"
-                                                checked={isSelected}
-                                                onChange={() => toggleFileSelection(file)}
-                                                onClick={e => e.stopPropagation()}
-                                            />
-                                            <span className="drive-item-icon">
-                                                {getDriveFileIcon(file.mimeType)}
-                                            </span>
-                                            <span className="drive-item-name" title={file.name}>
-                                                {file.name}
-                                            </span>
-                                            <span className="drive-item-size">
-                                                {file.size ? `${(parseInt(file.size) / 1024).toFixed(0)} KB` : "—"}
-                                            </span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Footer */}
-                    <div className="drive-browser-footer">
-                        <span className="drive-footer-hint">
-                            {driveBrowser.selectedFiles.length > 0
-                                ? `${driveBrowser.selectedFiles.length} file(s) selected`
-                                : "Tap folders to open • Tap files to select"}
-                        </span>
-                        <div className="drive-footer-actions">
-                            <button className="btn-cancel" onClick={closeDriveBrowser}>
-                                Cancel
-                            </button>
-                            <button
-                                className="btn-upload"
-                                onClick={downloadSelectedDriveFiles}
-                                disabled={driveBrowser.selectedFiles.length === 0}
-                            >
-                                <FiUpload size={15} />
-                                {driveBrowser.selectedFiles.length > 0
-                                    ? `Add ${driveBrowser.selectedFiles.length} File(s)`
-                                    : "Add Files"}
-                            </button>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-        );
-    };
-
     /* ================= RENDER DOCUMENT PREVIEW ================= */
     const renderDocumentPreview = () => {
         if (!previewDoc || !isPreviewOpen) return null;
@@ -2048,7 +1770,7 @@ const ClientFilesUpload = () => {
                                 SECURE VIEW: Downloading and right-click disabled
                             </span>
                             <span className="zoom-hint">
-                                <FiZoomIn size={14} /> Use zoom controls or Mouse Wheel to zoom
+                                <FiZoomIn size={14} /> Use zoom controls or Ctrl+Mouse Wheel to zoom
                             </span>
                         </div>
 
@@ -2072,7 +1794,6 @@ const ClientFilesUpload = () => {
                             </div>
                         )}
 
-                        {/* ✅ IMAGE VIEWER - ref added, old onWheel removed */}
                         {fileType === 'image' && (
                             <div className="image-viewer-wrapper">
                                 <div className="zoom-controls">
@@ -2104,42 +1825,70 @@ const ClientFilesUpload = () => {
                                 </div>
 
                                 <div
-                                    className="image-scroll-container"
-                                    ref={imageScrollRef}
+                                    className={`protected-view-container image-viewer-container ${isDragging ? 'dragging' : ''}`}
                                     onContextMenu={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
                                         return false;
                                     }}
-                                    onMouseDown={(e) => {
-                                        if (zoomLevel > 1) {
-                                            setIsDragging(true);
-                                            setDragStart({ x: e.clientX - imagePosition.x, y: e.clientY - imagePosition.y });
-                                        }
+                                    onMouseDown={handleMouseDown}
+                                    onMouseMove={handleMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onMouseLeave={handleMouseUp}
+                                    style={{
+                                        overflow: 'auto',
+                                        maxHeight: '70vh',
+                                        textAlign: 'center',
+                                        backgroundColor: '#f5f5f5',
+                                        position: 'relative',
+                                        cursor: zoomLevel > 1 ? 'grab' : 'default'
                                     }}
-                                    onMouseMove={(e) => {
-                                        if (isDragging && zoomLevel > 1) {
-                                            setImagePosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
-                                        }
-                                    }}
-                                    onMouseUp={() => setIsDragging(false)}
-                                    onMouseLeave={() => setIsDragging(false)}
                                 >
                                     <div
-                                        className="image-transform-wrapper"
                                         style={{
                                             transform: `scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`,
-                                            cursor: isDragging ? 'grabbing' : (zoomLevel > 1 ? 'grab' : 'default'),
+                                            transformOrigin: 'center',
+                                            transition: isDragging ? 'none' : 'transform 0.1s ease',
+                                            display: 'inline-block',
+                                            padding: '20px',
+                                            minWidth: '100%',
+                                            minHeight: '100%'
                                         }}
                                     >
                                         <img
                                             src={previewDoc.url}
                                             alt={previewDoc.fileName}
-                                            draggable={false}
-                                            onContextMenu={(e) => { e.preventDefault(); return false; }}
+                                            style={{
+                                                maxWidth: '100%',
+                                                maxHeight: '100%',
+                                                pointerEvents: 'none',
+                                                userSelect: 'none',
+                                                WebkitUserSelect: 'none',
+                                                MozUserSelect: 'none',
+                                                msUserSelect: 'none',
+                                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                                draggable: 'false'
+                                            }}
+                                            onContextMenu={(e) => {
+                                                e.preventDefault();
+                                                return false;
+                                            }}
                                             onDragStart={(e) => e.preventDefault()}
                                         />
                                     </div>
+
+                                    <div
+                                        className="image-protection-overlay"
+                                        style={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: '100%',
+                                            height: '100%',
+                                            pointerEvents: 'none',
+                                            zIndex: 10
+                                        }}
+                                    />
                                 </div>
                             </div>
                         )}
@@ -2683,11 +2432,11 @@ const ClientFilesUpload = () => {
                 {/* View All Files Modal */}
                 {renderViewAllModal()}
 
-                {/* Custom Drive Browser Modal */}
-                {renderDriveBrowser()}
+                {/* ✅ Google Drive Modal REMOVED - Using Google Picker popup instead */}
             </div>
 
-            {/* Google Drive Loading Overlay */}
+
+            {/* ===== Google Drive Loading Overlay with Modal ===== */}
             {driveLoading && (
                 <div className="drive-loading-overlay">
                     <div className="drive-loading-modal">
