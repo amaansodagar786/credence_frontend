@@ -2905,6 +2905,7 @@
     opacity: 0;
     transform: translateY(-30px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -2915,6 +2916,7 @@
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -3040,6 +3042,7 @@
       }
 
       .drive-footer-actions {
+
         .drive-cancel-btn,
         .drive-add-btn {
           padding: 8px 16px;
@@ -3077,6 +3080,7 @@
 /* ================= ZOOM CONTROLS FOR DOCUMENT PREVIEW ================= */
 .document-preview-modal {
   .preview-modal-body {
+
     .image-viewer-wrapper,
     .excel-viewer-wrapper {
       position: relative;
@@ -3128,7 +3132,7 @@
           width: auto;
           padding: 0 16px;
           gap: 8px;
-          
+
           svg {
             margin-right: 4px;
           }
@@ -3161,7 +3165,7 @@
 
       &.dragging {
         cursor: grabbing !important;
-        
+
         img {
           transition: none;
         }
@@ -3191,7 +3195,7 @@
       flex: 1;
       overflow: auto;
       background: white;
-      
+
       &::-webkit-scrollbar {
         width: 12px;
         height: 12px;
@@ -3234,7 +3238,7 @@
         padding: 4px 12px;
         border-radius: 20px;
         font-weight: 600;
-        
+
         svg {
           color: #7cd64b;
         }
@@ -3250,5 +3254,80 @@
         align-items: flex-start;
       }
     }
+  }
+}
+
+
+
+
+/* ================= GOOGLE DRIVE LOADING MODAL ================= */
+.drive-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease;
+
+  .drive-loading-modal {
+    background: white;
+    border-radius: 16px;
+    padding: 30px 40px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(124, 214, 75, 0.5);
+    animation: modalPop 0.3s ease;
+
+    .drive-loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(124, 214, 75, 0.2);
+      border-top: 4px solid #7cd64b;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px auto;
+    }
+
+    p {
+      color: #333;
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+    }
+
+    small {
+      color: #666;
+      font-size: 14px;
+    }
+  }
+}
+
+@keyframes modalPop {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
   }
 }

@@ -126,9 +126,12 @@ const ClientFilesUpload = () => {
         files: []
     });
 
-    // ===== Google Drive State (only access token needed now) =====
-    const [driveAccessToken, setDriveAccessToken] = useState(null);
+    // ===== Google Drive State =====
+    // We no longer need driveAccessToken state – token is passed directly
     const [clientData, setClientData] = useState(null);
+
+    // ===== Google Drive loading state =====
+    const [driveLoading, setDriveLoading] = useState(false);
 
     // Ref for protection
     const previewRef = useRef(null);
@@ -880,30 +883,8 @@ const ClientFilesUpload = () => {
         </span>
     );
 
-    // ================= GOOGLE PICKER FUNCTIONS =================
+    // ================= NEW DRIVE FUNCTIONS (REPLACED) =================
 
-    /* Step 1: Open Picker with access token */
-    const openGooglePicker = (accessToken, categoryInfo) => {
-        if (!window.google || !window.google.picker) {
-            showError("Google Picker not loaded. Please refresh and try again.");
-            return;
-        }
-
-        const view = new window.google.picker.DocsView()
-            .setIncludeFolders(true)
-            .setSelectFolderEnabled(false);
-
-        const picker = new window.google.picker.PickerBuilder()
-            .addView(view)
-            .setOAuthToken(accessToken)
-            .setDeveloperKey(import.meta.env.VITE_GOOGLE_API_KEY)
-            .setCallback((data) => pickerCallback(data, accessToken, categoryInfo))
-            .build();
-
-        picker.setVisible(true);
-    };
-
-    /* Step 2: Authenticate then open Picker */
     const authenticateDrive = (categoryInfo) => {
         if (!window.google || !window.google.accounts) {
             showError("Google Identity Services not loaded. Please refresh.");
@@ -913,31 +894,60 @@ const ClientFilesUpload = () => {
         const tokenClient = window.google.accounts.oauth2.initTokenClient({
             client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
             scope: "https://www.googleapis.com/auth/drive.file",
-            callback: (response) => {
-                if (response.error) {
-                    showError("Google Drive authentication failed: " + response.error);
+            callback: (tokenResponse) => {
+                if (tokenResponse.error) {
+                    showError("Google Drive authentication failed: " + tokenResponse.error);
                     return;
                 }
-
-                setDriveAccessToken(response.access_token);
-                openGooglePicker(response.access_token, categoryInfo);
+                // Open picker with the obtained token
+                openGooglePicker(tokenResponse.access_token, categoryInfo);
             },
         });
 
         tokenClient.requestAccessToken();
     };
 
-    /* Step 3: Handle Picker selection and download files */
+    const openGooglePicker = (accessToken, categoryInfo) => {
+        if (!window.google || !window.google.picker) {
+            showError("Google Picker not loaded. Please refresh.");
+            return;
+        }
+
+        const view = new window.google.picker.DocsView()
+            .setIncludeFolders(true)
+            .setMode(window.google.picker.DocsViewMode.LIST);
+
+        const picker = new window.google.picker.PickerBuilder()
+            .addView(view)
+            .setOAuthToken(accessToken)
+            .setDeveloperKey(import.meta.env.VITE_GOOGLE_API_KEY)
+            .setAppId(import.meta.env.VITE_GOOGLE_APP_ID)   // Make sure this env var is set
+            .enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED)
+            .setCallback((data) => pickerCallback(data, accessToken, categoryInfo))
+            .build();
+
+        picker.setVisible(true);
+    };
+
     const pickerCallback = async (data, accessToken, categoryInfo) => {
-        if (data.action !== window.google.picker.Action.PICKED) return;
+        if (data.action !== window.google.picker.Action.PICKED) {
+            return;
+        }
 
         const files = data.docs;
         if (!files || files.length === 0) return;
 
-        const downloadedFiles = [];
+        // Show loading overlay
+        setDriveLoading(true);
+        showInfo(`Processing ${files.length} file(s) from Google Drive...`);
 
-        try {
-            for (const file of files) {
+        const downloadedFiles = [];
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const file of files) {
+            try {
+                // Call backend proxy
                 const response = await fetch(
                     `${import.meta.env.VITE_API_URL}/api/google-drive-proxy`,
                     {
@@ -950,40 +960,76 @@ const ClientFilesUpload = () => {
                     }
                 );
 
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error(`Failed to download ${file.name}:`, errorData);
+                    errorCount++;
+                    continue;
+                }
+
+                // Get filename from header or use original name
+                const contentDisposition = response.headers.get("Content-Disposition");
+                let filename = file.name;
+                if (contentDisposition) {
+                    const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                    if (match && match[1]) {
+                        filename = match[1].replace(/['"]/g, "");
+                        try {
+                            filename = decodeURIComponent(filename);
+                        } catch (e) { }
+                    }
+                }
 
                 const blob = await response.blob();
-                const newFile = new File([blob], file.name, {
-                    type: blob.type,
-                });
+                const newFile = new File([blob], filename, { type: blob.type });
 
                 downloadedFiles.push(newFile);
+                successCount++;
+            } catch (err) {
+                console.error("Download error:", err);
+                errorCount++;
             }
+        }
 
-            const { type, categoryName } = categoryInfo;
+        // Hide loading overlay
+        setDriveLoading(false);
 
-            if (categoryName) {
-                const updated = [...otherCategories];
+        // Show summary toast
+        if (successCount > 0) {
+            showSuccess(`Successfully downloaded ${successCount} file(s) from Google Drive.`);
+        }
+        if (errorCount > 0) {
+            showError(`Failed to download ${errorCount} file(s). Check console for details.`);
+        }
+
+        if (downloadedFiles.length === 0) return;
+
+        // Add files to the appropriate category state
+        const { type, categoryName } = categoryInfo;
+
+        if (categoryName) {
+            // Other category
+            setOtherCategories(prev => {
+                const updated = [...prev];
                 const idx = updated.findIndex(c => c.categoryName === categoryName);
-
                 if (idx !== -1) {
-                    updated[idx].newFiles.push(...downloadedFiles);
-                    setOtherCategories(updated);
+                    updated[idx] = {
+                        ...updated[idx],
+                        newFiles: [...(updated[idx].newFiles || []), ...downloadedFiles],
+                    };
                 }
-            } else {
-                setNewFiles(prev => ({
-                    ...prev,
-                    [type]: [...prev[type], ...downloadedFiles],
-                }));
-            }
-
-            showSuccess(`${downloadedFiles.length} file(s) added from Google Drive`);
-
-        } catch (err) {
-            console.error("Picker download error:", err);
-            showError("Failed to download files from Google Drive");
+                return updated;
+            });
+        } else {
+            // Main category (sales, purchase, bank)
+            setNewFiles(prev => ({
+                ...prev,
+                [type]: [...(prev[type] || []), ...downloadedFiles],
+            }));
         }
     };
+
+    // ================= END NEW DRIVE FUNCTIONS =================
 
     /* ================= RENDER EXISTING FILES INFO ================= */
     const renderExistingFilesInfo = (category, categoryType, categoryName = null) => {
@@ -2382,6 +2428,18 @@ const ClientFilesUpload = () => {
 
                 {/* ✅ Google Drive Modal REMOVED - Using Google Picker popup instead */}
             </div>
+
+
+            {/* ===== Google Drive Loading Overlay with Modal ===== */}
+            {driveLoading && (
+                <div className="drive-loading-overlay">
+                    <div className="drive-loading-modal">
+                        <div className="drive-loading-spinner"></div>
+                        <p>Processing files from Google Drive...</p>
+                        <small>This may take a few seconds</small>
+                    </div>
+                </div>
+            )}
         </ClientLayout>
     );
 };

@@ -32,7 +32,6 @@ import {
   FiChevronDown
 } from "react-icons/fi";
 import "./AdminEmployees.scss";
-
 // Validation schemas
 const employeeSchema = Yup.object().shape({
   name: Yup.string()
@@ -48,7 +47,6 @@ const employeeSchema = Yup.object().shape({
     .min(6, "Password must be at least 6 characters")
     .optional()
 });
-
 const assignSchema = Yup.object().shape({
   clientId: Yup.string().required("Client is required"),
   year: Yup.number()
@@ -63,7 +61,6 @@ const assignSchema = Yup.object().shape({
     .min(1, "Select at least one task")
     .required("Select at least one task")
 });
-
 const AdminEmployees = () => {
   // State declarations
   const [employees, setEmployees] = useState([]);
@@ -71,14 +68,12 @@ const AdminEmployees = () => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showRemoveConfirmModal, setShowRemoveConfirmModal] = useState(false);
-
   // Selected items
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [assigningEmployee, setAssigningEmployee] = useState(null);
@@ -86,16 +81,13 @@ const AdminEmployees = () => {
   const [confirmAction, setConfirmAction] = useState(""); // "deactivate" or "activate"
   const [confirmMessage, setConfirmMessage] = useState("");
   const [assignmentToRemove, setAssignmentToRemove] = useState(null);
-
   // Client task status state
   const [clientTaskStatus, setClientTaskStatus] = useState(null);
   const [loadingTaskStatus, setLoadingTaskStatus] = useState(false);
-
   // Mobile search states for client dropdown
   const [clientSearchTerm, setClientSearchTerm] = useState("");
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const dropdownRef = useRef(null);
-
   // Task options
   const taskOptions = [
     { value: "Bookkeeping", label: "Bookkeeping" },
@@ -104,13 +96,11 @@ const AdminEmployees = () => {
     { value: "Financial Statement Generation", label: "Financial Statement Generation" },
     { value: "Audit", label: "Audit" }
   ];
-
   // Current month/year
   const currentMonth = {
     year: new Date().getFullYear(),
     month: new Date().getMonth() + 1
   };
-
   // Formik for Add/Edit Employee
   const employeeFormik = useFormik({
     initialValues: {
@@ -123,25 +113,21 @@ const AdminEmployees = () => {
     onSubmit: async (values) => {
       try {
         setLoading(true);
-
         const payload = {
           name: values.name,
           email: values.email,
           phone: values.phone
         };
-
         // Only include password if provided
         if (values.password && values.password.trim() !== "") {
           payload.password = values.password;
         }
-
         // For new employees, check if password exists
         if (!selectedEmployee && !values.password) {
           toast.error("Password is required for new employees");
           setLoading(false);
           return;
         }
-
         if (selectedEmployee) {
           // Update existing employee
           const response = await axios.put(
@@ -149,7 +135,6 @@ const AdminEmployees = () => {
             payload,
             { withCredentials: true }
           );
-
           toast.success(response.data.message || "Employee updated successfully!", {
             position: "top-right",
             autoClose: 3000,
@@ -166,20 +151,17 @@ const AdminEmployees = () => {
             setLoading(false);
             return;
           }
-
           const response = await axios.post(
             `${import.meta.env.VITE_API_URL}/admin-employee/create`,
             payload,
             { withCredentials: true }
           );
-
           toast.success(response.data.message || "Employee created successfully!", {
             position: "top-right",
             autoClose: 3000,
             theme: "dark"
           });
         }
-
         resetEmployeeForm();
         loadEmployees();
       } catch (error) {
@@ -194,7 +176,6 @@ const AdminEmployees = () => {
       }
     }
   });
-
   // Formik for Assign Client (UPDATED WITH MULTIPLE TASKS)
   const assignFormik = useFormik({
     initialValues: {
@@ -207,14 +188,12 @@ const AdminEmployees = () => {
     onSubmit: async (values) => {
       try {
         setLoading(true);
-
         // Check if client has documents
         const documentCheck = await checkClientDocuments(
           values.clientId,
           values.year,
           values.month
         );
-
         if (!documentCheck.hasDocuments) {
           toast.error(documentCheck.message || "No documents uploaded for selected month", {
             position: "top-right",
@@ -224,7 +203,6 @@ const AdminEmployees = () => {
           setLoading(false);
           return;
         }
-
         // Proceed with multiple tasks assignment
         const response = await axios.post(
           `${import.meta.env.VITE_API_URL}/admin-employee/assign-client`,
@@ -237,16 +215,13 @@ const AdminEmployees = () => {
           },
           { withCredentials: true }
         );
-
         toast.success(response.data.message || "Tasks assigned successfully!", {
           position: "top-right",
           autoClose: 3000,
           theme: "dark"
         });
-
         resetAssignForm();
         loadEmployees();
-
         // Refresh client task status after assignment
         if (values.clientId && values.year && values.month) {
           loadClientTaskStatus(values.clientId, values.year, values.month);
@@ -263,8 +238,8 @@ const AdminEmployees = () => {
       }
     }
   });
-
-  // Load data
+  // ✅ FIXED: loadEmployees now returns fresh data so handleRemoveAssignment
+  // can use it directly instead of reading from stale state
   const loadEmployees = async () => {
     try {
       setLoading(true);
@@ -273,6 +248,7 @@ const AdminEmployees = () => {
         { withCredentials: true }
       );
       setEmployees(res.data);
+      return res.data; // ← CHANGED: return fresh data
     } catch (error) {
       console.error("Error loading employees:", error);
       toast.error("Failed to load employees", {
@@ -280,11 +256,11 @@ const AdminEmployees = () => {
         autoClose: 3000,
         theme: "dark"
       });
+      return null; // ← CHANGED: return null on error
     } finally {
       setLoading(false);
     }
   };
-
   const loadClients = async () => {
     try {
       const res = await axios.get(
@@ -296,26 +272,20 @@ const AdminEmployees = () => {
       console.error("Error loading clients:", error);
     }
   };
-
   const loadClientTaskStatus = async (clientId, year, month) => {
     try {
       setLoadingTaskStatus(true);
       setClientTaskStatus(null);
-
       console.log("📡 Loading task status for:", { clientId, year, month });
-
       const res = await axios.get(
         `${import.meta.env.VITE_API_URL}/admin-employee/client-tasks-status/${clientId}?year=${year}&month=${month}`,
         { withCredentials: true }
       );
-
       console.log("✅ Task status received:", res.data);
-
       const expectedYear = Number(year);
       const expectedMonth = Number(month);
       const receivedYear = Number(res.data.year);
       const receivedMonth = Number(res.data.month);
-
       if (res.data.clientId === clientId &&
         receivedYear === expectedYear &&
         receivedMonth === expectedMonth) {
@@ -332,7 +302,6 @@ const AdminEmployees = () => {
         });
         setClientTaskStatus(res.data);
       }
-
     } catch (error) {
       console.error("❌ Error loading client task status:", error);
       setClientTaskStatus(null);
@@ -340,7 +309,6 @@ const AdminEmployees = () => {
       setLoadingTaskStatus(false);
     }
   };
-
   // Check if client has documents for month
   const checkClientDocuments = async (clientId, year, month) => {
     try {
@@ -354,12 +322,10 @@ const AdminEmployees = () => {
       return { hasDocuments: false, message: "Error checking documents" };
     }
   };
-
   useEffect(() => {
     loadEmployees();
     loadClients();
   }, []);
-
   // Handle click outside dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -367,32 +333,24 @@ const AdminEmployees = () => {
         setShowClientDropdown(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
   // Load task status when client/date changes
   useEffect(() => {
     if (!showAssignModal) return;
-
     setClientTaskStatus(null);
-
     const { clientId, year, month } = assignFormik.values;
-
     if (!clientId || !year || !month) {
       return;
     }
-
     const timer = setTimeout(() => {
       loadClientTaskStatus(clientId, year, month);
     }, 300);
-
     return () => clearTimeout(timer);
   }, [showAssignModal, assignFormik.values.clientId, assignFormik.values.year, assignFormik.values.month]);
-
   // Open Edit Modal
   const openEditModal = (employee) => {
     setSelectedEmployee(employee);
@@ -404,7 +362,6 @@ const AdminEmployees = () => {
     });
     setShowEditModal(true);
   };
-
   // Open Assign Modal (UPDATED)
   const openAssignModal = (employee) => {
     setAssigningEmployee(employee);
@@ -419,7 +376,6 @@ const AdminEmployees = () => {
     setShowClientDropdown(false);
     setShowAssignModal(true);
   };
-
   // Open Confirm Modal for Deactivate
   const openDeactivateConfirm = (employee) => {
     setEmployeeToConfirm(employee);
@@ -427,7 +383,6 @@ const AdminEmployees = () => {
     setConfirmMessage(`Are you sure you want to deactivate "${employee.name}"? This will remove their current month task assignments from clients.`);
     setShowConfirmModal(true);
   };
-
   // Open Confirm Modal for Activate
   const openActivateConfirm = (employee) => {
     setEmployeeToConfirm(employee);
@@ -435,26 +390,21 @@ const AdminEmployees = () => {
     setConfirmMessage(`Activate "${employee.name}"? Employee will be available for new task assignments.`);
     setShowConfirmModal(true);
   };
-
   // Open Remove Assignment Confirmation
   const openRemoveAssignmentConfirm = (assignment) => {
     setAssignmentToRemove(assignment);
     setShowRemoveConfirmModal(true);
   };
-
-
-  // Handle Remove Assignment
+  // ✅ FIXED: Use freshEmployees returned from loadEmployees() instead of
+  // reading stale employees state (which hasn't re-rendered yet at that point)
   const handleRemoveAssignment = async () => {
     if (!assignmentToRemove || !assigningEmployee) return;
-
     try {
       setLoading(true);
-
       // Store these values before they get cleared
       const clientId = assignmentToRemove.clientId;
       const year = assignmentToRemove.year;
       const month = assignmentToRemove.month;
-
       const response = await axios.delete(
         `${import.meta.env.VITE_API_URL}/admin-employee/remove-assignment`,
         {
@@ -468,26 +418,23 @@ const AdminEmployees = () => {
           withCredentials: true
         }
       );
-
       toast.success(response.data.message || "Task assignment removed successfully!", {
         position: "top-right",
         autoClose: 3000,
         theme: "dark"
       });
-
       // Close modal first
       closeRemoveConfirmModal();
-
-      // Then refresh data
-      await loadEmployees(); // Wait for employees to load
-
-      // IMPORTANT: Update the assigningEmployee with the latest data
-      // Find the updated employee from the newly loaded employees list
-      const updatedEmployee = employees.find(emp => emp.employeeId === assigningEmployee.employeeId);
-      if (updatedEmployee) {
-        setAssigningEmployee(updatedEmployee);
+      // ✅ CHANGED: use returned fresh data directly instead of stale state
+      const freshEmployees = await loadEmployees();
+      if (freshEmployees) {
+        const updatedEmployee = freshEmployees.find(
+          emp => emp.employeeId === assigningEmployee.employeeId
+        );
+        if (updatedEmployee) {
+          setAssigningEmployee(updatedEmployee);
+        }
       }
-
       // Refresh task status with the stored values
       if (clientId && year && month) {
         await loadClientTaskStatus(clientId, year, month);
@@ -503,21 +450,17 @@ const AdminEmployees = () => {
       setLoading(false);
     }
   };
-
   // Handle Confirm Action (Deactivate/Activate)
   const handleConfirmAction = async () => {
     if (!employeeToConfirm) return;
-
     try {
       setLoading(true);
-
       if (confirmAction === "deactivate") {
         const response = await axios.post(
           `${import.meta.env.VITE_API_URL}/admin-employee/deactivate/${employeeToConfirm.employeeId}`,
           {},
           { withCredentials: true }
         );
-
         toast.success(response.data.message || "Employee deactivated successfully!", {
           position: "top-right",
           autoClose: 3000,
@@ -529,14 +472,12 @@ const AdminEmployees = () => {
           {},
           { withCredentials: true }
         );
-
         toast.success(response.data.message || "Employee activated successfully!", {
           position: "top-right",
           autoClose: 3000,
           theme: "dark"
         });
       }
-
       loadEmployees();
       closeConfirmModal();
     } catch (error) {
@@ -550,12 +491,10 @@ const AdminEmployees = () => {
       setLoading(false);
     }
   };
-
   // Handle task selection (checkbox)
   const handleTaskToggle = (taskValue) => {
     const currentTasks = assignFormik.values.tasks;
     let newTasks;
-
     if (currentTasks.includes(taskValue)) {
       // Remove task if already selected
       newTasks = currentTasks.filter(t => t !== taskValue);
@@ -563,28 +502,23 @@ const AdminEmployees = () => {
       // Add task if not selected
       newTasks = [...currentTasks, taskValue];
     }
-
     assignFormik.setFieldValue('tasks', newTasks);
   };
-
   // Handle select all tasks
   const handleSelectAllTasks = () => {
     const availableTasks = getAvailableTasks().map(t => t.value);
     assignFormik.setFieldValue('tasks', availableTasks);
   };
-
   // Handle clear all tasks
   const handleClearAllTasks = () => {
     assignFormik.setFieldValue('tasks', []);
   };
-
   // Handle client selection from dropdown
   const handleClientSelect = (clientId) => {
     assignFormik.setFieldValue('clientId', clientId);
     setShowClientDropdown(false);
     setClientSearchTerm("");
   };
-
   // Close modals
   const closeConfirmModal = () => {
     setShowConfirmModal(false);
@@ -592,12 +526,10 @@ const AdminEmployees = () => {
     setConfirmAction("");
     setConfirmMessage("");
   };
-
   const closeRemoveConfirmModal = () => {
     setShowRemoveConfirmModal(false);
     setAssignmentToRemove(null);
   };
-
   // Reset forms
   const resetEmployeeForm = () => {
     employeeFormik.resetForm();
@@ -606,7 +538,6 @@ const AdminEmployees = () => {
     setShowEditModal(false);
     setShowPassword(false);
   };
-
   const resetAssignForm = () => {
     assignFormik.resetForm({
       values: {
@@ -622,7 +553,6 @@ const AdminEmployees = () => {
     setShowClientDropdown(false);
     setShowAssignModal(false);
   };
-
   // Format month name
   const getMonthName = (month) => {
     const months = [
@@ -631,12 +561,10 @@ const AdminEmployees = () => {
     ];
     return months[month - 1] || "";
   };
-
   // Format month-year string
   const getMonthYear = (month, year) => {
     return `${getMonthName(month)} ${year}`;
   };
-
   // Format phone number
   const formatPhone = (phone) => {
     const cleaned = phone.replace(/\D/g, '');
@@ -645,40 +573,33 @@ const AdminEmployees = () => {
     }
     return phone;
   };
-
   // Get assigned tasks count
   const getAssignedCount = (employee) => {
     return employee.assignedClients?.filter(ac => !ac.isRemoved).length || 0;
   };
-
   // Filtered employees based on search
   const filteredEmployees = employees.filter(emp =>
     emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     emp.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
   // Filtered clients based on search (for mobile dropdown)
   const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
     (client.email && client.email.toLowerCase().includes(clientSearchTerm.toLowerCase()))
   );
-
   // Get current month assignments
   const getCurrentMonthAssignments = (employee) => {
     const currentYear = new Date().getFullYear();
     const currentMonthNum = new Date().getMonth() + 1;
-
     return employee.assignedClients?.filter(
       assignment => assignment.year === currentYear &&
         assignment.month === currentMonthNum &&
         !assignment.isRemoved
     ) || [];
   };
-
   // Get past assignments for display
   const getPastAssignments = (employee) => {
     if (!employee?.assignedClients) return [];
-
     return [...employee.assignedClients]
       .filter(assignment => !assignment.isRemoved)
       .sort((a, b) => {
@@ -686,37 +607,30 @@ const AdminEmployees = () => {
         return b.month - a.month;
       });
   };
-
   // Get available tasks (filter out already assigned tasks)
   const getAvailableTasks = () => {
     if (!clientTaskStatus || !clientTaskStatus.taskStatus) {
       return taskOptions;
     }
-
     const assignedTasks = clientTaskStatus.taskStatus
       .filter(task => task.isAssigned)
       .map(task => task.task);
-
     return taskOptions.filter(taskOption =>
       !assignedTasks.includes(taskOption.value)
     );
   };
-
   // Check if task is already assigned
   const isTaskAlreadyAssigned = (task) => {
     if (!clientTaskStatus || !clientTaskStatus.taskStatus) return false;
-
     const taskStatus = clientTaskStatus.taskStatus.find(t => t.task === task);
     return taskStatus ? taskStatus.isAssigned : false;
   };
-
   // Get selected client name
   const getSelectedClientName = () => {
     if (!assignFormik.values.clientId) return "Select a client";
     const client = clients.find(c => c.clientId === assignFormik.values.clientId);
     return client ? client.name : "Select a client";
   };
-
   return (
     <AdminLayout>
       <ToastContainer />
@@ -731,7 +645,6 @@ const AdminEmployees = () => {
               Manage employees and assign tasks month-wise to clients
             </p>
           </div>
-
           <div className="action-section">
             <button
               className="add-btn"
@@ -742,7 +655,6 @@ const AdminEmployees = () => {
             </button>
           </div>
         </div>
-
         {/* Employees Table */}
         <div className="table-container">
           <div className="table-header">
@@ -759,7 +671,6 @@ const AdminEmployees = () => {
                 </span>
               </div>
             </div>
-
             <div className="table-controls">
               <div className="search-box">
                 <FiSearch size={18} />
@@ -773,7 +684,6 @@ const AdminEmployees = () => {
               </div>
             </div>
           </div>
-
           {loading && filteredEmployees.length === 0 ? (
             <div className="empty-state">
               <div className="loading-spinner"></div>
@@ -808,7 +718,6 @@ const AdminEmployees = () => {
                   {filteredEmployees.map((employee) => {
                     const currentAssignments = getCurrentMonthAssignments(employee);
                     const hasCurrentAssignments = currentAssignments.length > 0;
-
                     return (
                       <tr key={employee.employeeId} className="employee-row">
                         <td className="employee-info">
@@ -914,7 +823,6 @@ const AdminEmployees = () => {
             </div>
           )}
         </div>
-
         {/* Add/Edit Employee Modal - NO CHANGES */}
         {(showAddModal || showEditModal) && (
           <div className="modal-overlay">
@@ -939,7 +847,6 @@ const AdminEmployees = () => {
                   <FiX size={24} />
                 </button>
               </div>
-
               <div className="modal-body">
                 <form onSubmit={employeeFormik.handleSubmit} className="modal-form">
                   <div className="form-group">
@@ -965,7 +872,6 @@ const AdminEmployees = () => {
                       <div className="error-text">{employeeFormik.errors.name}</div>
                     )}
                   </div>
-
                   <div className="form-group">
                     <label htmlFor="email">
                       <FiMail size={16} /> Email Address *
@@ -989,7 +895,6 @@ const AdminEmployees = () => {
                       <div className="error-text">{employeeFormik.errors.email}</div>
                     )}
                   </div>
-
                   <div className="form-group">
                     <label htmlFor="phone">
                       <FiPhone size={16} /> Phone Number *
@@ -1014,7 +919,6 @@ const AdminEmployees = () => {
                       <div className="error-text">{employeeFormik.errors.phone}</div>
                     )}
                   </div>
-
                   <div className="form-group">
                     <div className="password-header">
                       <label htmlFor="password">
@@ -1066,7 +970,6 @@ const AdminEmployees = () => {
                       </small>
                     )}
                   </div>
-
                   <div className="modal-actions">
                     <button
                       type="button"
@@ -1095,7 +998,6 @@ const AdminEmployees = () => {
             </div>
           </div>
         )}
-
         {/* Assign Tasks Modal - UPDATED WITH MULTIPLE TASKS AND MOBILE SEARCH */}
         {showAssignModal && assigningEmployee && (
           <div className="modal-overlay">
@@ -1113,7 +1015,6 @@ const AdminEmployees = () => {
                   <FiX size={24} />
                 </button>
               </div>
-
               <div className="modal-body">
                 <div className="employee-info-card">
                   <div className="employee-avatar">
@@ -1127,14 +1028,12 @@ const AdminEmployees = () => {
                     </small>
                   </div>
                 </div>
-
                 <form onSubmit={assignFormik.handleSubmit} className="modal-form">
                   {/* Client Selection with Mobile Search */}
                   <div className="form-group">
                     <label htmlFor="clientId">
                       <FiBriefcase size={16} /> Select Client *
                     </label>
-
                     {/* Custom dropdown with search for all devices */}
                     <div className="custom-dropdown" ref={dropdownRef}>
                       <div
@@ -1144,7 +1043,6 @@ const AdminEmployees = () => {
                         <span>{getSelectedClientName()}</span>
                         <FiChevronDown size={18} />
                       </div>
-
                       {showClientDropdown && (
                         <div className="dropdown-options">
                           <div className="dropdown-search">
@@ -1178,12 +1076,10 @@ const AdminEmployees = () => {
                         </div>
                       )}
                     </div>
-
                     {assignFormik.touched.clientId && assignFormik.errors.clientId && (
                       <div className="error-text">{assignFormik.errors.clientId}</div>
                     )}
                   </div>
-
                   {/* Date Selection */}
                   <div className="date-selection">
                     <div className="form-group">
@@ -1211,7 +1107,6 @@ const AdminEmployees = () => {
                         <div className="error-text">{assignFormik.errors.year}</div>
                       )}
                     </div>
-
                     <div className="form-group">
                       <label htmlFor="month">
                         <FiCalendar size={16} /> Month *
@@ -1241,7 +1136,6 @@ const AdminEmployees = () => {
                       )}
                     </div>
                   </div>
-
                   {/* Multiple Tasks Selection with Checkboxes */}
                   <div className="form-group tasks-selection">
                     <div className="task-selection-header">
@@ -1255,7 +1149,6 @@ const AdminEmployees = () => {
                         </div>
                       )}
                     </div>
-
                     {/* Bulk Actions */}
                     {getAvailableTasks().length > 0 && (
                       <div className="bulk-actions">
@@ -1277,7 +1170,6 @@ const AdminEmployees = () => {
                         </button>
                       </div>
                     )}
-
                     {/* Tasks Checkbox List */}
                     <div className="tasks-checkbox-list">
                       {loadingTaskStatus ? (
@@ -1309,7 +1201,6 @@ const AdminEmployees = () => {
                         ))
                       )}
                     </div>
-
                     {/* Selected Tasks Summary */}
                     {assignFormik.values.tasks.length > 0 && (
                       <div className="selected-tasks-summary">
@@ -1330,11 +1221,9 @@ const AdminEmployees = () => {
                         </div>
                       </div>
                     )}
-
                     {assignFormik.touched.tasks && assignFormik.errors.tasks && (
                       <div className="error-text">{assignFormik.errors.tasks}</div>
                     )}
-
                     {/* Task Status Display */}
                     {clientTaskStatus && clientTaskStatus.taskStatus && (
                       <div className="task-status-display">
@@ -1360,7 +1249,6 @@ const AdminEmployees = () => {
                       </div>
                     )}
                   </div>
-
                   {/* Assignment Summary */}
                   <div className="assignment-summary">
                     <h4>Task Assignment Summary</h4>
@@ -1393,7 +1281,6 @@ const AdminEmployees = () => {
                       )}
                     </div>
                   </div>
-
                   {/* Document Status Check */}
                   {clientTaskStatus && assignFormik.values.clientId && assignFormik.values.year && assignFormik.values.month && (
                     <div className="document-status-check">
@@ -1430,7 +1317,6 @@ const AdminEmployees = () => {
                       </small>
                     </div>
                   )}
-
                   {/* Buttons */}
                   <div className="modal-actions">
                     <button
@@ -1461,7 +1347,6 @@ const AdminEmployees = () => {
                       )}
                     </button>
                   </div>
-
                   {/* Past Assignments Table */}
                   {getPastAssignments(assigningEmployee).length > 0 && (
                     <div className="past-assignments">
@@ -1532,7 +1417,6 @@ const AdminEmployees = () => {
             </div>
           </div>
         )}
-
         {/* Confirmation Modal for Deactivate/Activate */}
         {showConfirmModal && employeeToConfirm && (
           <div className="modal-overlay">
@@ -1550,7 +1434,6 @@ const AdminEmployees = () => {
                   <FiX size={24} />
                 </button>
               </div>
-
               <div className="modal-body">
                 <div className="confirmation-content">
                   <div className="confirmation-icon">
@@ -1564,12 +1447,10 @@ const AdminEmployees = () => {
                       </div>
                     )}
                   </div>
-
                   <div className="confirmation-details">
                     <h4>{employeeToConfirm.name}</h4>
                     <p className="employee-email">{employeeToConfirm.email}</p>
                     <p className="confirmation-message">{confirmMessage}</p>
-
                     {confirmAction === "deactivate" && (
                       <div className="warning-note">
                         <FiAlertTriangle size={16} />
@@ -1581,7 +1462,6 @@ const AdminEmployees = () => {
                     )}
                   </div>
                 </div>
-
                 <div className="modal-actions">
                   <button
                     type="button"
@@ -1614,7 +1494,6 @@ const AdminEmployees = () => {
             </div>
           </div>
         )}
-
         {/* Remove Assignment Confirmation Modal */}
         {showRemoveConfirmModal && assignmentToRemove && (
           <div className="modal-overlay">
@@ -1632,7 +1511,6 @@ const AdminEmployees = () => {
                   <FiX size={24} />
                 </button>
               </div>
-
               <div className="modal-body">
                 <div className="confirmation-content">
                   <div className="confirmation-icon">
@@ -1640,7 +1518,6 @@ const AdminEmployees = () => {
                       <FiArchive size={48} />
                     </div>
                   </div>
-
                   <div className="confirmation-details">
                     <h4>Remove Task Assignment</h4>
                     <div className="assignment-details">
@@ -1650,7 +1527,6 @@ const AdminEmployees = () => {
                       <p><strong>Period:</strong> {getMonthYear(assignmentToRemove.month, assignmentToRemove.year)}</p>
                       <p><strong>Status:</strong> <span className="status-pending">Pending (Accounting not done)</span></p>
                     </div>
-
                     <div className="warning-note">
                       <FiAlertTriangle size={16} />
                       <span>
@@ -1660,7 +1536,6 @@ const AdminEmployees = () => {
                     </div>
                   </div>
                 </div>
-
                 <div className="modal-actions">
                   <button
                     type="button"
@@ -1693,5 +1568,4 @@ const AdminEmployees = () => {
     </AdminLayout>
   );
 };
-
 export default AdminEmployees;
