@@ -8,23 +8,50 @@ const AgreementModal = () => {
   const [agree2, setAgree2] = useState(false);
   const [pdfDownloaded, setPdfDownloaded] = useState(false);
   const [showCheckbox2, setShowCheckbox2] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
-  const handleDownloadPDF = () => {
-    // Replace with your actual PDF URL
-    const pdfUrl = '/termsandconditions.pdf';
-    const link = document.createElement('a');
-    link.href = pdfUrl;
-    link.download = 'Credence_Terms_Conditions.pdf';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setPdfDownloaded(true);
-    setShowCheckbox2(true); // Show second checkbox AFTER download
+  const handleDownloadPDF = async () => {
+    try {
+      setDownloading(true); // 👈 start
+
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/pdf/public/current`);
+      const data = await res.json();
+
+      if (!data.success) {
+        alert("Agreement PDF not available. Please try again later.");
+        return;
+      }
+
+      const fileResponse = await fetch(data.pdf.fileUrl);
+      const blob = await fileResponse.blob();
+
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = "Agreement.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+
+      setPdfDownloaded(true);
+      setShowCheckbox2(true);
+
+    } catch (error) {
+      console.error("Download error:", error);
+      alert("Failed to download agreement. Please try again.");
+    } finally {
+      setDownloading(false); // 👈 stop (runs whether success or error)
+    }
   };
+
+
+
 
   const handleProceed = () => {
     console.log('Proceed clicked:', { agree1, agree2, pdfDownloaded });
-    
+
     if (agree1 && agree2) {
       console.log('Opening registration modal...');
       openRegistrationModal();
@@ -73,11 +100,11 @@ const AgreementModal = () => {
 
           {/* Download Button - Only enabled when agree1 is checked */}
           <button
-            className={`download-btn ${!agree1 ? 'disabled' : ''}`}
+            className={`download-btn ${(!agree1 || downloading) ? 'disabled' : ''}`}
             onClick={handleDownloadPDF}
-            disabled={!agree1}
+            disabled={!agree1 || downloading}
           >
-            Download Terms & Conditions PDF
+            {downloading ? "Downloading..." : "Download Terms & Conditions PDF"}
           </button>
 
           {/* Second Checkbox - Only shown AFTER download */}
@@ -108,8 +135,8 @@ const AgreementModal = () => {
           {/* Validation Message */}
           {!(agree1 && agree2) && (
             <p className="validation-msg">
-              {!agree1 ? 'Please tick the first checkbox.' : 
-               !agree2 ? 'Please download the PDF and tick the second checkbox.' : ''}
+              {!agree1 ? 'Please tick the first checkbox.' :
+                !agree2 ? 'Please download the PDF and tick the second checkbox.' : ''}
             </p>
           )}
         </div>

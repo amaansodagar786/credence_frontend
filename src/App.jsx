@@ -31,6 +31,7 @@ import PrivacyPolicy from './Pages/PrivacyPolicy/PrivacyPolicy';
 import NotFound from './Pages/NotFound/NotFound';
 import GoogleDrivePicker from './Pages/Testing/GoogleDrivePicker';
 import ClientPaymentInfo from './Pages/Employee/ClientPayment/ClientPaymentInfo';
+import AgreementPdf from './Pages/Admin/AgreementPdf/AgreementPdf';
 
 function App() {
   return (
@@ -55,6 +56,7 @@ function App() {
           <Route path="/admin/clients" element={<AdminClients />} />
           <Route path="/admin/logs" element={<ActivityLogs />} />
           <Route path="/admin/notes" element={<AdminNotesPanel />} />
+          <Route path="/admin/pdf" element={<AgreementPdf />} />
 
           {/* CLIENT ROUTES  */}
           {/* <Route path="/client/login" element={<ClientLogin />} /> */}

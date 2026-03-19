@@ -25,6 +25,7 @@ const ClientSidebar = ({ children }) => {
   const [showFinancialStatementModal, setShowFinancialStatementModal] = useState(false);
   const [clientInfo, setClientInfo] = useState(null);
   const [loadingClientInfo, setLoadingClientInfo] = useState(false);
+  const [downloadingTerms, setDownloadingTerms] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -62,7 +63,7 @@ const ClientSidebar = ({ children }) => {
         }
       );
 
-     
+
 
       if (response.data) {
         setClientInfo(response.data);
@@ -73,7 +74,7 @@ const ClientSidebar = ({ children }) => {
     } catch (error) {
       console.log("=== ERROR FETCHING CLIENT INFO ===");
       console.log("Error:", error);
-     
+
       // Try alternative endpoint
       try {
         console.log("Trying alternative endpoint: /client/dashboard/overview");
@@ -91,13 +92,13 @@ const ClientSidebar = ({ children }) => {
       }
     } finally {
       setLoadingClientInfo(false);
-      
+
     }
   };
 
   // Handle Financial Statements button click - WITH DEBUG
   const handleFinancialStatementsClick = () => {
-    
+
 
     // If no client info, try to fetch it first
     if (!clientInfo || Object.keys(clientInfo).length === 0) {
@@ -132,15 +133,38 @@ const ClientSidebar = ({ children }) => {
     navigate("/login");
   };
 
-  // Handle Terms PDF download
-  const handleTermsDownload = () => {
-    const link = document.createElement('a');
-    link.href = pdf;
-    link.download = 'Terms_and_Conditions.pdf';
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleTermsDownload = async () => {
+    if (downloadingTerms) return;
+    try {
+      setDownloadingTerms(true);
+
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/pdf/public/current`);
+      const data = await res.json();
+
+      if (!data.success) {
+        alert("Terms & Conditions PDF not available. Please try again later.");
+        return;
+      }
+
+      const fileResponse = await fetch(data.pdf.fileUrl);
+      const blob = await fileResponse.blob();
+
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = "Terms_and_Conditions.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+
+    } catch (error) {
+      console.error("Download error:", error);
+      alert("Failed to download Terms & Conditions. Please try again.");
+    } finally {
+      setDownloadingTerms(false);
+    }
   };
 
   // Auto-collapse sidebar
@@ -223,11 +247,14 @@ const ClientSidebar = ({ children }) => {
             <button
               className="client-terms-button"
               onClick={handleTermsDownload}
+              disabled={downloadingTerms}
             >
               <span className="client-menu-icon">
                 <FiFile />
               </span>
-              <span className="client-menu-title">Terms & Conditions</span>
+              <span className="client-menu-title">
+                {downloadingTerms ? "Downloading..." : "Terms & Conditions"}
+              </span>
             </button>
           </li>
         </ul>

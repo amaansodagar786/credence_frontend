@@ -18,7 +18,8 @@ import {
   FiRefreshCw,
   FiActivity,
   FiBriefcase,
-  FiUpload,
+  FiUpload, 
+   
 } from "react-icons/fi";
 import { MdOutlineDashboard } from "react-icons/md";
 import { TbUsers, TbReportAnalytics } from "react-icons/tb";
@@ -251,6 +252,11 @@ const AdminSidebar = ({ children }) => {
       icon: <FiActivity />,
       title: "Activity Logs",
       path: "/admin/logs",
+    },
+    {
+      icon: <FiFileText  />,
+      title: "Agreement Pdf",
+      path: "/admin/pdf",
     },
   ];
 

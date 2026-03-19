@@ -34,6 +34,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ClientLayout from "../Layout/ClientLayout";
 import "./ClientDashboard.scss";
+import ConsentUpdateModal from "../Consentupdatemodal/Consentupdatemodal";
 
 const ClientDashboard = () => {
   // State for dashboard data
@@ -1284,6 +1285,8 @@ const ClientDashboard = () => {
         {/* Month Details Modal */}
         {showMonthDetailsModal && renderMonthDetailsModal()}
       </div>
+
+      <ConsentUpdateModal />
     </ClientLayout>
   );
 };

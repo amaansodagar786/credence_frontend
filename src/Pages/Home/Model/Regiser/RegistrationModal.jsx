@@ -79,7 +79,10 @@ const RegistrationModal = () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(values),
+          body: JSON.stringify({
+            ...values,
+            email: values.email.toLowerCase().trim()
+          }),
         });
 
         const data = await response.json();
