@@ -26,7 +26,7 @@ import { useModal } from "../../Home/Model/ModalProvider";
 // Validation Schemas
 const employeeLoginSchema = Yup.object().shape({
   email: Yup.string()
-    .email("Invalid email address")
+    .email("Invalid email address format")
     .required("Email is required"),
   password: Yup.string()
     .min(6, "Password must be at least 6 characters")
@@ -35,7 +35,7 @@ const employeeLoginSchema = Yup.object().shape({
 
 const clientLoginSchema = Yup.object().shape({
   email: Yup.string()
-    .email("Invalid email address")
+    .email("Invalid email address format")
     .required("Email is required"),
   password: Yup.string()
     .required("Password is required")
@@ -45,7 +45,7 @@ const ClientEmpLogin = () => {
   const [loginType, setLoginType] = useState("client");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [serverError, setServerError] = useState(""); // optional, can be removed if you want only toasts
+  const [serverError, setServerError] = useState("");
 
   // Forgot Password States
   const [forgotPasswordModal, setForgotPasswordModal] = useState(false);
@@ -66,27 +66,95 @@ const ClientEmpLogin = () => {
     openAgreementModal();
   };
 
+  // Configure axios defaults
+  axios.defaults.withCredentials = true;
+
   // Employee Login
   const employeeFormik = useFormik({
     initialValues: { email: "", password: "" },
     validationSchema: employeeLoginSchema,
-    onSubmit: async (values, { resetForm }) => {
+    onSubmit: async (values, { resetForm, setSubmitting }) => {
       try {
         setLoading(true);
         setServerError("");
 
-        await axios.post(
+        console.log("Attempting employee login:", { email: values.email });
+
+        const response = await axios.post(
           `${import.meta.env.VITE_API_URL}/employee/login`,
-          values,
-          { withCredentials: true }
+          values
         );
-        window.location.href = "/employee/dashboard";
+
+        // Show success toast
+        toast.success(response.data.message || "Login successful! Redirecting...", {
+          position: "top-center",
+          autoClose: 2000,
+        });
+
+        // Redirect after short delay
+        setTimeout(() => {
+          window.location.href = "/employee/dashboard";
+        }, 1500);
+
       } catch (error) {
-        const msg = error.response?.data?.message || "Login failed. Please try again.";
-        toast.error(msg);
+        console.error("Employee login error:", error);
+
+        // Handle different error scenarios
+        if (error.response) {
+          // The request was made and the server responded with a status code
+          const { status, data } = error.response;
+
+          switch (status) {
+            case 401:
+              toast.error(data.message || "Invalid password. Please try again.", {
+                position: "top-center",
+                autoClose: 5000,
+              });
+              break;
+            case 404:
+              toast.error(data.message || "Email not found. Please check and try again.", {
+                position: "top-center",
+                autoClose: 5000,
+              });
+              break;
+            case 400:
+              toast.error(data.message || "Invalid input. Please check your credentials.", {
+                position: "top-center",
+                autoClose: 5000,
+              });
+              break;
+            case 500:
+              toast.error("Server error. Please try again later.", {
+                position: "top-center",
+                autoClose: 5000,
+              });
+              break;
+            default:
+              toast.error(data.message || "Login failed. Please try again.", {
+                position: "top-center",
+                autoClose: 5000,
+              });
+          }
+        } else if (error.request) {
+          // The request was made but no response was received
+          console.error("No response received:", error.request);
+          toast.error("Network error. Please check your internet connection.", {
+            position: "top-center",
+            autoClose: 5000,
+          });
+        } else {
+          // Something happened in setting up the request
+          console.error("Request setup error:", error.message);
+          toast.error("An unexpected error occurred. Please try again.", {
+            position: "top-center",
+            autoClose: 5000,
+          });
+        }
+
         resetForm();
       } finally {
         setLoading(false);
+        setSubmitting(false);
       }
     }
   });
@@ -95,24 +163,94 @@ const ClientEmpLogin = () => {
   const clientFormik = useFormik({
     initialValues: { email: "", password: "" },
     validationSchema: clientLoginSchema,
-    onSubmit: async (values, { resetForm }) => {
+    onSubmit: async (values, { resetForm, setSubmitting }) => {
       try {
         setLoading(true);
         setServerError("");
 
-        await axios.post(
+        console.log("Attempting client login:", { email: values.email });
+
+        const response = await axios.post(
           `${import.meta.env.VITE_API_URL}/client/login`,
-          values,
-          { withCredentials: true }
+          values
         );
-        window.location.href = "/client/dashboard";
+
+        // Show success toast
+        toast.success(response.data.message || "Login successful! Redirecting...", {
+          position: "top-center",
+          autoClose: 2000,
+        });
+
+        // Redirect after short delay
+        setTimeout(() => {
+          window.location.href = "/client/dashboard";
+        }, 1500);
+
       } catch (error) {
-        // Use the specific message from backend
-        const msg = error.response?.data?.message || "Login failed. Please try again.";
-        toast.error(msg);
+        console.error("Client login error:", error);
+        console.error("Error details:", {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+          headers: error.response?.headers
+        });
+
+        // Handle different error scenarios
+        if (error.response) {
+          // The request was made and the server responded with a status code
+          const { status, data } = error.response;
+
+          switch (status) {
+            case 401:
+              toast.error(data.message || "Incorrect password. Please try again.", {
+                position: "top-center",
+                autoClose: 5000,
+              });
+              break;
+            case 404:
+              toast.error(data.message || "Email not registered. Please enroll first.", {
+                position: "top-center",
+                autoClose: 5000,
+              });
+              break;
+            case 400:
+              toast.error(data.message || "Invalid input. Please check your credentials.", {
+                position: "top-center",
+                autoClose: 5000,
+              });
+              break;
+            case 500:
+              toast.error("Server error. Please try again later.", {
+                position: "top-center",
+                autoClose: 5000,
+              });
+              break;
+            default:
+              toast.error(data.message || "Login failed. Please try again.", {
+                position: "top-center",
+                autoClose: 5000,
+              });
+          }
+        } else if (error.request) {
+          // The request was made but no response was received
+          console.error("No response received:", error.request);
+          toast.error("Cannot connect to server. Please check your internet connection.", {
+            position: "top-center",
+            autoClose: 5000,
+          });
+        } else {
+          // Something happened in setting up the request
+          console.error("Request setup error:", error.message);
+          toast.error("An unexpected error occurred. Please try again.", {
+            position: "top-center",
+            autoClose: 5000,
+          });
+        }
+
         resetForm();
       } finally {
         setLoading(false);
+        setSubmitting(false);
       }
     }
   });
@@ -155,11 +293,19 @@ const ClientEmpLogin = () => {
         if (response.data.success) {
           setForgotPasswordStep(2);
           setForgotPasswordSuccess("OTP sent to your email. Check your inbox.");
+          toast.success("OTP sent successfully!", {
+            position: "top-center",
+            autoClose: 3000,
+          });
         }
       } catch (error) {
-        setForgotPasswordError(
-          error.response?.data?.message || "Failed to send OTP. Please try again."
-        );
+        console.error("Forgot password error:", error);
+        const errorMsg = error.response?.data?.message || "Failed to send OTP. Please try again.";
+        setForgotPasswordError(errorMsg);
+        toast.error(errorMsg, {
+          position: "top-center",
+          autoClose: 5000,
+        });
       } finally {
         setForgotLoading(false);
       }
@@ -181,11 +327,19 @@ const ClientEmpLogin = () => {
           setVerifyToken(response.data.verifyToken);
           setForgotPasswordStep(3);
           setForgotPasswordSuccess("OTP verified. Now set your new password.");
+          toast.success("OTP verified successfully!", {
+            position: "top-center",
+            autoClose: 3000,
+          });
         }
       } catch (error) {
-        setForgotPasswordError(
-          error.response?.data?.message || "Invalid OTP. Please try again."
-        );
+        console.error("OTP verification error:", error);
+        const errorMsg = error.response?.data?.message || "Invalid OTP. Please try again.";
+        setForgotPasswordError(errorMsg);
+        toast.error(errorMsg, {
+          position: "top-center",
+          autoClose: 5000,
+        });
       } finally {
         setForgotLoading(false);
       }
@@ -215,15 +369,24 @@ const ClientEmpLogin = () => {
 
         if (response.data.success) {
           setForgotPasswordSuccess("Password updated successfully! You can now login.");
+          toast.success("Password updated successfully! Redirecting to login...", {
+            position: "top-center",
+            autoClose: 3000,
+          });
+
           setTimeout(() => {
             setForgotPasswordModal(false);
             resetForgotPasswordForm();
           }, 3000);
         }
       } catch (error) {
-        setForgotPasswordError(
-          error.response?.data?.message || "Failed to reset password. Please try again."
-        );
+        console.error("Password reset error:", error);
+        const errorMsg = error.response?.data?.message || "Failed to reset password. Please try again.";
+        setForgotPasswordError(errorMsg);
+        toast.error(errorMsg, {
+          position: "top-center",
+          autoClose: 5000,
+        });
       } finally {
         setForgotLoading(false);
       }
@@ -254,6 +417,7 @@ const ClientEmpLogin = () => {
         pauseOnFocusLoss
         draggable
         pauseOnHover
+        theme="colored"
       />
 
       <div className="login-container">
@@ -298,7 +462,7 @@ const ClientEmpLogin = () => {
             </div>
           </div>
 
-          {/* Server Error Message (optional, you can remove it if you want only toasts) */}
+          {/* Server Error Message (optional) */}
           {serverError && (
             <div className="server-error">
               <FiAlertCircle size={18} />
@@ -408,8 +572,6 @@ const ClientEmpLogin = () => {
               </div>
             )}
           </form>
-
-          {/* Footer - commented out as in original */}
         </div>
 
         {/* Info Side - Right Side */}
@@ -456,7 +618,7 @@ const ClientEmpLogin = () => {
         </div>
       </div>
 
-      {/* Forgot Password Modal (unchanged) */}
+      {/* Forgot Password Modal */}
       {forgotPasswordModal && (
         <div className="forgot-password-modal-overlay">
           <div className="forgot-password-modal">
