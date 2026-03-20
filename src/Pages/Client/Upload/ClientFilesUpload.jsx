@@ -1467,6 +1467,11 @@ const ClientFilesUpload = () => {
                     )}
                 </div>
 
+                <div className="upload-size-note">
+                    <FiInfo size={13} />
+                    <span>Max upload limit: <strong>10MB</strong> per submission (single or multiple files combined)</span>
+                </div>
+
                 {category && renderExistingFilesInfo(category, type)}
 
                 {monthInactive && (
@@ -1600,6 +1605,11 @@ const ClientFilesUpload = () => {
                             <FiLock size={14} /> Category Locked
                         </span>
                     )}
+                </div>
+
+                <div className="upload-size-note">
+                    <FiInfo size={13} />
+                    <span>Max upload limit: <strong>10MB</strong> per submission (single or multiple files combined)</span>
                 </div>
 
                 {category && renderExistingFilesInfo(category, "other", cat.categoryName)}
