@@ -64,12 +64,12 @@ const Footer = () => {
             <p className="fgf-address fgf-hover-item">
               <FaMapMarkerAlt />
               <a
-                href="https://www.google.com/maps/search/?api=1&query=Uomarinne+I+B+20+Vantaa+01600+Finland"
+                href="https://www.google.com/maps/search/?api=1&query=Uomarinne+5+A+014+01600+VANTAA+Finland"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mobileaddress"
               >
-                Uomarinne I B 20 Vantaa 01600 <span><br className="mobilebreak" /></span>Uusimaa Finland.
+                Uomarinne 5 A 014, 01600 VANTAA <span><br className="mobilebreak" /></span>Uusimaa Finland.
               </a>
             </p>
           </div>
@@ -115,7 +115,7 @@ const Footer = () => {
           </div>
         </div>
       </div>
-    </footer>
+    </footer >
   );
 };
 

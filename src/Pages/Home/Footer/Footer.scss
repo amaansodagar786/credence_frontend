@@ -35,7 +35,7 @@
 .fgf-top-row {
   display: flex;
   justify-content: space-between;
-  gap: 80px;
+  gap: 60px;
 
   @media (max-width: 768px) {
     flex-direction: column;

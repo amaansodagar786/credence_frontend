@@ -340,16 +340,18 @@ const PrivacyPolicy = () => {
                             <strong>Email:</strong> <a href="mailto:support@jladgroup.fi">support@jladgroup.fi</a><br />
                             <strong>Phone:</strong> <a href="tel:+358413250081">+358 413250081</a><br />
                             <strong>Business ID:</strong> [Your Business ID]<br />
-                            <strong>Address:</strong>{' '}
-                            <a
-                                href="https://maps.google.com/?q=Uomarinne+I+B+20+Vantaa+01600+Uusimaa+Finland"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="privacy-map-link"
-                            >
-                                Uomarinne I B 20 Vantaa 01600 Uusimaa Finland
-                                <span className="map-icon">📍</span>
-                            </a>
+                            <p>
+                                <strong>Address:</strong>{' '}
+                                <a
+                                    href="https://maps.google.com/?q=Uomarinne+5+A+014+01600+VANTAA+Finland"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="privacy-map-link"
+                                >
+                                    Uomarinne 5 A 014, 01600 VANTAA Uusimaa Finland
+                                    <span className="map-icon">📍</span>
+                                </a>
+                            </p>
                         </motion.p>
 
                         <motion.p
@@ -728,9 +730,9 @@ const PrivacyPolicy = () => {
                         <p>By using our services, you acknowledge that you have read and understood this Privacy Policy.</p>
                     </motion.div>
                 </motion.div>
-            </motion.section>
+            </motion.section >
 
-            <Footer/>
+            <Footer />
         </>
     );
 };
