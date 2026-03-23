@@ -53,6 +53,7 @@ const EmployeeAssignedClients = () => {
   const [assignments, setAssignments] = useState([]);
   const [groupedAssignments, setGroupedAssignments] = useState({});
   const [clientList, setClientList] = useState([]);
+  const [filteredClients, setFilteredClients] = useState([]);
   const [activeClient, setActiveClient] = useState(null);
   const [activeAssignment, setActiveAssignment] = useState(null);
   const [activeMonthYear, setActiveMonthYear] = useState(null);
@@ -78,7 +79,7 @@ const EmployeeAssignedClients = () => {
   const [currentCategoryFiles, setCurrentCategoryFiles] = useState([]);
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const previewRef = useRef(null);
-  const imageScrollRef = useRef(null); // ✅ ADDED
+  const imageScrollRef = useRef(null);
 
   /* ================= ZOOM AND PAN STATES ================= */
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -145,7 +146,6 @@ const EmployeeAssignedClients = () => {
     return 'other';
   };
 
-  // Inside loadAssignedClients function, after setting clientList
   const loadAssignedClients = async () => {
     try {
       setRefreshing(true);
@@ -159,7 +159,6 @@ const EmployeeAssignedClients = () => {
       setAssignments(data);
 
       const grouped = groupAssignmentsByMonthYear(data);
-
       setGroupedAssignments(grouped);
 
       const clientMap = {};
@@ -190,10 +189,20 @@ const EmployeeAssignedClients = () => {
 
       const clientsArray = Object.values(clientMap);
 
-      setClientList(clientsArray);
+      // Sort clients alphabetically A to Z
+      const sortedClients = [...clientsArray].sort((a, b) => {
+        const nameA = a.name.toLowerCase().trim();
+        const nameB = b.name.toLowerCase().trim();
+        if (nameA < nameB) return -1;
+        if (nameA > nameB) return 1;
+        return 0;
+      });
 
-      if (clientsArray.length > 0) {
-        const defaultClient = clientsArray[0];
+      setClientList(sortedClients);
+      setFilteredClients(sortedClients);
+
+      if (sortedClients.length > 0) {
+        const defaultClient = sortedClients[0];
         setActiveClient(defaultClient);
 
         const clientAssignments = getAssignmentsForClient(defaultClient.clientId);
@@ -291,8 +300,6 @@ const EmployeeAssignedClients = () => {
     const loadAllViewedStatus = async () => {
       if (!activeAssignment || !activeFilesData) return;
 
-      console.log("Loading viewed status for ALL files in current assignment...");
-
       const categories = [
         { type: 'sales', files: activeFilesData.categories?.sales?.files },
         { type: 'purchase', files: activeFilesData.categories?.purchase?.files },
@@ -327,28 +334,76 @@ const EmployeeAssignedClients = () => {
     loadAssignedClients();
   }, []);
 
-  /* ================= FILTERING ================= */
+  /* ================= FILTER CLIENTS BASED ON SEARCH TERM, YEAR & MONTH ================= */
   useEffect(() => {
-    let filtered = assignments;
+    let filtered = clientList;
 
+    // Filter by search term
     if (searchTerm) {
-      filtered = filtered.filter(item =>
-        item.client.name.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(client =>
+        client.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    if (yearFilter) {
-      filtered = filtered.filter(item => item.year.toString() === yearFilter);
+    // Filter by year and month - ONLY affects client list, NOT assignments
+    if (yearFilter || monthFilter) {
+      filtered = filtered.filter(client => {
+        // Get all assignments for this client
+        const clientAssignments = assignments.filter(a => a.client.clientId === client.clientId);
+
+        if (clientAssignments.length === 0) return false;
+
+        // Check if client has ANY assignment matching the year/month filters
+        return clientAssignments.some(assignment => {
+          let matches = true;
+
+          if (yearFilter) {
+            matches = matches && assignment.year.toString() === yearFilter;
+          }
+
+          if (monthFilter) {
+            matches = matches && assignment.month.toString() === monthFilter;
+          }
+
+          return matches;
+        });
+      });
     }
 
-    if (monthFilter) {
-      filtered = filtered.filter(item => item.month.toString() === monthFilter);
+    // Sort alphabetically A to Z
+    const sorted = [...filtered].sort((a, b) => {
+      const nameA = a.name.toLowerCase().trim();
+      const nameB = b.name.toLowerCase().trim();
+      if (nameA < nameB) return -1;
+      if (nameA > nameB) return 1;
+      return 0;
+    });
+
+    setFilteredClients(sorted);
+
+    // If active client is not in filtered list, select first filtered client
+    if (activeClient && sorted.length > 0) {
+      const isActiveInFiltered = sorted.some(c => c.clientId === activeClient.clientId);
+      if (!isActiveInFiltered) {
+        setActiveClient(sorted[0]);
+        setActiveAssignment(null);
+        setActiveMonthYear(null);
+      }
+    } else if (sorted.length > 0 && !activeClient) {
+      setActiveClient(sorted[0]);
+    } else if (sorted.length === 0) {
+      setActiveClient(null);
+      setActiveAssignment(null);
+      setActiveMonthYear(null);
     }
 
-    const grouped = groupAssignmentsByMonthYear(filtered);
+  }, [searchTerm, yearFilter, monthFilter, clientList, assignments, activeClient]);
+
+  /* ================= UPDATE GROUPED ASSIGNMENTS (NOT FILTERED BY YEAR/MONTH) ================= */
+  useEffect(() => {
+    const grouped = groupAssignmentsByMonthYear(assignments);
     setGroupedAssignments(grouped);
-
-  }, [assignments, searchTerm, yearFilter, monthFilter]);
+  }, [assignments]);
 
   /* ================= CHECK FILE VIEWED STATUS ================= */
   const checkFileViewedStatus = async (fileData) => {
@@ -506,7 +561,7 @@ const EmployeeAssignedClients = () => {
     }
   };
 
-  /* ================= ✅ ADDED - useEffect for image wheel/pinch zoom ================= */
+  /* ================= ADDED - useEffect for image wheel/pinch zoom ================= */
   useEffect(() => {
     const el = imageScrollRef.current;
     if (!el || !isPreviewOpen) return;
@@ -552,7 +607,7 @@ const EmployeeAssignedClients = () => {
     return [];
   };
 
-  /* ================= OPEN DOCUMENT PREVIEW (UPDATED WITH CATEGORY NAVIGATION) ================= */
+  /* ================= OPEN DOCUMENT PREVIEW ================= */
   const openDocumentPreview = async (document, categoryType = null, categoryName = null) => {
     if (!document || !document.url) return;
 
@@ -1387,7 +1442,7 @@ const EmployeeAssignedClients = () => {
     );
   };
 
-  /* ================= RENDER DOCUMENT PREVIEW (WITH CATEGORY NAVIGATION, CHECKMARK AND ZOOM) ================= */
+  /* ================= RENDER DOCUMENT PREVIEW ================= */
   const renderDocumentPreview = () => {
     if (!previewDoc || !isPreviewOpen) return null;
 
@@ -1547,7 +1602,7 @@ const EmployeeAssignedClients = () => {
               </div>
             )}
 
-            {/* ✅ IMAGE VIEWER - ref added, onWheel removed */}
+            {/* IMAGE VIEWER */}
             {fileType === 'image' && (
               <div className="image-viewer-wrapper">
                 <div className="zoom-controls">
@@ -1961,18 +2016,18 @@ const EmployeeAssignedClients = () => {
                 <h3>
                   <FiUsers /> Client List
                 </h3>
-                <span className="count-badge">{clientList.length}</span>
+                <span className="count-badge">{filteredClients.length}</span>
               </div>
 
-              {clientList.length === 0 ? (
+              {filteredClients.length === 0 ? (
                 <div className="empty-state">
                   <FiBriefcase />
-                  <h4>No Clients Assigned</h4>
-                  <p>You haven't been assigned any clients yet.</p>
+                  <h4>No Clients Found</h4>
+                  <p>No clients match your search or filter criteria.</p>
                 </div>
               ) : (
                 <div className="clients-list">
-                  {clientList.map((client) => {
+                  {filteredClients.map((client) => {
                     return (
                       <div
                         key={client.clientId}
@@ -2005,7 +2060,7 @@ const EmployeeAssignedClients = () => {
               )}
             </div>
 
-            {/* Assignments History - Grouped by Month-Year */}
+            {/* Assignments History - Grouped by Month-Year (ALL assignments for selected client) */}
             <div className="assignments-section">
               {activeClient ? (
                 <>
@@ -2015,7 +2070,7 @@ const EmployeeAssignedClients = () => {
                         <FiCalendar /> Assignments for {activeClient.name}
                       </h3>
                       <p className="section-subtitle">
-                        Grouped by month, click to view tasks
+                        All assignments grouped by month
                       </p>
                     </div>
                   </div>
