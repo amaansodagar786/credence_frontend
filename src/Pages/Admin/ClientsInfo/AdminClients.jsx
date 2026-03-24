@@ -175,13 +175,55 @@ const AdminClients = () => {
     setIsDragging(false);
   };
 
-  /* ================= ADD FILE TYPE DETECTION FUNCTION ================= */
-  const getFileType = (fileName) => {
-    if (!fileName) return 'other';
-    const ext = fileName.split('.').pop().toLowerCase();
-    if (ext === 'pdf') return 'pdf';
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return 'image';
-    if (['xls', 'xlsx', 'csv', 'xlsm'].includes(ext)) return 'excel';
+  /* ================= IMPROVED FILE TYPE DETECTION ================= */
+  const getFileType = (file) => {
+    // Case 1: If we have fileType from MongoDB, use it first (most reliable)
+    if (file.fileType) {
+      const fileTypeLower = file.fileType.toLowerCase();
+
+      // PDF check
+      if (fileTypeLower.includes('pdf')) {
+        return 'pdf';
+      }
+
+      // Image check (jpeg, jpg, png, gif, webp, heic, heif)
+      if (fileTypeLower.includes('jpeg') ||
+        fileTypeLower.includes('jpg') ||
+        fileTypeLower.includes('png') ||
+        fileTypeLower.includes('gif') ||
+        fileTypeLower.includes('webp') ||
+        fileTypeLower.includes('heic') ||
+        fileTypeLower.includes('heif') ||
+        fileTypeLower.includes('image')) {
+        return 'image';
+      }
+
+      // Excel/CSV check
+      if (fileTypeLower.includes('sheet') ||
+        fileTypeLower.includes('excel') ||
+        fileTypeLower.includes('csv') ||
+        fileTypeLower.includes('spreadsheetml')) {
+        return 'excel';
+      }
+    }
+
+    // Case 2: Try from URL if fileType not available
+    if (file.url) {
+      const urlLower = file.url.toLowerCase();
+      if (urlLower.includes('.pdf')) return 'pdf';
+      if (urlLower.includes('.jpg') || urlLower.includes('.jpeg') ||
+        urlLower.includes('.png') || urlLower.includes('.gif') ||
+        urlLower.includes('.webp')) return 'image';
+    }
+
+    // Case 3: Try from filename extension (last resort)
+    if (file.fileName) {
+      const ext = file.fileName.split('.').pop().toLowerCase();
+      if (ext === 'pdf') return 'pdf';
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return 'image';
+      if (['xls', 'xlsx', 'csv', 'xlsm'].includes(ext)) return 'excel';
+    }
+
     return 'other';
   };
 
@@ -258,7 +300,7 @@ const AdminClients = () => {
     previewRef.current.removeEventListener('dragstart', () => { });
   };
 
-  /* ================= OPEN DOCUMENT PREVIEW (CORRECTED) ================= */
+  /* ================= OPEN DOCUMENT PREVIEW (UPDATED) ================= */
   const openDocumentPreview = (document) => {
     if (!document || !document.url) {
       showSnackbar("No document available to preview", "warning");
@@ -270,8 +312,8 @@ const AdminClients = () => {
     setImagePosition({ x: 0, y: 0 });
     setIsDragging(false);
 
-    // Determine file type
-    const fileType = getFileType(document.fileName);
+    // Determine file type using the improved function that checks fileType
+    const fileType = getFileType(document);  // ← CHANGE: pass the whole document, not just fileName
     setPreviewDoc({ ...document, fileType });
     setIsPreviewOpen(true);
 
@@ -321,7 +363,9 @@ const AdminClients = () => {
   const renderDocumentPreview = () => {
     if (!previewDoc || !isPreviewOpen) return null;
 
-    const fileType = previewDoc.fileType || getFileType(previewDoc.fileName);
+    // const fileType = previewDoc.fileType || getFileType(previewDoc.fileName);
+    const fileType = previewDoc.fileType || getFileType(previewDoc);
+
 
     // Handle overlay click
     const handleOverlayClick = (e) => {

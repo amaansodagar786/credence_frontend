@@ -135,6 +135,7 @@ const ClientFilesUpload = () => {
 
     // Ref for protection
     const previewRef = useRef(null);
+    const imageScrollRef = useRef(null); // Add this line
 
     const monthNames = [
         "January", "February", "March", "April", "May", "June",
@@ -190,6 +191,37 @@ const ClientFilesUpload = () => {
         });
     };
 
+
+    // ✅ ADD THIS - Mouse wheel zoom for images
+    useEffect(() => {
+        const el = imageScrollRef.current;
+        if (!el || !isPreviewOpen) return;
+
+        const handleWheel = (e) => {
+            // Only zoom if we're in image preview mode
+            const previewDocFileType = previewDoc?.fileType || getFileType(previewDoc?.fileName);
+            if (previewDocFileType !== 'image') return;
+
+            e.preventDefault();
+            e.stopPropagation();
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            setZoomLevel(prev => Math.min(Math.max(prev + delta, 0.5), 3));
+        };
+
+        const blockPinch = (e) => {
+            if (e.ctrlKey || e.touches?.length > 1) {
+                e.preventDefault();
+            }
+        };
+
+        el.addEventListener('wheel', handleWheel, { passive: false });
+        el.addEventListener('touchmove', blockPinch, { passive: false });
+
+        return () => {
+            el.removeEventListener('wheel', handleWheel);
+            el.removeEventListener('touchmove', blockPinch);
+        };
+    }, [isPreviewOpen, previewDoc]);
     /* ================= ZOOM FUNCTIONS ================= */
     const handleZoomIn = () => {
         setZoomLevel(prev => Math.min(prev + 0.25, 3));
@@ -248,13 +280,54 @@ const ClientFilesUpload = () => {
         document.body.appendChild(gapiScript);
     }, []);
 
-    // ===== Helper function to get file type =====
-    const getFileType = (fileName) => {
-        if (!fileName) return 'other';
-        const ext = fileName.split('.').pop().toLowerCase();
-        if (ext === 'pdf') return 'pdf';
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return 'image';
-        if (['xls', 'xlsx', 'csv', 'xlsm'].includes(ext)) return 'excel';
+    const getFileType = (file) => {
+        // Case 1: If we have fileType from MongoDB, use it first (most reliable)
+        if (file.fileType) {
+            const fileTypeLower = file.fileType.toLowerCase();
+
+            // PDF check
+            if (fileTypeLower.includes('pdf')) {
+                return 'pdf';
+            }
+
+            // Image check (jpeg, jpg, png, gif, webp, heic, heif)
+            if (fileTypeLower.includes('jpeg') ||
+                fileTypeLower.includes('jpg') ||
+                fileTypeLower.includes('png') ||
+                fileTypeLower.includes('gif') ||
+                fileTypeLower.includes('webp') ||
+                fileTypeLower.includes('heic') ||
+                fileTypeLower.includes('heif') ||
+                fileTypeLower.includes('image')) {
+                return 'image';
+            }
+
+            // Excel/CSV check
+            if (fileTypeLower.includes('sheet') ||
+                fileTypeLower.includes('excel') ||
+                fileTypeLower.includes('csv') ||
+                fileTypeLower.includes('spreadsheetml')) {
+                return 'excel';
+            }
+        }
+
+        // Case 2: Try from URL if fileType not available
+        if (file.url) {
+            const urlLower = file.url.toLowerCase();
+            if (urlLower.includes('.pdf')) return 'pdf';
+            if (urlLower.includes('.jpg') || urlLower.includes('.jpeg') ||
+                urlLower.includes('.png') || urlLower.includes('.gif') ||
+                urlLower.includes('.webp')) return 'image';
+        }
+
+        // Case 3: Try from filename extension (last resort)
+        if (file.fileName) {
+            const ext = file.fileName.split('.').pop().toLowerCase();
+            if (ext === 'pdf') return 'pdf';
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return 'image';
+            if (['xls', 'xlsx', 'csv', 'xlsm'].includes(ext)) return 'excel';
+        }
+
         return 'other';
     };
 
@@ -374,7 +447,8 @@ const ClientFilesUpload = () => {
         setImagePosition({ x: 0, y: 0 });
         setIsDragging(false);
 
-        const fileType = getFileType(document.fileName);
+        // const fileType = getFileType(document.fileName); 
+        const fileType = getFileType(document);
         setPreviewDoc({ ...document, fileType });
         setIsPreviewOpen(true);
 
@@ -1378,7 +1452,11 @@ const ClientFilesUpload = () => {
                                     <div key={index} className="file-list-item">
                                         <div className="file-info">
                                             <div className="file-icon">
-                                                {getFileIcon(viewAllModal.categoryType)}
+                                                {/* {getFileIcon(viewAllModal.categoryType)} */}
+
+                                                {viewAllModal.categoryType === 'sales' ? <FiTrendingUp /> :
+                                                    viewAllModal.categoryType === 'purchase' ? <FiPackage /> :
+                                                        viewAllModal.categoryType === 'bank' ? <FiCreditCard /> : <FiFileText />}
                                                 {file.notes && file.notes.length > 0 && (
                                                     <span className="file-icon-badge-small">
                                                         <FiBell size={8} />
@@ -1725,7 +1803,8 @@ const ClientFilesUpload = () => {
     const renderDocumentPreview = () => {
         if (!previewDoc || !isPreviewOpen) return null;
 
-        const fileType = previewDoc.fileType || getFileType(previewDoc.fileName);
+        // const fileType = previewDoc.fileType || getFileType(previewDoc.fileName); 
+        const fileType = previewDoc.fileType || getFileType(previewDoc);
 
         const handleOverlayClick = (e) => {
             if (e.target === e.currentTarget) {
@@ -1834,71 +1913,57 @@ const ClientFilesUpload = () => {
                                     </button>
                                 </div>
 
+                                {/* ✅ USE SCROLL CONTAINER LIKE ADMIN - FIXED */}
                                 <div
-                                    className={`protected-view-container image-viewer-container ${isDragging ? 'dragging' : ''}`}
-                                    onContextMenu={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        return false;
+                                    className="image-scroll-container"
+                                    ref={imageScrollRef}
+                                    onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); return false; }}
+                                    onMouseDown={(e) => {
+                                        if (zoomLevel > 1) {
+                                            setIsDragging(true);
+                                            setDragStart({ x: e.clientX - imagePosition.x, y: e.clientY - imagePosition.y });
+                                        }
                                     }}
-                                    onMouseDown={handleMouseDown}
-                                    onMouseMove={handleMouseMove}
-                                    onMouseUp={handleMouseUp}
-                                    onMouseLeave={handleMouseUp}
+                                    onMouseMove={(e) => {
+                                        if (isDragging && zoomLevel > 1) {
+                                            setImagePosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+                                        }
+                                    }}
+                                    onMouseUp={() => setIsDragging(false)}
+                                    onMouseLeave={() => setIsDragging(false)}
                                     style={{
                                         overflow: 'auto',
                                         maxHeight: '70vh',
-                                        textAlign: 'center',
                                         backgroundColor: '#f5f5f5',
-                                        position: 'relative',
-                                        cursor: zoomLevel > 1 ? 'grab' : 'default'
+                                        cursor: zoomLevel > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default'
                                     }}
                                 >
                                     <div
+                                        className="image-transform-wrapper"
                                         style={{
                                             transform: `scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`,
                                             transformOrigin: 'center',
                                             transition: isDragging ? 'none' : 'transform 0.1s ease',
                                             display: 'inline-block',
-                                            padding: '20px',
                                             minWidth: '100%',
-                                            minHeight: '100%'
+                                            minHeight: '100%',
+                                            textAlign: 'center'
                                         }}
                                     >
                                         <img
                                             src={previewDoc.url}
                                             alt={previewDoc.fileName}
+                                            draggable={false}
+                                            onContextMenu={(e) => { e.preventDefault(); return false; }}
+                                            onDragStart={(e) => e.preventDefault()}
                                             style={{
                                                 maxWidth: '100%',
                                                 maxHeight: '100%',
-                                                pointerEvents: 'none',
-                                                userSelect: 'none',
-                                                WebkitUserSelect: 'none',
-                                                MozUserSelect: 'none',
-                                                msUserSelect: 'none',
-                                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                                draggable: 'false'
+                                                display: 'block',
+                                                margin: '0 auto'
                                             }}
-                                            onContextMenu={(e) => {
-                                                e.preventDefault();
-                                                return false;
-                                            }}
-                                            onDragStart={(e) => e.preventDefault()}
                                         />
                                     </div>
-
-                                    <div
-                                        className="image-protection-overlay"
-                                        style={{
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            width: '100%',
-                                            height: '100%',
-                                            pointerEvents: 'none',
-                                            zIndex: 10
-                                        }}
-                                    />
                                 </div>
                             </div>
                         )}

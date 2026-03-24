@@ -136,13 +136,55 @@ const EmployeeAssignedClients = () => {
     setIsDragging(false);
   };
 
-  /* ================= ADD FILE TYPE DETECTION FUNCTION ================= */
-  const getFileType = (fileName) => {
-    if (!fileName) return 'other';
-    const ext = fileName.split('.').pop().toLowerCase();
-    if (ext === 'pdf') return 'pdf';
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return 'image';
-    if (['xls', 'xlsx', 'csv', 'xlsm'].includes(ext)) return 'excel';
+  /* ================= IMPROVED FILE TYPE DETECTION ================= */
+  const getFileType = (file) => {
+    // Case 1: If we have fileType from MongoDB, use it first (most reliable)
+    if (file.fileType) {
+      const fileTypeLower = file.fileType.toLowerCase();
+
+      // PDF check
+      if (fileTypeLower.includes('pdf')) {
+        return 'pdf';
+      }
+
+      // Image check (jpeg, jpg, png, gif, webp, heic, heif)
+      if (fileTypeLower.includes('jpeg') ||
+        fileTypeLower.includes('jpg') ||
+        fileTypeLower.includes('png') ||
+        fileTypeLower.includes('gif') ||
+        fileTypeLower.includes('webp') ||
+        fileTypeLower.includes('heic') ||
+        fileTypeLower.includes('heif') ||
+        fileTypeLower.includes('image')) {
+        return 'image';
+      }
+
+      // Excel/CSV check
+      if (fileTypeLower.includes('sheet') ||
+        fileTypeLower.includes('excel') ||
+        fileTypeLower.includes('csv') ||
+        fileTypeLower.includes('spreadsheetml')) {
+        return 'excel';
+      }
+    }
+
+    // Case 2: Try from URL if fileType not available
+    if (file.url) {
+      const urlLower = file.url.toLowerCase();
+      if (urlLower.includes('.pdf')) return 'pdf';
+      if (urlLower.includes('.jpg') || urlLower.includes('.jpeg') ||
+        urlLower.includes('.png') || urlLower.includes('.gif') ||
+        urlLower.includes('.webp')) return 'image';
+    }
+
+    // Case 3: Try from filename extension (last resort)
+    if (file.fileName) {
+      const ext = file.fileName.split('.').pop().toLowerCase();
+      if (ext === 'pdf') return 'pdf';
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return 'image';
+      if (['xls', 'xlsx', 'csv', 'xlsm'].includes(ext)) return 'excel';
+    }
+
     return 'other';
   };
 
@@ -615,8 +657,10 @@ const EmployeeAssignedClients = () => {
     setImagePosition({ x: 0, y: 0 });
     setIsDragging(false);
 
-    const fileType = getFileType(document.fileName);
+    // ✅ CHANGE: Pass the whole document object, not just fileName
+    const fileType = getFileType(document);
 
+    // Rest of the function remains the same...
     let actualCategoryType = categoryType;
     let actualCategoryName = categoryName;
 
@@ -666,14 +710,13 @@ const EmployeeAssignedClients = () => {
     }, 100);
   };
 
-  /* ================= NAVIGATE TO NEXT/PREVIOUS FILE ================= */
   const navigateToNextFile = async () => {
     if (currentFileIndex < currentCategoryFiles.length - 1) {
       const nextFile = currentCategoryFiles[currentFileIndex + 1];
       setCurrentFileIndex(currentFileIndex + 1);
       setPreviewDoc({
         ...nextFile,
-        fileType: getFileType(nextFile.fileName),
+        fileType: getFileType(nextFile), // ✅ CHANGE: pass whole object
         categoryType: previewDoc?.categoryType
       });
 
@@ -701,7 +744,7 @@ const EmployeeAssignedClients = () => {
       setCurrentFileIndex(currentFileIndex - 1);
       setPreviewDoc({
         ...prevFile,
-        fileType: getFileType(prevFile.fileName),
+        fileType: getFileType(prevFile), // ✅ CHANGE: pass whole object
         categoryType: previewDoc?.categoryType
       });
 
@@ -1446,7 +1489,8 @@ const EmployeeAssignedClients = () => {
   const renderDocumentPreview = () => {
     if (!previewDoc || !isPreviewOpen) return null;
 
-    const fileType = previewDoc.fileType || getFileType(previewDoc.fileName);
+    // const fileType = previewDoc.fileType || getFileType(previewDoc.fileName); 
+    const fileType = previewDoc.fileType || getFileType(previewDoc);
     const totalFilesInCategory = currentCategoryFiles.length;
     const isFirstFile = currentFileIndex === 0;
     const isLastFile = currentFileIndex === totalFilesInCategory - 1;
