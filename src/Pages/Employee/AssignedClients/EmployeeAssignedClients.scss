@@ -3849,3 +3849,423 @@
     }
   }
 }
+
+
+
+/* ================= AUDIT BUTTON STYLES (ADD AT THE BOTTOM OF YOUR SCSS) ================= */
+
+/* Audit button in file actions */
+.file-actions {
+  .audit-btn {
+    background: none;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+    background: white;
+
+    &:hover {
+      border-color: #7cd64b;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(124, 214, 75, 0.2);
+    }
+
+    &.audited {
+      background: #7cd64b;
+      border-color: #7cd64b;
+
+      .audit-icon {
+        filter: brightness(0) invert(1);
+      }
+
+      &:hover {
+        background: #6bc542;
+        border-color: #6bc542;
+        transform: translateY(-1px);
+      }
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .audit-icon {
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
+      transition: all 0.2s ease;
+    }
+  }
+}
+
+/* Audit button in preview modal header */
+.preview-modal-header {
+  .preview-header-right {
+    .audit-preview-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 2px solid rgba(34, 33, 33, 0.4);
+      color: black;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 14px;
+      font-weight: 400;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.25);
+        border-color: rgba(0, 0, 0, 0.6);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      &.audited {
+        background: rgba(124, 214, 75, 0.4);
+        border-color: #7cd64b;
+        color: #fff;
+
+        .audit-icon-preview {
+          filter: brightness(0) invert(1);
+        }
+
+        &:hover {
+          background: rgba(124, 214, 75, 0.6);
+          border-color: #6bc542;
+        }
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .audit-text {
+        font-weight: 600;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      }
+
+      .audit-icon-preview {
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+    }
+  }
+}
+
+/* Audited badge in file metadata */
+.file-meta {
+  .audited-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(124, 214, 75, 0.15);
+    color: #5a9e30;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+
+    svg {
+      flex-shrink: 0;
+    }
+  }
+}
+
+/* Responsive adjustments for audit buttons */
+@media (max-width: 768px) {
+  .file-actions {
+    .audit-btn {
+      width: 32px;
+      height: 32px;
+
+      .audit-icon {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  .preview-modal-header {
+    .preview-header-right {
+      .audit-preview-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+
+        .audit-text {
+          display: none;
+        }
+
+        .audit-icon-preview {
+          width: 18px;
+          height: 18px;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .file-actions {
+    .audit-btn {
+      width: 28px;
+      height: 28px;
+
+      .audit-icon {
+        width: 14px;
+        height: 14px;
+      }
+    }
+  }
+}
+
+/* Animation for audit button when toggled */
+@keyframes auditPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(124, 214, 75, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 4px rgba(124, 214, 75, 0.3);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(124, 214, 75, 0);
+  }
+}
+
+.audit-btn.audited {
+  animation: auditPulse 0.4s ease-in-out;
+}
+
+.audit-preview-btn.audited {
+  animation: auditPulse 0.4s ease-in-out;
+}
+
+
+/* ================= AUDIT BUTTON STYLES (FIXED) ================= */
+
+/* Audit button in file actions */
+.file-actions {
+  .audit-btn {
+    background: none;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+    background: white;
+
+    &:hover {
+      border-color: #7cd64b;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(124, 214, 75, 0.2);
+    }
+
+    /* WHEN AUDITED - GREEN BACKGROUND */
+    &.audited {
+      background: #7cd64b !important;
+      border-color: #7cd64b !important;
+
+      .audit-icon {
+        filter: brightness(0) invert(1) !important; /* Makes icon white */
+      }
+
+      &:hover {
+        background: #6bc542 !important;
+        border-color: #6bc542 !important;
+      }
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .audit-icon {
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
+      transition: all 0.2s ease;
+    }
+  }
+}
+
+/* Audit button in preview modal header */
+.preview-modal-header {
+  .preview-header-right {
+    .audit-preview-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 2px solid rgba(34, 33, 33, 0.4);
+      color: black;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 14px;
+      font-weight: 400;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.25);
+        border-color: rgba(0, 0, 0, 0.6);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      /* WHEN AUDITED - GREEN BACKGROUND */
+      &.audited {
+        background: #7cd64b !important;
+        border-color: #7cd64b !important;
+        color: #fff !important;
+
+        .audit-icon-preview {
+          filter: brightness(0) invert(1) !important; /* Makes icon white */
+        }
+
+        .audit-text {
+          color: white !important;
+        }
+
+        &:hover {
+          background: #6bc542 !important;
+          border-color: #6bc542 !important;
+        }
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .audit-text {
+        font-weight: 600;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      }
+
+      .audit-icon-preview {
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+    }
+  }
+}
+
+/* Audited badge in file metadata */
+.file-meta {
+  .audited-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(124, 214, 75, 0.15);
+    color: #5a9e30;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+
+    svg {
+      flex-shrink: 0;
+    }
+  }
+}
+
+/* Animation for audit button when toggled */
+@keyframes auditPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(124, 214, 75, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 4px rgba(124, 214, 75, 0.3);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(124, 214, 75, 0);
+  }
+}
+
+.audit-btn.audited {
+  animation: auditPulse 0.4s ease-in-out;
+}
+
+.audit-preview-btn.audited {
+  animation: auditPulse 0.4s ease-in-out;
+}
+
+/* Responsive adjustments for audit buttons */
+@media (max-width: 768px) {
+  .file-actions {
+    .audit-btn {
+      width: 32px;
+      height: 32px;
+
+      .audit-icon {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  .preview-modal-header {
+    .preview-header-right {
+      .audit-preview-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+
+        .audit-text {
+          display: none;
+        }
+
+        .audit-icon-preview {
+          width: 18px;
+          height: 18px;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .file-actions {
+    .audit-btn {
+      width: 28px;
+      height: 28px;
+
+      .audit-icon {
+        width: 14px;
+        height: 14px;
+      }
+    }
+  }
+}

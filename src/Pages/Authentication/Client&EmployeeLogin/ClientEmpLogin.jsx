@@ -586,7 +586,7 @@ const ClientEmpLogin = () => {
             <div className="security-note">
               <FiShield size={20} />
               <p>
-                <strong>Security First:</strong> All financial data is encrypted for protection.
+                <strong>Security First:</strong> All financial data is secured for protection.
               </p>
             </div>
           </div>

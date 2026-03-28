@@ -96,7 +96,10 @@ const EmployeeAssignedClients = () => {
   /* ================= FILE VIEWED STATUS STATE ================= */
   const [fileViewedStatus, setFileViewedStatus] = useState({});
   const [checkingViewed, setCheckingViewed] = useState(false);
-  const [auditIconStatus, setAuditIconStatus] = useState({});
+
+  /* ================= FILE AUDIT STATUS STATE (NEW) ================= */
+  const [fileAuditStatus, setFileAuditStatus] = useState({});
+  const [checkingAudit, setCheckingAudit] = useState(false);
 
   /* ================= ZOOM FUNCTIONS ================= */
   const handleZoomIn = () => {
@@ -363,6 +366,12 @@ const EmployeeAssignedClients = () => {
             fileName: file.fileName,
             url: file.url
           });
+          await checkFileAuditStatus({
+            categoryType: category.type,
+            categoryName: category.name || null,
+            fileName: file.fileName,
+            url: file.url
+          });
         }
       }
     };
@@ -551,6 +560,110 @@ const EmployeeAssignedClients = () => {
     return fileViewedStatus[fileKey] || false;
   };
 
+  /* ================= NEW: CHECK FILE AUDIT STATUS ================= */
+  const checkFileAuditStatus = async (fileData) => {
+    if (!fileData || !activeAssignment) return;
+
+    try {
+      setCheckingAudit(true);
+
+      const clientId = activeAssignment.client.clientId;
+      const { year, month } = activeAssignment;
+      const { categoryType, categoryName, fileName } = fileData;
+
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/employee/check-file-audited`,
+        {
+          params: {
+            clientId,
+            year,
+            month,
+            categoryType,
+            categoryName: categoryName || undefined,
+            fileName
+          },
+          withCredentials: true
+        }
+      );
+
+      const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}`;
+
+      setFileAuditStatus(prev => ({
+        ...prev,
+        [fileKey]: response.data.isAudited
+      }));
+
+      return response.data.isAudited;
+
+    } catch (error) {
+      console.error("Error checking file audit status:", error);
+      return false;
+    } finally {
+      setCheckingAudit(false);
+    }
+  };
+
+  /* ================= NEW: TOGGLE FILE AUDIT STATUS ================= */
+  const toggleFileAudit = async (fileData) => {
+    if (!fileData || !activeAssignment || checkingAudit) return;
+
+    if (!activeAssignment.client?.clientId) {
+      console.error("No clientId found in activeAssignment");
+      return null;
+    }
+
+    try {
+      setCheckingAudit(true);
+
+      const clientId = activeAssignment.client.clientId;
+      const { year, month, task } = activeAssignment;
+      const { categoryType, categoryName, fileName, url } = fileData;
+
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/employee/toggle-file-audited`,
+        {
+          clientId,
+          year,
+          month,
+          categoryType,
+          categoryName: categoryName || undefined,
+          fileName,
+          fileUrl: url,
+          task
+        },
+        { withCredentials: true }
+      );
+
+      const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}`;
+
+      setFileAuditStatus(prev => ({
+        ...prev,
+        [fileKey]: response.data.isAudited
+      }));
+
+      return response.data.isAudited;
+
+    } catch (error) {
+      console.error("Error toggling file audit status:", error);
+      return null;
+    } finally {
+      setCheckingAudit(false);
+    }
+  };
+
+  /* ================= NEW: GET FILE AUDIT STATUS ================= */
+  const getFileAuditStatus = (fileData) => {
+    if (!fileData || !activeAssignment) return false;
+
+    const clientId = activeAssignment.client.clientId;
+    const { year, month } = activeAssignment;
+    const { categoryType, categoryName, fileName } = fileData;
+
+    const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}`;
+
+    return fileAuditStatus[fileKey] || false;
+  };
+
   /* ================= DOCUMENT PREVIEW PROTECTION ================= */
   const applyProtection = () => {
     if (!previewRef.current) return;
@@ -657,10 +770,8 @@ const EmployeeAssignedClients = () => {
     setImagePosition({ x: 0, y: 0 });
     setIsDragging(false);
 
-    // ✅ CHANGE: Pass the whole document object, not just fileName
     const fileType = getFileType(document);
 
-    // Rest of the function remains the same...
     let actualCategoryType = categoryType;
     let actualCategoryName = categoryName;
 
@@ -705,6 +816,13 @@ const EmployeeAssignedClients = () => {
       url: document.url
     });
 
+    await checkFileAuditStatus({
+      categoryType: actualCategoryType,
+      categoryName: actualCategoryName,
+      fileName: document.fileName,
+      url: document.url
+    });
+
     setTimeout(() => {
       applyProtection();
     }, 100);
@@ -716,7 +834,7 @@ const EmployeeAssignedClients = () => {
       setCurrentFileIndex(currentFileIndex + 1);
       setPreviewDoc({
         ...nextFile,
-        fileType: getFileType(nextFile), // ✅ CHANGE: pass whole object
+        fileType: getFileType(nextFile),
         categoryType: previewDoc?.categoryType
       });
 
@@ -724,6 +842,15 @@ const EmployeeAssignedClients = () => {
       setImagePosition({ x: 0, y: 0 });
 
       await checkFileViewedStatus({
+        categoryType: previewDoc?.categoryType,
+        categoryName: previewCategoryName === 'Sales' || previewCategoryName === 'Purchase' || previewCategoryName === 'Bank'
+          ? null
+          : previewCategoryName,
+        fileName: nextFile.fileName,
+        url: nextFile.url
+      });
+
+      await checkFileAuditStatus({
         categoryType: previewDoc?.categoryType,
         categoryName: previewCategoryName === 'Sales' || previewCategoryName === 'Purchase' || previewCategoryName === 'Bank'
           ? null
@@ -744,7 +871,7 @@ const EmployeeAssignedClients = () => {
       setCurrentFileIndex(currentFileIndex - 1);
       setPreviewDoc({
         ...prevFile,
-        fileType: getFileType(prevFile), // ✅ CHANGE: pass whole object
+        fileType: getFileType(prevFile),
         categoryType: previewDoc?.categoryType
       });
 
@@ -752,6 +879,15 @@ const EmployeeAssignedClients = () => {
       setImagePosition({ x: 0, y: 0 });
 
       await checkFileViewedStatus({
+        categoryType: previewDoc?.categoryType,
+        categoryName: previewCategoryName === 'Sales' || previewCategoryName === 'Purchase' || previewCategoryName === 'Bank'
+          ? null
+          : previewCategoryName,
+        fileName: prevFile.fileName,
+        url: prevFile.url
+      });
+
+      await checkFileAuditStatus({
         categoryType: previewDoc?.categoryType,
         categoryName: previewCategoryName === 'Sales' || previewCategoryName === 'Purchase' || previewCategoryName === 'Bank'
           ? null
@@ -1151,6 +1287,12 @@ const EmployeeAssignedClients = () => {
                 fileName: file.fileName
               });
 
+              const isAudited = getFileAuditStatus({
+                categoryType: categoryName ? 'other' : title.toLowerCase().split(' ')[0],
+                categoryName: categoryName || null,
+                fileName: file.fileName
+              });
+
               return (
                 <div key={index} className="file-card">
                   <div className="file-icon">
@@ -1170,6 +1312,12 @@ const EmployeeAssignedClients = () => {
                         <span className="meta-item viewed-badge">
                           <FiCheckSquare size={12} />
                           Viewed
+                        </span>
+                      )}
+                      {isAudited && (
+                        <span className="meta-item audited-badge">
+                          <FiCheckCircle size={12} />
+                          Audited
                         </span>
                       )}
                     </div>
@@ -1272,24 +1420,27 @@ const EmployeeAssignedClients = () => {
                       )}
                     </button>
 
-                    <div
-                      className={`rotated-tick-icon ${auditIconStatus[file.fileName] ? 'checked' : ''}`}
-                      title="Audit Icon"
-                      onClick={(e) => {
+                    {/* NEW: AUDIT BUTTON */}
+                    <button
+                      className={`action-btn audit-btn ${isAudited ? 'audited' : ''}`}
+                      onClick={async (e) => {
                         e.stopPropagation();
-                        setAuditIconStatus(prev => ({
-                          ...prev,
-                          [file.fileName]: !prev[file.fileName]
-                        }));
+                        const newStatus = await toggleFileAudit({
+                          categoryType: categoryName ? 'other' : title.toLowerCase().split(' ')[0],
+                          categoryName: categoryName || null,
+                          fileName: file.fileName,
+                          url: file.url
+                        });
                       }}
+                      title={isAudited ? "Mark as not audited" : "Mark as audited"}
+                      disabled={checkingAudit}
                     >
                       <img
                         src={audit}
-                        alt="Audit Icon"
-                        className="audit-icon"
+                        alt="Audit"
+                        className={`audit-icon ${isAudited ? 'audited-active' : ''}`}
                       />
-                    </div>
-
+                    </button>
                   </div>
                 </div>
               );
@@ -1489,13 +1640,20 @@ const EmployeeAssignedClients = () => {
   const renderDocumentPreview = () => {
     if (!previewDoc || !isPreviewOpen) return null;
 
-    // const fileType = previewDoc.fileType || getFileType(previewDoc.fileName); 
     const fileType = previewDoc.fileType || getFileType(previewDoc);
     const totalFilesInCategory = currentCategoryFiles.length;
     const isFirstFile = currentFileIndex === 0;
     const isLastFile = currentFileIndex === totalFilesInCategory - 1;
 
     const isFileViewed = getFileViewedStatus({
+      categoryType: previewDoc.categoryType,
+      categoryName: previewCategoryName === 'Sales' || previewCategoryName === 'Purchase' || previewCategoryName === 'Bank'
+        ? null
+        : previewCategoryName,
+      fileName: previewDoc.fileName
+    });
+
+    const isFileAudited = getFileAuditStatus({
       categoryType: previewDoc.categoryType,
       categoryName: previewCategoryName === 'Sales' || previewCategoryName === 'Purchase' || previewCategoryName === 'Bank'
         ? null
@@ -1578,25 +1736,31 @@ const EmployeeAssignedClients = () => {
                 </span>
               </button>
 
-              <div
-                className={`rotated-tick-icon ${auditIconStatus[previewDoc?.fileName] ? 'checked' : ''}`}
-                title="Audit Icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (previewDoc?.fileName) {
-                    setAuditIconStatus(prev => ({
-                      ...prev,
-                      [previewDoc.fileName]: !prev[previewDoc.fileName]
-                    }));
-                  }
+              {/* NEW: AUDIT BUTTON IN PREVIEW */}
+              <button
+                className={`audit-preview-btn ${isFileAudited ? 'audited' : ''}`}
+                onClick={async () => {
+                  const newStatus = await toggleFileAudit({
+                    categoryType: previewDoc.categoryType,
+                    categoryName: previewCategoryName === 'Sales' || previewCategoryName === 'Purchase' || previewCategoryName === 'Bank'
+                      ? null
+                      : previewCategoryName,
+                    fileName: previewDoc.fileName,
+                    url: previewDoc.url
+                  });
                 }}
+                title={isFileAudited ? "Mark as not audited" : "Mark as audited"}
+                disabled={checkingAudit}
               >
                 <img
                   src={audit}
-                  alt="Audit Icon"
-                  className="audit-icon"
+                  alt="Audit"
+                  className={`audit-icon-preview ${isFileAudited ? 'audited-active' : ''}`}
                 />
-              </div>
+                <span className="audit-text">
+                  {isFileAudited ? "Audited" : "Mark as Audited"}
+                </span>
+              </button>
 
               <button
                 className="close-preview-btn"
