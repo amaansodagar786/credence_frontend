@@ -27,6 +27,7 @@ const Home = () => {
       <Faq/>
       <ScheduleCall/>
       
+    
       <Footer/> 
     </ModalProvider>
   )

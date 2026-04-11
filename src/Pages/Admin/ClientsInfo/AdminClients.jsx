@@ -75,7 +75,7 @@ const AdminClients = () => {
   const [previewDoc, setPreviewDoc] = useState(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const previewRef = useRef(null);
-  const imageScrollRef = useRef(null); // ✅ ADDED
+  const imageScrollRef = useRef(null);
 
   // Zoom and Pan States
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -119,7 +119,7 @@ const AdminClients = () => {
   const currentMonth = now.getMonth() + 1;
 
   // Years array
-  const years = [currentYear, currentYear - 1];
+  const years = [currentYear, currentYear - 1  ];
 
   // Months array
   const months = [
@@ -313,7 +313,7 @@ const AdminClients = () => {
     setIsDragging(false);
 
     // Determine file type using the improved function that checks fileType
-    const fileType = getFileType(document);  // ← CHANGE: pass the whole document, not just fileName
+    const fileType = getFileType(document);
     setPreviewDoc({ ...document, fileType });
     setIsPreviewOpen(true);
 
@@ -363,9 +363,7 @@ const AdminClients = () => {
   const renderDocumentPreview = () => {
     if (!previewDoc || !isPreviewOpen) return null;
 
-    // const fileType = previewDoc.fileType || getFileType(previewDoc.fileName);
     const fileType = previewDoc.fileType || getFileType(previewDoc);
-
 
     // Handle overlay click
     const handleOverlayClick = (e) => {
@@ -697,7 +695,7 @@ const AdminClients = () => {
     setPaymentHistory([]);
   };
 
-  /* ================= LOAD ALL CLIENTS ================= */
+  /* ================= LOAD ALL CLIENTS - OPTIMIZED VERSION ================= */
   const loadClients = async () => {
     try {
       setLoading(true);
@@ -708,46 +706,15 @@ const AdminClients = () => {
 
       const clientsList = res.data;
       console.log("📋 CLIENTS FROM LIST API:", clientsList);
+      console.log("📊 Total clients loaded:", clientsList.length);
 
-      // NOW FETCH FULL DETAILS FOR EACH CLIENT TO GET PLAN
-      const clientsWithPlans = await Promise.all(
-        clientsList.map(async (client) => {
-          try {
-            const detailsRes = await axios.get(
-              `${import.meta.env.VITE_API_URL}/admin/clients/${client.clientId}`,
-              { withCredentials: true }
-            );
+      // ✅ OPTIMIZATION: No more fetching full details for each client!
+      // The API now returns planSelected in the list, so we can use it directly
+      setClients(clientsList);
 
-            // Handle response format
-            let clientDetails;
-            if (detailsRes.data.success && detailsRes.data.client) {
-              clientDetails = detailsRes.data.client;
-            } else if (detailsRes.data._id || detailsRes.data.clientId) {
-              clientDetails = detailsRes.data;
-            } else {
-              return client; // Return original if format wrong
-            }
-
-            console.log(`✅ PLAN FOR ${client.name}:`, clientDetails.planSelected);
-
-            // Merge plan into client object
-            return {
-              ...client,
-              planSelected: clientDetails.planSelected
-            };
-
-          } catch (error) {
-            console.error(`❌ Error fetching details for ${client.name}:`, error);
-            return client; // Return original on error
-          }
-        })
-      );
-
-      console.log("📋 FINAL CLIENTS WITH PLANS:", clientsWithPlans);
-      setClients(clientsWithPlans);
-
-      // Check for employee notes
-      checkForEmployeeNotes(clientsWithPlans);
+      // Check for employee notes (if documents exist in the list - they won't)
+      // We'll skip this for now since we don't have documents in the list
+      // checkForEmployeeNotes(clientsList); // This would need documents which we don't have in list
 
     } catch (error) {
       console.error("Error loading clients:", error);
@@ -798,7 +765,7 @@ const AdminClients = () => {
           year: selectedMonth.year,
           month: selectedMonth.month,
           status: newStatus,
-          notes: `Payment marked as ${newStatus ? 'PAID' : 'PENDING'}` // Simple auto note
+          notes: `Payment marked as ${newStatus ? 'PAID' : 'PENDING'}`
         },
         { withCredentials: true }
       );
@@ -969,7 +936,6 @@ const AdminClients = () => {
         loadPaymentStatus();
       }, 100);
 
-      // Don't update alerts here - they'll be updated by useEffect
       showSnackbar("Client data loaded successfully", "success");
 
     } catch (error) {
@@ -1057,7 +1023,7 @@ const AdminClients = () => {
 
   /* ================= MONTH LOCK ================= */
   const toggleMonthLock = async (lock) => {
-    if (monthLockLoading) return; // Prevent multiple clicks
+    if (monthLockLoading) return;
 
     try {
       setMonthLockLoading(true);
@@ -1671,28 +1637,12 @@ const AdminClients = () => {
                       <div className="client-meta">
                         {getStatusBadge(client.isActive)}
 
-                        {/* ADD CONSOLE LOGS TO DEBUG */}
-                        {console.log("CLIENT DATA:", {
-                          name: client.name,
-                          isActive: client.isActive,
-                          planSelected: client.planSelected,
-                          currentPlan: client.currentPlan,
-                          plan: client.plan
-                        })}
-
-                        {/* ONLY SHOW PLAN IF CLIENT IS ACTIVE */}
+                        {/* ONLY SHOW PLAN IF CLIENT IS ACTIVE AND PLAN EXISTS */}
                         {client.isActive && client.planSelected && (
-                          <>
-                            {console.log("✅ SHOWING PLAN FOR:", client.name, "PLAN:", client.planSelected)}
-                            <span className="plan-badge-small">
-                              {client.planSelected}
-                            </span>
-                          </>
+                          <span className="plan-badge-small">
+                            {client.planSelected}
+                          </span>
                         )}
-
-                        {/* IF NOT SHOWING, LOG WHY */}
-                        {!client.isActive && console.log("❌ CLIENT INACTIVE - no plan for:", client.name)}
-                        {client.isActive && !client.planSelected && console.log("⚠️ CLIENT ACTIVE BUT NO PLAN for:", client.name)}
                       </div>
                     </div>
                     {selectedClient?.clientId === client.clientId && (
@@ -1821,7 +1771,7 @@ const AdminClients = () => {
                   </div>
                 </div>
 
-                {/* ✅ NEW: Payment Status Section - Right after month selection */}
+                {/* Payment Status Section - Right after month selection */}
                 <div className="payment-status-section">
                   <div className="section-header">
                     <h4>
@@ -1911,7 +1861,7 @@ const AdminClients = () => {
                             </div>
                           </div>
 
-                          {/* ✅ TASK SELECTION DROPDOWN - NEW */}
+                          {/* TASK SELECTION DROPDOWN */}
                           <div className="task-selection-section">
                             <div className="dropdown-wrapper">
                               <label className="dropdown-label">
@@ -1934,7 +1884,7 @@ const AdminClients = () => {
                             </div>
                           </div>
 
-                          {/* ✅ EMPLOYEE ASSIGNMENT DETAILS TABLE - UPDATED */}
+                          {/* EMPLOYEE ASSIGNMENT DETAILS TABLE */}
                           <div className="assignment-info">
                             <h5>
                               <FiUserCheck size={16} /> Employee Assignment Details

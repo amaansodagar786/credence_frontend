@@ -755,6 +755,19 @@ const ClientFilesUpload = () => {
             return;
         }
 
+        // ✅ ADD THIS NEW VALIDATION HERE
+        const mainCategories = ["sales", "purchase", "bank"];
+        const mainCategoryNames = ["Sales", "Purchase", "Bank"];
+
+        const isMainCategory = mainCategoryNames.some(
+            name => name.toLowerCase() === newOtherCategory.trim().toLowerCase()
+        );
+
+        if (isMainCategory) {
+            showError(`Cannot create category "${newOtherCategory.trim()}" - This is a main category name. Please use a different name.`);
+            return;
+        }
+
         const newCat = {
             categoryName: newOtherCategory.trim(),
             document: { files: [], categoryNotes: [], isLocked: false },
@@ -766,7 +779,6 @@ const ClientFilesUpload = () => {
         setNewOtherCategory("");
         showSuccess(`Category "${newCat.categoryName}" added successfully`);
     };
-
     /* ================= UPLOAD FILES ================= */
     const uploadFiles = async (type, files, categoryName = null, isReplacement = false, replacedFileName = null, lockAfterUpload = false) => {
         if (!isMonthActive) {
@@ -2175,9 +2187,10 @@ const ClientFilesUpload = () => {
                                 >
                                     <option value="">Choose Year</option>
                                     <option value="2026">2026</option>
-                                    <option value="2025">2025</option>
-                                    <option value="2024">2024</option>
-                                    <option value="2023">2023</option>
+                                    {/* <option value="2027">2027</option> */}
+                                    {/* <option value="2025">2025</option> */}
+                                    {/* <option value="2024">2024</option> */}
+                                    {/* <option value="2023">2023</option> */}
                                 </select>
                             </div>
 
