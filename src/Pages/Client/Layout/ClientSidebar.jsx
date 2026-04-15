@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
-import axios from "axios"; // IMPORTANT: Add axios
+import axios from "axios";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Icons
 import { BiLogOut, BiLogIn } from "react-icons/bi";
@@ -17,7 +19,6 @@ import { MdOutlineDashboard } from "react-icons/md";
 
 import "./ClientSidebar.scss";
 import FinancialStatementModal from "../FInancialStatements/FinancialStatementModal";
-import pdf from "../../../assets/pdf/termsandconditions.pdf";
 
 const ClientSidebar = ({ children }) => {
   const [toggle, setToggle] = useState(false);
@@ -30,29 +31,21 @@ const ClientSidebar = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // UPDATED: Fetch client info with proper debugging
+  // Check login status
   useEffect(() => {
-    console.log("=== CLIENT SIDEBAR MOUNTED ===");
-
-    // Check if logged in
     const hasToken = document.cookie.includes("clientToken");
-    console.log("1. Has clientToken cookie:", hasToken);
     setIsLoggedIn(hasToken);
 
     if (hasToken) {
       fetchClientInfo();
-    } else {
-      console.log("2. Not logged in, skipping client info fetch");
     }
   }, []);
 
-  // Function to fetch client info
+  // Fetch client info
   const fetchClientInfo = async () => {
-    console.log("=== FETCHING CLIENT INFO ===");
     setLoadingClientInfo(true);
 
     try {
-
       const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/client/profile`,
         {
@@ -63,105 +56,183 @@ const ClientSidebar = ({ children }) => {
         }
       );
 
-
-
       if (response.data) {
         setClientInfo(response.data);
-        console.log("4. Client info set successfully:", response.data);
-      } else {
-        console.log("4. No data in response");
       }
     } catch (error) {
-      console.log("=== ERROR FETCHING CLIENT INFO ===");
-      console.log("Error:", error);
+      console.error("Error fetching client info:", error);
 
       // Try alternative endpoint
       try {
-        console.log("Trying alternative endpoint: /client/dashboard/overview");
         const altResponse = await axios.get(
           `${import.meta.env.VITE_API_URL}/client/dashboard/overview`,
           { withCredentials: true }
         );
 
         if (altResponse.data?.client) {
-          console.log("Got client info from dashboard:", altResponse.data.client);
           setClientInfo(altResponse.data.client);
         }
       } catch (altError) {
-        console.log("Alternative endpoint also failed:", altError);
+        console.error("Alternative endpoint also failed:", altError);
       }
     } finally {
       setLoadingClientInfo(false);
-
     }
   };
 
-  // Handle Financial Statements button click - WITH DEBUG
+  // Handle Financial Statements button click
   const handleFinancialStatementsClick = () => {
-
-
-    // If no client info, try to fetch it first
     if (!clientInfo || Object.keys(clientInfo).length === 0) {
-      console.log("Client info missing, fetching now...");
+      toast.info("Loading client information...", {
+        position: "top-center",
+        autoClose: 2000,
+      });
       fetchClientInfo().then(() => {
-        console.log("After fetch, opening modal...");
         setShowFinancialStatementModal(true);
       });
     } else {
-      console.log("Client info exists, opening modal directly");
       setShowFinancialStatementModal(true);
     }
   };
 
-  // Rest of your existing functions...
   const handleLogin = () => navigate("/login");
 
   const handleLogout = async () => {
+    const toastId = toast.loading("Logging out...", {
+      position: "top-center",
+    });
+
     try {
       await axios.post(
         `${import.meta.env.VITE_API_URL}/client/logout`,
         {},
         { withCredentials: true }
       );
+
+      toast.dismiss(toastId);
+      toast.success("Logged out successfully!", {
+        position: "top-center",
+        autoClose: 2000,
+      });
     } catch (error) {
       console.error("Logout error:", error);
+      toast.dismiss(toastId);
+      toast.error("Error during logout. Please try again.", {
+        position: "top-center",
+        autoClose: 3000,
+      });
     }
 
     document.cookie = "clientToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     setIsLoggedIn(false);
     setClientInfo(null);
-    navigate("/login");
+
+    setTimeout(() => {
+      navigate("/login");
+    }, 1000);
   };
 
+  // UPDATED: Terms & Conditions Download with proper error handling
   const handleTermsDownload = async () => {
     if (downloadingTerms) return;
+
+    const toastId = toast.loading("Downloading Terms & Conditions...", {
+      position: "top-center",
+    });
+
     try {
       setDownloadingTerms(true);
 
+      // Fetch active PDF info
       const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/pdf/public/current`);
-      const data = await res.json();
 
-      if (!data.success) {
-        alert("Terms & Conditions PDF not available. Please try again later.");
+      if (!res.ok) {
+        toast.dismiss(toastId);
+        toast.error("Failed to fetch agreement information. Please try again.", {
+          position: "top-center",
+          autoClose: 4000,
+        });
         return;
       }
 
-      const fileResponse = await fetch(data.pdf.fileUrl);
+      const data = await res.json();
+
+      if (!data.success || !data.pdf) {
+        toast.dismiss(toastId);
+        toast.error("Terms & Conditions PDF not available. Please contact support.", {
+          position: "top-center",
+          autoClose: 4000,
+        });
+        return;
+      }
+
+      // Download the actual PDF
+      let fileResponse;
+      try {
+        fileResponse = await fetch(data.pdf.fileUrl);
+      } catch (networkError) {
+        toast.dismiss(toastId);
+        toast.error("Network error. Please check your internet connection.", {
+          position: "top-center",
+          autoClose: 4000,
+        });
+        return;
+      }
+
+      if (!fileResponse.ok) {
+        toast.dismiss(toastId);
+        toast.error("Failed to download file. Please try again.", {
+          position: "top-center",
+          autoClose: 4000,
+        });
+        return;
+      }
+
+      const contentType = fileResponse.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/pdf')) {
+        toast.dismiss(toastId);
+        toast.error("Invalid file format. Expected PDF.", {
+          position: "top-center",
+          autoClose: 4000,
+        });
+        return;
+      }
+
       const blob = await fileResponse.blob();
+
+      if (blob.size === 0) {
+        toast.dismiss(toastId);
+        toast.error("Downloaded file is empty. Please try again.", {
+          position: "top-center",
+          autoClose: 4000,
+        });
+        return;
+      }
 
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = blobUrl;
-      link.download = "Terms_and_Conditions.pdf";
+      link.download = `Terms_and_Conditions_v${data.pdf.version || 1}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
       setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
 
+      // Success
+      toast.dismiss(toastId);
+      toast.success(`✓ Terms & Conditions downloaded successfully! (${(blob.size / 1024).toFixed(2)} KB)`, {
+        position: "top-center",
+        autoClose: 3000,
+      });
+
     } catch (error) {
       console.error("Download error:", error);
-      alert("Failed to download Terms & Conditions. Please try again.");
+      toast.dismiss(toastId);
+      toast.error("Something went wrong. Please try again.", {
+        position: "top-center",
+        autoClose: 4000,
+      });
     } finally {
       setDownloadingTerms(false);
     }
@@ -174,14 +245,16 @@ const ClientSidebar = ({ children }) => {
     }
   }, [location.pathname]);
 
-  // Toggle sidebar
   const handleToggle = () => {
     setToggle(!toggle);
   };
 
-  // Handle modal success
   const handleFinancialStatementSuccess = (data) => {
     console.log("Financial statement request successful:", data);
+    toast.success("Financial statement request submitted successfully!", {
+      position: "top-center",
+      autoClose: 3000,
+    });
   };
 
   // Menu Data
@@ -192,154 +265,151 @@ const ClientSidebar = ({ children }) => {
   ];
 
   return (
-    <div className="client-layout-container">
-      {/* SIDEBAR */}
-      <div id="client-sidebar" className={toggle ? "hide" : ""}>
-        <div className="client-logo">
-          <div className="client-logoBox">
-            {toggle ? (
-              <GiHamburgerMenu className="client-menuIconHidden" onClick={handleToggle} />
-            ) : (
-              <>
-                <div className="client-sidebar-logo">
-                  <FiShield size={24} />
-                  <span>Client Portal</span>
-                </div>
-                <RxCross1 className="client-menuIconHidden" onClick={handleToggle} />
-              </>
-            )}
-          </div>
-        </div>
-
-        <ul className="client-side-menu">
-          {menuData.map(({ icon, title, path }, i) => (
-            <li key={i}>
-              <NavLink
-                to={path}
-                className={({ isActive }) => (isActive ? "active" : "")}
-                end
-              >
-                <span className="client-menu-icon">{icon}</span>
-                <span className="client-menu-title">{title}</span>
-              </NavLink>
-            </li>
-          ))}
-
-          {/* Financial Statements Button */}
-          <li>
-            <button
-              className="client-financial-button"
-              onClick={handleFinancialStatementsClick}
-              disabled={loadingClientInfo}
-            >
-              <span className="client-menu-icon">
-                <FiFileMinus />
-              </span>
-              <span className="client-menu-title">
-                Finance Statements
-                {loadingClientInfo && " (Loading...)"}
-              </span>
-            </button>
-          </li>
-
-          {/* Terms & Conditions Button */}
-          <li>
-            <button
-              className="client-terms-button"
-              onClick={handleTermsDownload}
-              disabled={downloadingTerms}
-            >
-              <span className="client-menu-icon">
-                <FiFile />
-              </span>
-              <span className="client-menu-title">
-                {downloadingTerms ? "Downloading..." : "Terms & Conditions"}
-              </span>
-            </button>
-          </li>
-        </ul>
-
-        {/* SIDEBAR FOOTER */}
-        <div className="client-sidebar-footer">
-          <span>Designed & Developed By</span>
-          <a
-            // href="https://techorses.com"
-            // target="_blank"
-            rel="noopener noreferrer"
-            className="client-footer-link"
-          >
-            Vapautus Media Private Limited
-          </a>
-        </div>
-      </div>
-
-      {/* MAIN CONTENT AREA */}
-      <div id="client-main-content" className={toggle ? "expanded" : ""}>
-        {/* TOP NAVBAR */}
-        <nav className="client-top-nav">
-          <div className="client-nav-left">
-            <GiHamburgerMenu className="client-menuIcon" onClick={handleToggle} />
-            <div className="client-page-title">
-              {(() => {
-                const path = location.pathname;
-                if (path.includes("dashboard")) return "Dashboard";
-                if (path.includes("upload")) return "Upload Files";
-                if (path.includes("profile")) return "My Profile";
-                return "Client Portal";
-              })()}
+    <>
+      <div className="client-layout-container">
+        {/* SIDEBAR */}
+        <div id="client-sidebar" className={toggle ? "hide" : ""}>
+          <div className="client-logo">
+            <div className="client-logoBox">
+              {toggle ? (
+                <GiHamburgerMenu className="client-menuIconHidden" onClick={handleToggle} />
+              ) : (
+                <>
+                  <div className="client-sidebar-logo">
+                    <FiShield size={24} />
+                    <span>Client Portal</span>
+                  </div>
+                  <RxCross1 className="client-menuIconHidden" onClick={handleToggle} />
+                </>
+              )}
             </div>
           </div>
 
-          <div className="client-nav-right">
-            {!isLoggedIn ? (
-              <button className="client-icon-button" onClick={handleLogout}>
-                <BiLogIn />
+          <ul className="client-side-menu">
+            {menuData.map(({ icon, title, path }, i) => (
+              <li key={i}>
+                <NavLink
+                  to={path}
+                  className={({ isActive }) => (isActive ? "active" : "")}
+                  end
+                >
+                  <span className="client-menu-icon">{icon}</span>
+                  <span className="client-menu-title">{title}</span>
+                </NavLink>
+              </li>
+            ))}
+
+            {/* Financial Statements Button */}
+            <li>
+              <button
+                className="client-financial-button"
+                onClick={handleFinancialStatementsClick}
+                disabled={loadingClientInfo}
+              >
+                <span className="client-menu-icon">
+                  <FiFileMinus />
+                </span>
+                <span className="client-menu-title">
+                  Finance Statements
+                  {loadingClientInfo && " (Loading...)"}
+                </span>
               </button>
-            ) : (
-              <div className="client-profile">
-                <div className="client-profile-icon">
-                  <FiUser />
-                </div>
-                <button className="client-icon-button" onClick={handleLogout}>
-                  <BiLogOut />
-                </button>
-              </div>
-            )}
+            </li>
+
+            {/* Terms & Conditions Button */}
+            <li>
+              <button
+                className="client-terms-button"
+                onClick={handleTermsDownload}
+                disabled={downloadingTerms}
+              >
+                <span className="client-menu-icon">
+                  <FiFile />
+                </span>
+                <span className="client-menu-title">
+                  {downloadingTerms ? "Downloading..." : "Terms & Conditions"}
+                </span>
+              </button>
+            </li>
+          </ul>
+
+          {/* SIDEBAR FOOTER */}
+          <div className="client-sidebar-footer">
+            <span>Designed & Developed By</span>
+            <a
+              rel="noopener noreferrer"
+              className="client-footer-link"
+            >
+              Vapautus Media Private Limited
+            </a>
           </div>
-        </nav>
-
-        {/* PAGE CONTENT */}
-        <div className="client-page-content">
-          {children}
         </div>
+
+        {/* MAIN CONTENT AREA */}
+        <div id="client-main-content" className={toggle ? "expanded" : ""}>
+          {/* TOP NAVBAR */}
+          <nav className="client-top-nav">
+            <div className="client-nav-left">
+              <GiHamburgerMenu className="client-menuIcon" onClick={handleToggle} />
+              <div className="client-page-title">
+                {(() => {
+                  const path = location.pathname;
+                  if (path.includes("dashboard")) return "Dashboard";
+                  if (path.includes("upload")) return "Upload Files";
+                  if (path.includes("profile")) return "My Profile";
+                  return "Client Portal";
+                })()}
+              </div>
+            </div>
+
+            <div className="client-nav-right">
+              {!isLoggedIn ? (
+                <button className="client-icon-button" onClick={handleLogin}>
+                  <BiLogIn />
+                </button>
+              ) : (
+                <div className="client-profile">
+                  <div className="client-profile-icon">
+                    <FiUser />
+                  </div>
+                  <button className="client-icon-button" onClick={handleLogout}>
+                    <BiLogOut />
+                  </button>
+                </div>
+              )}
+            </div>
+          </nav>
+
+          {/* PAGE CONTENT */}
+          <div className="client-page-content">
+            {children}
+          </div>
+        </div>
+
+        {/* FINANCIAL STATEMENT MODAL */}
+        <FinancialStatementModal
+          isOpen={showFinancialStatementModal}
+          onClose={() => setShowFinancialStatementModal(false)}
+          clientInfo={clientInfo || {}}
+          onSuccess={handleFinancialStatementSuccess}
+        />
       </div>
 
-      {/* FINANCIAL STATEMENT MODAL */}
-      <FinancialStatementModal
-        isOpen={showFinancialStatementModal}
-        onClose={() => setShowFinancialStatementModal(false)}
-        clientInfo={clientInfo || {}}
-        onSuccess={handleFinancialStatementSuccess}
+      {/* Toast Container */}
+      <ToastContainer
+        position="top-center"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop={true}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        limit={3}
       />
-
-      {/* DEBUG INFO (visible in UI) */}
-      <div style={{
-        position: 'fixed',
-        bottom: '10px',
-        right: '10px',
-        background: '#f0f0f0',
-        padding: '10px',
-        borderRadius: '5px',
-        fontSize: '12px',
-        zIndex: 9999,
-        display: 'none' // Change to 'block' to see debug info in UI
-      }}>
-        <strong>Client Info Debug:</strong><br />
-        Has Token: {document.cookie.includes("clientToken") ? 'Yes' : 'No'}<br />
-        Client Info: {clientInfo ? JSON.stringify(clientInfo) : 'null'}<br />
-        Loading: {loadingClientInfo ? 'Yes' : 'No'}
-      </div>
-    </div>
+    </>
   );
 };
 
