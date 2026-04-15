@@ -44,9 +44,6 @@ const ConsentUpdateModal = () => {
         checkConsent();
     }, []);
 
-    // ============================================
-    // DOWNLOAD PDF - FIXED: NO GHOST TOAST
-    // ============================================
     const handleDownload = async () => {
         if (downloading) return;
 
@@ -90,33 +87,31 @@ const ConsentUpdateModal = () => {
                     console.error("Download error response:", errorText);
                 }
 
-                // Dismiss loading toast first
+                // Dismiss loading toast
                 toast.dismiss(toastIdRef.current);
                 toastIdRef.current = null;
 
                 // Show error toast
-                toastIdRef.current = toast.error(getErrorMessage(errorType, errorMessage), {
+                toast.error(getErrorMessage(errorType, errorMessage), {
                     position: "top-center",
                     autoClose: 4000,
                     closeButton: true,
                     closeOnClick: true,
                 });
-
-                throw new Error(errorMessage);
+                return; // Stop execution
             }
 
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/pdf')) {
                 toast.dismiss(toastIdRef.current);
                 toastIdRef.current = null;
-
-                toastIdRef.current = toast.error("Invalid file format. Expected PDF.", {
+                toast.error("Invalid file format. Expected PDF.", {
                     position: "top-center",
                     autoClose: 4000,
                     closeButton: true,
                     closeOnClick: true,
                 });
-                throw new Error("Invalid file format");
+                return;
             }
 
             const blob = await response.blob();
@@ -124,14 +119,13 @@ const ConsentUpdateModal = () => {
             if (blob.size === 0) {
                 toast.dismiss(toastIdRef.current);
                 toastIdRef.current = null;
-
-                toastIdRef.current = toast.error("Downloaded file is empty. Please try again.", {
+                toast.error("Downloaded file is empty. Please try again.", {
                     position: "top-center",
                     autoClose: 4000,
                     closeButton: true,
                     closeOnClick: true,
                 });
-                throw new Error("Empty file");
+                return;
             }
 
             // Create download link
@@ -156,7 +150,7 @@ const ConsentUpdateModal = () => {
             toast.dismiss(toastIdRef.current);
             toastIdRef.current = null;
 
-            // Show success toast (will auto-close)
+            // Show success toast
             toast.success("✓ Agreement downloaded successfully! Please read carefully.", {
                 position: "top-center",
                 autoClose: 3000,
@@ -167,11 +161,24 @@ const ConsentUpdateModal = () => {
             setPdfDownloaded(true);
 
         } catch (error) {
+            // 🔥 NETWORK ERROR or any other exception
             console.error("Download error:", error);
-            // Error already handled above
+
+            // Dismiss loading toast if it exists
+            if (toastIdRef.current) {
+                toast.dismiss(toastIdRef.current);
+                toastIdRef.current = null;
+            }
+
+            // Show network error toast
+            toast.error("Network error. Please check your internet connection and try again.", {
+                position: "top-center",
+                autoClose: 4000,
+                closeButton: true,
+                closeOnClick: true,
+            });
         } finally {
             setDownloading(false);
-            toastIdRef.current = null;
         }
     };
 
@@ -366,7 +373,7 @@ const ConsentUpdateModal = () => {
                 </div>
             </div>
 
-           
+
         </>
     );
 };
