@@ -399,3 +399,28 @@
         }
     }
 }
+
+
+// Add this at the END of your ConsentUpdateModal.scss file
+
+// ============================================
+// FIX: TOAST ABOVE MODAL
+// ============================================
+.Toastify__toast-container {
+    z-index: 100000 !important;
+}
+
+.consent-modal-overlay {
+    z-index: 99999 !important;
+}
+
+.Toastify__toast {
+    z-index: 100001 !important;
+    border-radius: 12px !important;
+    font-family: 'Poppins', sans-serif !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+}
+
+.Toastify__toast-container--top-center {
+    top: 1em !important;
+}
