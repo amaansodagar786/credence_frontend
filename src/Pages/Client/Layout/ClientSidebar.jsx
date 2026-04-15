@@ -108,7 +108,7 @@ const ClientSidebar = ({ children }) => {
         {},
         { withCredentials: true }
       );
-
+      
       toast.dismiss(toastId);
       toast.success("Logged out successfully!", {
         position: "top-center",
@@ -126,13 +126,13 @@ const ClientSidebar = ({ children }) => {
     document.cookie = "clientToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     setIsLoggedIn(false);
     setClientInfo(null);
-
+    
     setTimeout(() => {
       navigate("/login");
     }, 1000);
   };
 
-  // UPDATED: Terms & Conditions Download with proper error handling
+  // UPDATED: Terms & Conditions Download with PROPER NETWORK ERROR HANDLING
   const handleTermsDownload = async () => {
     if (downloadingTerms) return;
 
@@ -144,11 +144,29 @@ const ClientSidebar = ({ children }) => {
       setDownloadingTerms(true);
 
       // Fetch active PDF info
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/pdf/public/current`);
-
+      let res;
+      try {
+        res = await fetch(`${import.meta.env.VITE_API_URL}/admin/pdf/public/current`);
+      } catch (networkError) {
+        toast.dismiss(toastId);
+        // Check if it's a network error (no internet)
+        if (networkError.message === 'Failed to fetch' || networkError.name === 'TypeError') {
+          toast.error("📡 No internet connection! Please check your network and try again.", {
+            position: "top-center",
+            autoClose: 4000,
+          });
+        } else {
+          toast.error("🌐 Network error! Please check your internet connection.", {
+            position: "top-center",
+            autoClose: 4000,
+          });
+        }
+        return;
+      }
+      
       if (!res.ok) {
         toast.dismiss(toastId);
-        toast.error("Failed to fetch agreement information. Please try again.", {
+        toast.error(`Failed to fetch agreement information. Status: ${res.status}`, {
           position: "top-center",
           autoClose: 4000,
         });
@@ -172,16 +190,23 @@ const ClientSidebar = ({ children }) => {
         fileResponse = await fetch(data.pdf.fileUrl);
       } catch (networkError) {
         toast.dismiss(toastId);
-        toast.error("Network error. Please check your internet connection.", {
-          position: "top-center",
-          autoClose: 4000,
-        });
+        if (networkError.message === 'Failed to fetch' || networkError.name === 'TypeError') {
+          toast.error("📡 No internet connection! Please check your network and try again.", {
+            position: "top-center",
+            autoClose: 4000,
+          });
+        } else {
+          toast.error("🌐 Network error! Please check your internet connection.", {
+            position: "top-center",
+            autoClose: 4000,
+          });
+        }
         return;
       }
 
       if (!fileResponse.ok) {
         toast.dismiss(toastId);
-        toast.error("Failed to download file. Please try again.", {
+        toast.error(`Failed to download file. Status: ${fileResponse.status}`, {
           position: "top-center",
           autoClose: 4000,
         });
@@ -229,10 +254,32 @@ const ClientSidebar = ({ children }) => {
     } catch (error) {
       console.error("Download error:", error);
       toast.dismiss(toastId);
-      toast.error("Something went wrong. Please try again.", {
-        position: "top-center",
-        autoClose: 4000,
-      });
+      
+      // 🔥 IMPROVED ERROR DETECTION 🔥
+      if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+        toast.error("📡 No internet connection! Please check your network and try again.", {
+          position: "top-center",
+          autoClose: 4000,
+        });
+      } 
+      else if (error.name === 'AbortError') {
+        toast.error("⏱️ Request timed out. Please check your connection and try again.", {
+          position: "top-center",
+          autoClose: 4000,
+        });
+      }
+      else if (error.message === 'NetworkError' || error.message?.includes('network')) {
+        toast.error("🌐 Network error! Please check your internet connection.", {
+          position: "top-center",
+          autoClose: 4000,
+        });
+      }
+      else {
+        toast.error("Something went wrong. Please try again later.", {
+          position: "top-center",
+          autoClose: 4000,
+        });
+      }
     } finally {
       setDownloadingTerms(false);
     }
@@ -250,8 +297,8 @@ const ClientSidebar = ({ children }) => {
   };
 
   const handleFinancialStatementSuccess = (data) => {
-    console.log("Financial statement request successful:", data);
-    toast.success("Financial statement request submitted successfully!", {
+    console.log("Financial statement request submitted:", data);
+    toast.success("✓ Financial statement request submitted successfully!", {
       position: "top-center",
       autoClose: 3000,
     });

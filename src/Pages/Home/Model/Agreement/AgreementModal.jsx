@@ -24,10 +24,10 @@ const AgreementModal = () => {
 
       // First, get the PDF info (which one is active)
       const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/pdf/public/current`);
-      
+
       if (!res.ok) {
         toast.dismiss(toastId);
-        toast.error("Failed to fetch agreement information. Please try again.", {
+        toast.error(`Failed to fetch agreement information. Status: ${res.status}`, {
           position: "top-center",
           autoClose: 4000,
         });
@@ -51,16 +51,24 @@ const AgreementModal = () => {
         fileResponse = await fetch(data.pdf.fileUrl);
       } catch (networkError) {
         toast.dismiss(toastId);
-        toast.error("Network error. Please check your internet connection.", {
-          position: "top-center",
-          autoClose: 4000,
-        });
+        // Check if it's a network error
+        if (networkError.message === 'Failed to fetch' || networkError.name === 'TypeError') {
+          toast.error("📡 Network error! Please check your internet connection and try again.", {
+            position: "top-center",
+            autoClose: 4000,
+          });
+        } else {
+          toast.error("Failed to connect to server. Please try again.", {
+            position: "top-center",
+            autoClose: 4000,
+          });
+        }
         return;
       }
 
       if (!fileResponse.ok) {
         toast.dismiss(toastId);
-        toast.error("Failed to download file. Please try again.", {
+        toast.error(`Failed to download file. Status: ${fileResponse.status}`, {
           position: "top-center",
           autoClose: 4000,
         });
@@ -111,10 +119,36 @@ const AgreementModal = () => {
     } catch (error) {
       console.error("Download error:", error);
       toast.dismiss(toastId);
-      toast.error("Something went wrong. Please try again.", {
-        position: "top-center",
-        autoClose: 4000,
-      });
+
+      // 🔥 IMPROVED ERROR DETECTION 🔥
+      // Check for network errors (no internet)
+      if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+        toast.error("📡 No internet connection! Please check your network and try again.", {
+          position: "top-center",
+          autoClose: 4000,
+        });
+      }
+      // Check for abort errors
+      else if (error.name === 'AbortError') {
+        toast.error("⏱️ Request timed out. Please check your connection and try again.", {
+          position: "top-center",
+          autoClose: 4000,
+        });
+      }
+      // Check for other network related errors
+      else if (error.message === 'NetworkError' || error.message.includes('network')) {
+        toast.error("🌐 Network error! Please check your internet connection.", {
+          position: "top-center",
+          autoClose: 4000,
+        });
+      }
+      // Generic error
+      else {
+        toast.error("Something went wrong. Please try again later.", {
+          position: "top-center",
+          autoClose: 4000,
+        });
+      }
     } finally {
       setDownloading(false);
     }
@@ -125,12 +159,12 @@ const AgreementModal = () => {
       openRegistrationModal();
     } else {
       if (!agree1) {
-        toast.warning("Please accept the terms and conditions first.", {
+        toast.warning("⚠️ Please accept the terms and conditions first.", {
           position: "top-center",
           autoClose: 3000,
         });
       } else if (!agree2) {
-        toast.warning("Please download and accept the PDF agreement first.", {
+        toast.warning("📄 Please download and accept the PDF agreement first.", {
           position: "top-center",
           autoClose: 3000,
         });
@@ -221,7 +255,7 @@ const AgreementModal = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Toast Container for this modal */}
       <ToastContainer
         position="top-center"
