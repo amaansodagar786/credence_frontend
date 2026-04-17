@@ -183,7 +183,7 @@ const MaintenanceComponent = () => {
         >
           <span className="timer-icon">⏳</span>
           <span className="timer-text">We'll be back in</span>
-          <span className="timer-hours">1 Hour</span>
+          <span className="timer-hours">2 Hour</span>
         </motion.div>
 
         {/* Thank You Message */}
