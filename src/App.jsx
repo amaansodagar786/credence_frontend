@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import ModalProvider  from './Pages/Home/Model/ModalProvider';
+import ModalProvider from './Pages/Home/Model/ModalProvider';
 import AdminLogin from './Pages/Admin/Login/AdminLogin';
 import AdminRegister from './Pages/Admin/Register/AdminRegister';
 import AdminDashboard from './Pages/Admin/Dashboard/AdminDashboard';
@@ -33,7 +33,28 @@ import GoogleDrivePicker from './Pages/Testing/GoogleDrivePicker';
 import ClientPaymentInfo from './Pages/Employee/ClientPayment/ClientPaymentInfo';
 import AgreementPdf from './Pages/Admin/AgreementPdf/AgreementPdf';
 
+// IMPORT YOUR MAINTENANCE COMPONENT
+import MaintenanceComponent from './Pages/MaintenanceComponent/MaintenanceComponent';
+
 function App() {
+  // 👇 MAINTENANCE MODE FLAG - SET TO true TO SHOW MAINTENANCE, false FOR NORMAL SITE
+  const isMaintenanceMode = true;  // CHANGE THIS TO false WHEN SITE IS READY
+
+  // If maintenance mode is ON, show only the maintenance component
+  if (isMaintenanceMode) {
+    return (
+      <ModalProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Only maintenance route available */}
+            <Route path="*" element={<MaintenanceComponent />} />
+          </Routes>
+        </BrowserRouter>
+      </ModalProvider>
+    );
+  }
+
+  // Normal site rendering (when maintenance is OFF)
   return (
     <ModalProvider>
       <BrowserRouter>
@@ -64,7 +85,7 @@ function App() {
           <Route path="/client/dashboard" element={<ClientDashboard />} />
           <Route path="/client/upload" element={<ClientFilesUpload />} />
           <Route path="/client/profile" element={<ClientProfile />} />
-          
+
 
           {/* EMPLOYEE ROUTES  */}
           {/* <Route path="/employee/login" element={<EmployeeLogin />} /> */}
