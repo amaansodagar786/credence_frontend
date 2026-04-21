@@ -3688,3 +3688,194 @@
     margin: 0 2px;
   }
 }
+
+/* ================= CSV VIEWER STYLES ================= */
+.csv-viewer-wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  .csv-scroll-container {
+    flex: 1;
+    overflow: auto;
+    background: #ffffff;
+
+    &::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 5px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #7cd64b;
+      border-radius: 5px;
+
+      &:hover {
+        background: #5a9e30;
+      }
+    }
+  }
+
+  .csv-table-container {
+    display: inline-block;
+    min-width: 100%;
+  }
+
+  .csv-table-wrapper {
+    width: 100%;
+  }
+
+  .csv-preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    font-family: 'Poppins', monospace;
+
+    th,
+    td {
+      border: 1px solid #e2e8f0;
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f8fafc;
+      font-weight: 600;
+      color: #1e293b;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 2px solid #7cd64b;
+      white-space: nowrap;
+    }
+
+    td {
+      background: #ffffff;
+      color: #334155;
+    }
+
+    tr:hover td {
+      background: #f8fafc;
+    }
+  }
+
+  .csv-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    height: 300px;
+
+    .loading-spinner-small {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #e2e8f0;
+      border-top: 3px solid #7cd64b;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    p {
+      color: #64748b;
+      font-size: 14px;
+      margin: 0;
+    }
+  }
+
+  .csv-error {
+    text-align: center;
+    padding: 40px;
+    color: #ef4444;
+    font-size: 14px;
+  }
+
+  .viewer-info {
+    padding: 10px;
+    background: #f8fafc;
+    font-size: 12px;
+    color: #64748b;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    svg {
+      color: #7cd64b;
+    }
+  }
+}
+
+/* ================= ZOOM CONTROLS STYLES (already exists, but ensure these are present) ================= */
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.98);
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+  .zoom-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: white;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background: #7cd64b;
+      color: #000;
+      border-color: #7cd64b;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(124, 214, 75, 0.3);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    &.reset {
+      width: auto;
+      padding: 0 16px;
+      gap: 8px;
+
+      svg {
+        margin-right: 4px;
+      }
+
+      span {
+        font-size: 13px;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .zoom-level {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    min-width: 70px;
+    text-align: center;
+    background: #f8f9fa;
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid #e5e7eb;
+  }
+}

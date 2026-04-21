@@ -87,6 +87,11 @@ const EmployeeAssignedClients = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
+  /* ================= CSV STATES ================= */
+  const [csvData, setCsvData] = useState(null);
+  const [csvLoading, setCsvLoading] = useState(false);
+  const [csvZoomLevel, setCsvZoomLevel] = useState(1);
+
   /* ================= EXPANDED CATEGORY NOTES STATE ================= */
   const [expandedCategoryNotes, setExpandedCategoryNotes] = useState({});
 
@@ -100,6 +105,82 @@ const EmployeeAssignedClients = () => {
   /* ================= FILE AUDIT STATUS STATE (NEW) ================= */
   const [fileAuditStatus, setFileAuditStatus] = useState({});
   const [checkingAudit, setCheckingAudit] = useState(false);
+
+  /* ================= CSV HELPER FUNCTIONS ================= */
+  const escapeHtmlForCSV = (str) => {
+    if (!str) return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  };
+
+  const parseCSVAndDisplay = async (csvUrl) => {
+    try {
+      setCsvLoading(true);
+      const response = await fetch(csvUrl);
+      const csvText = await response.text();
+      
+      const rows = [];
+      const lines = csvText.split(/\r?\n/);
+      
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        
+        const row = [];
+        let inQuote = false;
+        let currentCell = '';
+        
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          
+          if (char === '"') {
+            inQuote = !inQuote;
+          } else if (char === ',' && !inQuote) {
+            row.push(currentCell);
+            currentCell = '';
+          } else {
+            currentCell += char;
+          }
+        }
+        row.push(currentCell);
+        rows.push(row);
+      }
+      
+      if (rows.length === 0) {
+        setCsvData('<div class="csv-error">No data found in CSV file</div>');
+        return;
+      }
+      
+      let html = '<div class="csv-table-wrapper"><table class="csv-preview-table">';
+      
+      if (rows[0]) {
+        html += '<thead><tr>';
+        rows[0].forEach(cell => {
+          html += `<th>${escapeHtmlForCSV(cell)}</th>`;
+        });
+        html += '</thead>';
+      }
+      
+      html += '<tbody>';
+      for (let i = 1; i < rows.length; i++) {
+        html += '<tr>';
+        rows[i].forEach(cell => {
+          html += `<td>${escapeHtmlForCSV(cell)}</td>`;
+        });
+        html += '</tr>';
+      }
+      html += '</tbody></table></div>';
+      
+      setCsvData(html);
+    } catch (error) {
+      console.error("Error parsing CSV:", error);
+      setCsvData('<div class="csv-error">Error loading CSV file</div>');
+    } finally {
+      setCsvLoading(false);
+    }
+  };
 
   /* ================= ZOOM FUNCTIONS ================= */
   const handleZoomIn = () => {
@@ -139,7 +220,7 @@ const EmployeeAssignedClients = () => {
     setIsDragging(false);
   };
 
-  /* ================= IMPROVED FILE TYPE DETECTION ================= */
+  /* ================= IMPROVED FILE TYPE DETECTION WITH CSV ================= */
   const getFileType = (file) => {
     // Case 1: If we have fileType from MongoDB, use it first (most reliable)
     if (file.fileType) {
@@ -162,10 +243,14 @@ const EmployeeAssignedClients = () => {
         return 'image';
       }
 
-      // Excel/CSV check
+      // CSV check - MUST COME BEFORE EXCEL
+      if (fileTypeLower.includes('csv')) {
+        return 'csv';
+      }
+
+      // Excel check (but NOT csv)
       if (fileTypeLower.includes('sheet') ||
         fileTypeLower.includes('excel') ||
-        fileTypeLower.includes('csv') ||
         fileTypeLower.includes('spreadsheetml')) {
         return 'excel';
       }
@@ -175,17 +260,20 @@ const EmployeeAssignedClients = () => {
     if (file.url) {
       const urlLower = file.url.toLowerCase();
       if (urlLower.includes('.pdf')) return 'pdf';
+      if (urlLower.includes('.csv')) return 'csv';
       if (urlLower.includes('.jpg') || urlLower.includes('.jpeg') ||
         urlLower.includes('.png') || urlLower.includes('.gif') ||
         urlLower.includes('.webp')) return 'image';
+      if (urlLower.includes('.xls') || urlLower.includes('.xlsx')) return 'excel';
     }
 
     // Case 3: Try from filename extension (last resort)
     if (file.fileName) {
       const ext = file.fileName.split('.').pop().toLowerCase();
       if (ext === 'pdf') return 'pdf';
+      if (ext === 'csv') return 'csv';
       if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return 'image';
-      if (['xls', 'xlsx', 'csv', 'xlsm'].includes(ext)) return 'excel';
+      if (['xls', 'xlsx', 'xlsm'].includes(ext)) return 'excel';
     }
 
     return 'other';
@@ -234,7 +322,6 @@ const EmployeeAssignedClients = () => {
 
       const clientsArray = Object.values(clientMap);
 
-      // Sort clients alphabetically A to Z
       const sortedClients = [...clientsArray].sort((a, b) => {
         const nameA = a.name.toLowerCase().trim();
         const nameB = b.name.toLowerCase().trim();
@@ -389,22 +476,18 @@ const EmployeeAssignedClients = () => {
   useEffect(() => {
     let filtered = clientList;
 
-    // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(client =>
         client.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    // Filter by year and month - ONLY affects client list, NOT assignments
     if (yearFilter || monthFilter) {
       filtered = filtered.filter(client => {
-        // Get all assignments for this client
         const clientAssignments = assignments.filter(a => a.client.clientId === client.clientId);
 
         if (clientAssignments.length === 0) return false;
 
-        // Check if client has ANY assignment matching the year/month filters
         return clientAssignments.some(assignment => {
           let matches = true;
 
@@ -421,7 +504,6 @@ const EmployeeAssignedClients = () => {
       });
     }
 
-    // Sort alphabetically A to Z
     const sorted = [...filtered].sort((a, b) => {
       const nameA = a.name.toLowerCase().trim();
       const nameB = b.name.toLowerCase().trim();
@@ -432,7 +514,6 @@ const EmployeeAssignedClients = () => {
 
     setFilteredClients(sorted);
 
-    // If active client is not in filtered list, select first filtered client
     if (activeClient && sorted.length > 0) {
       const isActiveInFiltered = sorted.some(c => c.clientId === activeClient.clientId);
       if (!isActiveInFiltered) {
@@ -450,7 +531,6 @@ const EmployeeAssignedClients = () => {
 
   }, [searchTerm, yearFilter, monthFilter, clientList, assignments, activeClient]);
 
-  /* ================= UPDATE GROUPED ASSIGNMENTS (NOT FILTERED BY YEAR/MONTH) ================= */
   useEffect(() => {
     const grouped = groupAssignmentsByMonthYear(assignments);
     setGroupedAssignments(grouped);
@@ -560,7 +640,7 @@ const EmployeeAssignedClients = () => {
     return fileViewedStatus[fileKey] || false;
   };
 
-  /* ================= NEW: CHECK FILE AUDIT STATUS ================= */
+  /* ================= CHECK FILE AUDIT STATUS ================= */
   const checkFileAuditStatus = async (fileData) => {
     if (!fileData || !activeAssignment) return;
 
@@ -603,7 +683,7 @@ const EmployeeAssignedClients = () => {
     }
   };
 
-  /* ================= NEW: TOGGLE FILE AUDIT STATUS ================= */
+  /* ================= TOGGLE FILE AUDIT STATUS ================= */
   const toggleFileAudit = async (fileData) => {
     if (!fileData || !activeAssignment || checkingAudit) return;
 
@@ -651,7 +731,7 @@ const EmployeeAssignedClients = () => {
     }
   };
 
-  /* ================= NEW: GET FILE AUDIT STATUS ================= */
+  /* ================= GET FILE AUDIT STATUS ================= */
   const getFileAuditStatus = (fileData) => {
     if (!fileData || !activeAssignment) return false;
 
@@ -716,7 +796,7 @@ const EmployeeAssignedClients = () => {
     }
   };
 
-  /* ================= ADDED - useEffect for image wheel/pinch zoom ================= */
+  /* ================= useEffect for image wheel/pinch zoom ================= */
   useEffect(() => {
     const el = imageScrollRef.current;
     if (!el || !isPreviewOpen) return;
@@ -762,13 +842,15 @@ const EmployeeAssignedClients = () => {
     return [];
   };
 
-  /* ================= OPEN DOCUMENT PREVIEW ================= */
+  /* ================= OPEN DOCUMENT PREVIEW WITH CSV SUPPORT ================= */
   const openDocumentPreview = async (document, categoryType = null, categoryName = null) => {
     if (!document || !document.url) return;
 
     setZoomLevel(1);
     setImagePosition({ x: 0, y: 0 });
     setIsDragging(false);
+    setCsvData(null);
+    setCsvZoomLevel(1);
 
     const fileType = getFileType(document);
 
@@ -809,6 +891,11 @@ const EmployeeAssignedClients = () => {
     setPreviewDoc({ ...document, fileType, categoryType: actualCategoryType });
     setIsPreviewOpen(true);
 
+    // If CSV, parse it
+    if (fileType === 'csv') {
+      parseCSVAndDisplay(document.url);
+    }
+
     await checkFileViewedStatus({
       categoryType: actualCategoryType,
       categoryName: actualCategoryName,
@@ -840,6 +927,13 @@ const EmployeeAssignedClients = () => {
 
       setZoomLevel(1);
       setImagePosition({ x: 0, y: 0 });
+      setCsvData(null);
+      setCsvZoomLevel(1);
+
+      // If next file is CSV, parse it
+      if (getFileType(nextFile) === 'csv') {
+        parseCSVAndDisplay(nextFile.url);
+      }
 
       await checkFileViewedStatus({
         categoryType: previewDoc?.categoryType,
@@ -877,6 +971,13 @@ const EmployeeAssignedClients = () => {
 
       setZoomLevel(1);
       setImagePosition({ x: 0, y: 0 });
+      setCsvData(null);
+      setCsvZoomLevel(1);
+
+      // If previous file is CSV, parse it
+      if (getFileType(prevFile) === 'csv') {
+        parseCSVAndDisplay(prevFile.url);
+      }
 
       await checkFileViewedStatus({
         categoryType: previewDoc?.categoryType,
@@ -913,6 +1014,9 @@ const EmployeeAssignedClients = () => {
     setZoomLevel(1);
     setImagePosition({ x: 0, y: 0 });
     setIsDragging(false);
+    setCsvData(null);
+    setCsvLoading(false);
+    setCsvZoomLevel(1);
   };
 
   /* ================= ADD NOTE FUNCTIONALITY ================= */
@@ -980,7 +1084,7 @@ const EmployeeAssignedClients = () => {
     }
   };
 
-  /* ================= EXPAND/Collapse Category Notes ================= */
+  /* ================= EXPAND/COLLAPSE FUNCTIONS ================= */
   const toggleCategoryNotes = (categoryKey) => {
     setExpandedCategoryNotes(prev => ({
       ...prev,
@@ -988,7 +1092,6 @@ const EmployeeAssignedClients = () => {
     }));
   };
 
-  /* ================= EXPAND/Collapse Month Groups ================= */
   const toggleMonthGroup = (monthKey) => {
     setExpandedMonthGroups(prev => ({
       ...prev,
@@ -1128,7 +1231,6 @@ const EmployeeAssignedClients = () => {
     }
   };
 
-  /* ================= SEPARATE TOGGLE FOR EXPAND/COLLAPSE ================= */
   const toggleMonthExpand = (monthKey, e) => {
     e.stopPropagation();
     e.preventDefault();
@@ -1139,7 +1241,6 @@ const EmployeeAssignedClients = () => {
     }));
   };
 
-  /* ================= UPDATE handleMonthYearSelect ================= */
   const handleMonthYearSelect = (monthKey) => {
     setActiveMonthYear(monthKey);
 
@@ -1165,7 +1266,6 @@ const EmployeeAssignedClients = () => {
     }
   };
 
-  /* ================= UPDATE handleTaskSelect ================= */
   const handleTaskSelect = (assignment, e) => {
     if (e) e.stopPropagation();
     setActiveAssignment(assignment);
@@ -1420,7 +1520,6 @@ const EmployeeAssignedClients = () => {
                       )}
                     </button>
 
-                    {/* NEW: AUDIT BUTTON */}
                     <button
                       className={`action-btn audit-btn ${isAudited ? 'audited' : ''}`}
                       onClick={async (e) => {
@@ -1636,7 +1735,7 @@ const EmployeeAssignedClients = () => {
     );
   };
 
-  /* ================= RENDER DOCUMENT PREVIEW ================= */
+  /* ================= RENDER DOCUMENT PREVIEW WITH CSV SUPPORT ================= */
   const renderDocumentPreview = () => {
     if (!previewDoc || !isPreviewOpen) return null;
 
@@ -1689,6 +1788,7 @@ const EmployeeAssignedClients = () => {
                   {fileType === 'pdf' && <FiFileText size={18} />}
                   {fileType === 'image' && <FiImage size={18} />}
                   {fileType === 'excel' && <FiGrid size={18} />}
+                  {fileType === 'csv' && <FiGrid size={18} />}
                   {fileType === 'other' && <FiFile size={18} />}
                 </span>
 
@@ -1736,7 +1836,6 @@ const EmployeeAssignedClients = () => {
                 </span>
               </button>
 
-              {/* NEW: AUDIT BUTTON IN PREVIEW */}
               <button
                 className={`audit-preview-btn ${isFileAudited ? 'audited' : ''}`}
                 onClick={async () => {
@@ -1878,6 +1977,84 @@ const EmployeeAssignedClients = () => {
                       onDragStart={(e) => e.preventDefault()}
                     />
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* CSV VIEWER WITH ZOOM */}
+            {fileType === 'csv' && (
+              <div className="csv-viewer-wrapper">
+                <div className="zoom-controls">
+                  <button
+                    onClick={() => setCsvZoomLevel(prev => Math.max(prev - 0.1, 0.5))}
+                    disabled={csvZoomLevel <= 0.5}
+                    className="zoom-btn"
+                    title="Zoom Out"
+                  >
+                    <FiZoomOut size={18} />
+                  </button>
+                  <span className="zoom-level">{Math.round(csvZoomLevel * 100)}%</span>
+                  <button
+                    onClick={() => setCsvZoomLevel(prev => Math.min(prev + 0.1, 3))}
+                    disabled={csvZoomLevel >= 3}
+                    className="zoom-btn"
+                    title="Zoom In"
+                  >
+                    <FiZoomIn size={18} />
+                  </button>
+                  <button
+                    onClick={() => setCsvZoomLevel(1)}
+                    className="zoom-btn reset"
+                    title="Reset Zoom"
+                  >
+                    <FiMaximize size={16} />
+                    <span>Reset</span>
+                  </button>
+                </div>
+
+                <div 
+                  className="csv-scroll-container"
+                  style={{
+                    flex: 1,
+                    overflow: 'auto',
+                    background: '#ffffff',
+                    position: 'relative'
+                  }}
+                >
+                  {csvLoading ? (
+                    <div className="csv-loading">
+                      <div className="loading-spinner-small"></div>
+                      <p>Loading CSV data...</p>
+                    </div>
+                  ) : csvData ? (
+                    <div 
+                      className="csv-table-container"
+                      style={{
+                        display: 'inline-block',
+                        minWidth: '100%',
+                      }}
+                    >
+                      <div
+                        style={{
+                          zoom: csvZoomLevel,
+                          MozTransform: `scale(${csvZoomLevel})`,
+                          MozTransformOrigin: '0 0',
+                          display: 'inline-block',
+                          minWidth: '100%'
+                        }}
+                      >
+                        <div dangerouslySetInnerHTML={{ __html: csvData }} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="csv-error">Unable to load CSV file</div>
+                  )}
+                </div>
+                <div className="viewer-info">
+                  <FiInfo size={12} />
+                  <span style={{ marginLeft: '5px' }}>
+                    CSV file displayed as table. Use zoom controls to adjust view. Data is read-only.
+                  </span>
                 </div>
               </div>
             )}
@@ -2268,7 +2445,7 @@ const EmployeeAssignedClients = () => {
               )}
             </div>
 
-            {/* Assignments History - Grouped by Month-Year (ALL assignments for selected client) */}
+            {/* Assignments History - Grouped by Month-Year */}
             <div className="assignments-section">
               {activeClient ? (
                 <>

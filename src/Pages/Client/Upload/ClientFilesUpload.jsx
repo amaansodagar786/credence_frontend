@@ -52,7 +52,7 @@ const ClientFilesUpload = () => {
     const [year, setYear] = useState(currentYear.toString());
     const [month, setMonth] = useState(currentMonth.toString());
 
-    // ✅ State to track if month is active for this client
+    // State to track if month is active for this client
     const [isMonthActive, setIsMonthActive] = useState(true);
 
     // State for existing month data
@@ -86,11 +86,16 @@ const ClientFilesUpload = () => {
     const [previewDoc, setPreviewDoc] = useState(null);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-    /* ================= ZOOM AND PAN STATES ================= */
+    // Zoom and Pan States
     const [zoomLevel, setZoomLevel] = useState(1);
     const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+    // CSV STATES
+    const [csvData, setCsvData] = useState(null);
+    const [csvLoading, setCsvLoading] = useState(false);
+    const [csvZoomLevel, setCsvZoomLevel] = useState(1);
 
     // State for deleted files audit trail
     const [deletedFiles, setDeletedFiles] = useState([]);
@@ -117,7 +122,7 @@ const ClientFilesUpload = () => {
     const [employeeAssignments, setEmployeeAssignments] = useState([]);
     const [selectedTask, setSelectedTask] = useState(null);
 
-    // ===== State for View All Files Modal =====
+    // State for View All Files Modal
     const [viewAllModal, setViewAllModal] = useState({
         isOpen: false,
         categoryType: null,
@@ -126,23 +131,20 @@ const ClientFilesUpload = () => {
         files: []
     });
 
-    // ===== Google Drive State =====
-    // We no longer need driveAccessToken state – token is passed directly
+    // Google Drive State
     const [clientData, setClientData] = useState(null);
-
-    // ===== Google Drive loading state =====
     const [driveLoading, setDriveLoading] = useState(false);
 
     // Ref for protection
     const previewRef = useRef(null);
-    const imageScrollRef = useRef(null); // Add this line
+    const imageScrollRef = useRef(null);
 
     const monthNames = [
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
     ];
 
-    // ===== Toast Configuration =====
+    // Toast Configuration
     const showSuccess = (message) => {
         toast.success(message, {
             position: "top-center",
@@ -191,14 +193,12 @@ const ClientFilesUpload = () => {
         });
     };
 
-
-    // ✅ ADD THIS - Mouse wheel zoom for images
+    // Mouse wheel zoom for images
     useEffect(() => {
         const el = imageScrollRef.current;
         if (!el || !isPreviewOpen) return;
 
         const handleWheel = (e) => {
-            // Only zoom if we're in image preview mode
             const previewDocFileType = previewDoc?.fileType || getFileType(previewDoc?.fileName);
             if (previewDocFileType !== 'image') return;
 
@@ -222,7 +222,8 @@ const ClientFilesUpload = () => {
             el.removeEventListener('touchmove', blockPinch);
         };
     }, [isPreviewOpen, previewDoc]);
-    /* ================= ZOOM FUNCTIONS ================= */
+
+    // Zoom functions
     const handleZoomIn = () => {
         setZoomLevel(prev => Math.min(prev + 0.25, 3));
     };
@@ -236,7 +237,7 @@ const ClientFilesUpload = () => {
         setImagePosition({ x: 0, y: 0 });
     };
 
-    /* ================= PAN FUNCTIONS FOR IMAGES ================= */
+    // Pan functions for images
     const handleMouseDown = (e) => {
         if (zoomLevel > 1) {
             setIsDragging(true);
@@ -260,16 +261,90 @@ const ClientFilesUpload = () => {
         setIsDragging(false);
     };
 
-    // ===== Load Google Identity Services + Google Picker Script =====
+    // CSV HELPER FUNCTIONS
+    const escapeHtmlForCSV = (str) => {
+        if (!str) return '';
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    };
+
+    const parseCSVAndDisplay = async (csvUrl) => {
+        try {
+            setCsvLoading(true);
+            const response = await fetch(csvUrl);
+            const csvText = await response.text();
+
+            const rows = [];
+            const lines = csvText.split(/\r?\n/);
+
+            for (const line of lines) {
+                if (!line.trim()) continue;
+
+                const row = [];
+                let inQuote = false;
+                let currentCell = '';
+
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+
+                    if (char === '"') {
+                        inQuote = !inQuote;
+                    } else if (char === ',' && !inQuote) {
+                        row.push(currentCell);
+                        currentCell = '';
+                    } else {
+                        currentCell += char;
+                    }
+                }
+                row.push(currentCell);
+                rows.push(row);
+            }
+
+            if (rows.length === 0) {
+                setCsvData('<div class="csv-error">No data found in CSV file</div>');
+                return;
+            }
+
+            let html = '<div class="csv-table-wrapper"><table class="csv-preview-table">';
+
+            if (rows[0]) {
+                html += '<thead><tr>';
+                rows[0].forEach(cell => {
+                    html += `<th>${escapeHtmlForCSV(cell)}</th>`;
+                });
+                html += '</thead>';
+            }
+
+            html += '<tbody>';
+            for (let i = 1; i < rows.length; i++) {
+                html += '<tr>';
+                rows[i].forEach(cell => {
+                    html += `<td>${escapeHtmlForCSV(cell)}</td>`;
+                });
+                html += '</tr>';
+            }
+            html += '</tbody></table></div>';
+
+            setCsvData(html);
+        } catch (error) {
+            console.error("Error parsing CSV:", error);
+            setCsvData('<div class="csv-error">Error loading CSV file</div>');
+        } finally {
+            setCsvLoading(false);
+        }
+    };
+
+    // Load Google Identity Services + Google Picker Script
     useEffect(() => {
-        // Load GIS
         const gisScript = document.createElement("script");
         gisScript.src = "https://accounts.google.com/gsi/client";
         gisScript.async = true;
         gisScript.onload = () => console.log("Google Identity Services loaded");
         document.body.appendChild(gisScript);
 
-        // Load Google API (for Picker)
         const gapiScript = document.createElement("script");
         gapiScript.src = "https://apis.google.com/js/api.js";
         gapiScript.onload = () => {
@@ -281,16 +356,13 @@ const ClientFilesUpload = () => {
     }, []);
 
     const getFileType = (file) => {
-        // Case 1: If we have fileType from MongoDB, use it first (most reliable)
         if (file.fileType) {
             const fileTypeLower = file.fileType.toLowerCase();
 
-            // PDF check
             if (fileTypeLower.includes('pdf')) {
                 return 'pdf';
             }
 
-            // Image check (jpeg, jpg, png, gif, webp, heic, heif)
             if (fileTypeLower.includes('jpeg') ||
                 fileTypeLower.includes('jpg') ||
                 fileTypeLower.includes('png') ||
@@ -302,36 +374,39 @@ const ClientFilesUpload = () => {
                 return 'image';
             }
 
-            // Excel/CSV check
+            if (fileTypeLower.includes('csv')) {
+                return 'csv';
+            }
+
             if (fileTypeLower.includes('sheet') ||
                 fileTypeLower.includes('excel') ||
-                fileTypeLower.includes('csv') ||
                 fileTypeLower.includes('spreadsheetml')) {
                 return 'excel';
             }
         }
 
-        // Case 2: Try from URL if fileType not available
         if (file.url) {
             const urlLower = file.url.toLowerCase();
             if (urlLower.includes('.pdf')) return 'pdf';
+            if (urlLower.includes('.csv')) return 'csv';
             if (urlLower.includes('.jpg') || urlLower.includes('.jpeg') ||
                 urlLower.includes('.png') || urlLower.includes('.gif') ||
                 urlLower.includes('.webp')) return 'image';
+            if (urlLower.includes('.xls') || urlLower.includes('.xlsx')) return 'excel';
         }
 
-        // Case 3: Try from filename extension (last resort)
         if (file.fileName) {
             const ext = file.fileName.split('.').pop().toLowerCase();
             if (ext === 'pdf') return 'pdf';
+            if (ext === 'csv') return 'csv';
             if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return 'image';
-            if (['xls', 'xlsx', 'csv', 'xlsm'].includes(ext)) return 'excel';
+            if (['xls', 'xlsx', 'xlsm'].includes(ext)) return 'excel';
         }
 
         return 'other';
     };
 
-    /* ================= DELETE MODAL FUNCTIONS ================= */
+    // Delete Modal Functions
     const openDeleteModal = (type, fileName, categoryName = null) => {
         if (!isMonthActive) {
             showError("Cannot delete files - Client was inactive during this period.");
@@ -403,7 +478,7 @@ const ClientFilesUpload = () => {
         }
     };
 
-    /* ================= PROTECTION FUNCTIONS ================= */
+    // Protection Functions
     const applyProtection = () => {
         if (!previewRef.current) return;
 
@@ -428,7 +503,6 @@ const ClientFilesUpload = () => {
         previewRef.current.addEventListener('dragstart', disableDragStart);
     };
 
-    /* ================= CLEANUP PROTECTION ================= */
     const cleanupProtection = () => {
         if (!previewRef.current) return;
 
@@ -439,25 +513,30 @@ const ClientFilesUpload = () => {
         }
     };
 
-    /* ================= OPEN DOCUMENT PREVIEW ================= */
+    // Open Document Preview
     const openDocumentPreview = (document) => {
         if (!document || !document.url) return;
 
         setZoomLevel(1);
         setImagePosition({ x: 0, y: 0 });
         setIsDragging(false);
+        setCsvData(null);
+        setCsvZoomLevel(1);
 
-        // const fileType = getFileType(document.fileName); 
         const fileType = getFileType(document);
         setPreviewDoc({ ...document, fileType });
         setIsPreviewOpen(true);
+
+        if (fileType === 'csv') {
+            parseCSVAndDisplay(document.url);
+        }
 
         setTimeout(() => {
             applyProtection();
         }, 100);
     };
 
-    /* ================= CLOSE DOCUMENT PREVIEW ================= */
+    // Close Document Preview
     const closeDocumentPreview = () => {
         cleanupProtection();
         setIsPreviewOpen(false);
@@ -465,9 +544,12 @@ const ClientFilesUpload = () => {
         setZoomLevel(1);
         setImagePosition({ x: 0, y: 0 });
         setIsDragging(false);
+        setCsvData(null);
+        setCsvLoading(false);
+        setCsvZoomLevel(1);
     };
 
-    /* ================= OPEN VIEW ALL MODAL ================= */
+    // Open View All Modal
     const openViewAllModal = (categoryType, categoryName = null, categoryLabel) => {
         if (!monthData) return;
 
@@ -492,7 +574,7 @@ const ClientFilesUpload = () => {
         });
     };
 
-    /* ================= CLOSE VIEW ALL MODAL ================= */
+    // Close View All Modal
     const closeViewAllModal = () => {
         setViewAllModal({
             isOpen: false,
@@ -587,7 +669,7 @@ const ClientFilesUpload = () => {
         }
     };
 
-    /* ================= FETCH DELETED FILES ================= */
+    // Fetch Deleted Files
     const fetchDeletedFiles = async () => {
         if (!year || !month) return;
 
@@ -605,7 +687,7 @@ const ClientFilesUpload = () => {
         }
     };
 
-    /* ================= HANDLE MONTH/YEAR CHANGE ================= */
+    // Handle Month/Year Change
     useEffect(() => {
         if (year && month) {
             fetchMonthData(year, month);
@@ -613,7 +695,7 @@ const ClientFilesUpload = () => {
         }
     }, [year, month]);
 
-    /* ================= CHECK IF CATEGORY CAN BE UPDATED ================= */
+    // Check if category can be updated
     const canUpdateCategory = (categoryType, categoryName = null) => {
         if (!isMonthActive) return false;
 
@@ -634,7 +716,7 @@ const ClientFilesUpload = () => {
         return true;
     };
 
-    /* ================= CHECK IF THIS IS AN UPDATE ================= */
+    // Check if this is an update
     const isUpdate = (categoryType, categoryName = null) => {
         if (!monthData) return false;
 
@@ -647,19 +729,19 @@ const ClientFilesUpload = () => {
         }
     };
 
-    /* ================= CHECK IF UPDATE MODE ================= */
+    // Check if update mode
     const isUpdateMode = (categoryType, categoryName = null) => {
         if (!monthData) return false;
         return monthData.wasLockedOnce && isUpdate(categoryType, categoryName);
     };
 
-    /* ================= CHECK IF NOTE IS REQUIRED ================= */
+    // Check if note is required
     const isNoteRequired = (categoryType, categoryName = null) => {
         if (!monthData) return false;
         return monthData.wasLockedOnce && isUpdate(categoryType, categoryName);
     };
 
-    /* ================= HANDLE FILES CHANGE ================= */
+    // Handle files change
     const handleFilesChange = (type, files, categoryName = null) => {
         if (!isMonthActive) {
             showError("Cannot upload files - Client was inactive during this period.");
@@ -707,7 +789,7 @@ const ClientFilesUpload = () => {
         }
     };
 
-    /* ================= REMOVE FILE FROM SELECTION ================= */
+    // Remove file from selection
     const removeNewFile = (type, index, categoryName = null) => {
         if (!isMonthActive) {
             showError("Cannot modify files - Client was inactive during this period.");
@@ -738,7 +820,7 @@ const ClientFilesUpload = () => {
         }
     };
 
-    /* ================= ADD NEW OTHER CATEGORY ================= */
+    // Add new other category
     const addOtherCategory = () => {
         if (!isMonthActive) {
             showError("Cannot add categories - Client was inactive during this period.");
@@ -755,8 +837,6 @@ const ClientFilesUpload = () => {
             return;
         }
 
-        // ✅ ADD THIS NEW VALIDATION HERE
-        const mainCategories = ["sales", "purchase", "bank"];
         const mainCategoryNames = ["Sales", "Purchase", "Bank"];
 
         const isMainCategory = mainCategoryNames.some(
@@ -779,7 +859,8 @@ const ClientFilesUpload = () => {
         setNewOtherCategory("");
         showSuccess(`Category "${newCat.categoryName}" added successfully`);
     };
-    /* ================= UPLOAD FILES ================= */
+
+    // Upload files
     const uploadFiles = async (type, files, categoryName = null, isReplacement = false, replacedFileName = null, lockAfterUpload = false) => {
         if (!isMonthActive) {
             showError("Cannot upload files - Client was inactive during this period.");
@@ -902,7 +983,7 @@ const ClientFilesUpload = () => {
         }
     };
 
-    /* ================= SAVE & LOCK MONTH ================= */
+    // Save & Lock Month
     const saveAndLock = async () => {
         if (!isMonthActive) {
             showError("Cannot lock month - Client was inactive during this period.");
@@ -944,7 +1025,7 @@ const ClientFilesUpload = () => {
         }
     };
 
-    /* ================= GET FILE ICON ================= */
+    // Get file icon
     const getFileIcon = (type) => {
         switch (type) {
             case 'sales': return <FiTrendingUp />;
@@ -954,7 +1035,7 @@ const ClientFilesUpload = () => {
         }
     };
 
-    /* ================= GET STATUS BADGE ================= */
+    // Get status badge
     const getStatusBadge = (isLocked) => (
         <span className={`status-badge ${isLocked ? 'locked' : 'unlocked'}`}>
             {isLocked ? (
@@ -969,8 +1050,7 @@ const ClientFilesUpload = () => {
         </span>
     );
 
-    // ================= NEW DRIVE FUNCTIONS (REPLACED) =================
-
+    // Google Drive Functions
     const authenticateDrive = (categoryInfo) => {
         if (!window.google || !window.google.accounts) {
             showError("Google Identity Services not loaded. Please refresh.");
@@ -985,7 +1065,6 @@ const ClientFilesUpload = () => {
                     showError("Google Drive authentication failed: " + tokenResponse.error);
                     return;
                 }
-                // Open picker with the obtained token
                 openGooglePicker(tokenResponse.access_token, categoryInfo);
             },
         });
@@ -999,25 +1078,21 @@ const ClientFilesUpload = () => {
             return;
         }
 
-        // Scroll to top so picker opens in the right place
         window.scrollTo(0, 0);
 
-        // Create the view - this shows files in a grid with checkboxes
         const view = new window.google.picker.DocsView()
             .setIncludeFolders(true)
-            .setMode(window.google.picker.DocsViewMode.GRID); // GRID mode shows thumbnails with checkboxes
+            .setMode(window.google.picker.DocsViewMode.GRID);
 
         const picker = new window.google.picker.PickerBuilder()
             .addView(view)
             .setOAuthToken(accessToken)
             .setDeveloperKey(import.meta.env.VITE_GOOGLE_API_KEY)
             .setAppId(import.meta.env.VITE_GOOGLE_APP_ID)
-            // This is the KEY feature for multi-select
             .enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED)
             .setCallback((data) => pickerCallback(data, accessToken, categoryInfo))
             .build();
 
-        // Show the picker
         picker.setVisible(true);
     };
 
@@ -1029,7 +1104,6 @@ const ClientFilesUpload = () => {
         const files = data.docs;
         if (!files || files.length === 0) return;
 
-        // Show loading overlay
         setDriveLoading(true);
         showInfo(`Processing ${files.length} file(s) from Google Drive...`);
 
@@ -1039,7 +1113,6 @@ const ClientFilesUpload = () => {
 
         for (const file of files) {
             try {
-                // Call backend proxy
                 const response = await fetch(
                     `${import.meta.env.VITE_API_URL}/api/google-drive-proxy`,
                     {
@@ -1059,7 +1132,6 @@ const ClientFilesUpload = () => {
                     continue;
                 }
 
-                // Get filename from header or use original name
                 const contentDisposition = response.headers.get("Content-Disposition");
                 let filename = file.name;
                 if (contentDisposition) {
@@ -1083,10 +1155,8 @@ const ClientFilesUpload = () => {
             }
         }
 
-        // Hide loading overlay
         setDriveLoading(false);
 
-        // Show summary toast
         if (successCount > 0) {
             showSuccess(`Successfully downloaded ${successCount} file(s) from Google Drive.`);
         }
@@ -1096,11 +1166,9 @@ const ClientFilesUpload = () => {
 
         if (downloadedFiles.length === 0) return;
 
-        // Add files to the appropriate category state
         const { type, categoryName } = categoryInfo;
 
         if (categoryName) {
-            // Other category
             setOtherCategories(prev => {
                 const updated = [...prev];
                 const idx = updated.findIndex(c => c.categoryName === categoryName);
@@ -1113,7 +1181,6 @@ const ClientFilesUpload = () => {
                 return updated;
             });
         } else {
-            // Main category (sales, purchase, bank)
             setNewFiles(prev => ({
                 ...prev,
                 [type]: [...(prev[type] || []), ...downloadedFiles],
@@ -1121,9 +1188,7 @@ const ClientFilesUpload = () => {
         }
     };
 
-    // ================= END NEW DRIVE FUNCTIONS =================
-
-    /* ================= RENDER EXISTING FILES INFO ================= */
+    // Render Existing Files Info
     const renderExistingFilesInfo = (category, categoryType, categoryName = null) => {
         if (!category || !category.files || category.files.length === 0) return null;
 
@@ -1154,7 +1219,7 @@ const ClientFilesUpload = () => {
                 </div>
 
                 <div className="files-list">
-                    {category.files.map((file, index) => (
+                    {category.files.slice(0, 3).map((file, index) => (
                         <div key={index} className="file-item">
                             <div className="file-icon">
                                 {getFileIcon(categoryType)}
@@ -1249,6 +1314,12 @@ const ClientFilesUpload = () => {
                             </div>
                         </div>
                     ))}
+                    {category.files.length > 3 && (
+                        <div className="more-files-hint">
+                            <FiInfo size={12} />
+                            <span>+{category.files.length - 3} more file(s). Click "View All" to see all files.</span>
+                        </div>
+                    )}
                 </div>
 
                 {category.categoryNotes && category.categoryNotes.length > 0 && (
@@ -1292,7 +1363,7 @@ const ClientFilesUpload = () => {
         );
     };
 
-    /* ================= RENDER SELECTED FILES ================= */
+    // Render Selected Files
     const renderSelectedFiles = (files, type, categoryName = null) => {
         if (!files || files.length === 0) return null;
 
@@ -1347,7 +1418,7 @@ const ClientFilesUpload = () => {
         );
     };
 
-    /* ================= RENDER DELETE MODAL ================= */
+    // Render Delete Modal
     const renderDeleteModal = () => {
         if (!deleteModal.isOpen) return null;
 
@@ -1428,7 +1499,7 @@ const ClientFilesUpload = () => {
         );
     };
 
-    /* ================= RENDER VIEW ALL MODAL ================= */
+    // Render View All Modal
     const renderViewAllModal = () => {
         if (!viewAllModal.isOpen) return null;
 
@@ -1464,8 +1535,6 @@ const ClientFilesUpload = () => {
                                     <div key={index} className="file-list-item">
                                         <div className="file-info">
                                             <div className="file-icon">
-                                                {/* {getFileIcon(viewAllModal.categoryType)} */}
-
                                                 {viewAllModal.categoryType === 'sales' ? <FiTrendingUp /> :
                                                     viewAllModal.categoryType === 'purchase' ? <FiPackage /> :
                                                         viewAllModal.categoryType === 'bank' ? <FiCreditCard /> : <FiFileText />}
@@ -1524,7 +1593,7 @@ const ClientFilesUpload = () => {
         );
     };
 
-    /* ================= RENDER FILE UPLOAD SECTION ================= */
+    // Render File Upload Section
     const renderFileSection = (type, label) => {
         const category = monthData?.[type];
         const canUpload = canUpdateCategory(type);
@@ -1664,7 +1733,7 @@ const ClientFilesUpload = () => {
         );
     };
 
-    /* ================= RENDER OTHER CATEGORY ================= */
+    // Render Other Category
     const renderOtherCategory = (cat, index) => {
         const category = cat.document;
         const canUploadCat = canUpdateCategory("other", cat.categoryName);
@@ -1811,11 +1880,10 @@ const ClientFilesUpload = () => {
         );
     };
 
-    /* ================= RENDER DOCUMENT PREVIEW ================= */
+    // Render Document Preview
     const renderDocumentPreview = () => {
         if (!previewDoc || !isPreviewOpen) return null;
 
-        // const fileType = previewDoc.fileType || getFileType(previewDoc.fileName); 
         const fileType = previewDoc.fileType || getFileType(previewDoc);
 
         const handleOverlayClick = (e) => {
@@ -1845,6 +1913,7 @@ const ClientFilesUpload = () => {
                                 {fileType === 'pdf' && <FiFileText size={18} />}
                                 {fileType === 'image' && <FiImage size={18} />}
                                 {fileType === 'excel' && <FiGrid size={18} />}
+                                {fileType === 'csv' && <FiGrid size={18} />}
                                 {fileType === 'other' && <FiFile size={18} />}
                             </span>
                             {previewDoc.fileName}
@@ -1925,7 +1994,6 @@ const ClientFilesUpload = () => {
                                     </button>
                                 </div>
 
-                                {/* ✅ USE SCROLL CONTAINER LIKE ADMIN - FIXED */}
                                 <div
                                     className="image-scroll-container"
                                     ref={imageScrollRef}
@@ -1976,6 +2044,84 @@ const ClientFilesUpload = () => {
                                             }}
                                         />
                                     </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* CSV VIEWER WITH ZOOM */}
+                        {fileType === 'csv' && (
+                            <div className="csv-viewer-wrapper">
+                                <div className="zoom-controls">
+                                    <button
+                                        onClick={() => setCsvZoomLevel(prev => Math.max(prev - 0.1, 0.5))}
+                                        disabled={csvZoomLevel <= 0.5}
+                                        className="zoom-btn"
+                                        title="Zoom Out"
+                                    >
+                                        <FiZoomOut size={18} />
+                                    </button>
+                                    <span className="zoom-level">{Math.round(csvZoomLevel * 100)}%</span>
+                                    <button
+                                        onClick={() => setCsvZoomLevel(prev => Math.min(prev + 0.1, 3))}
+                                        disabled={csvZoomLevel >= 3}
+                                        className="zoom-btn"
+                                        title="Zoom In"
+                                    >
+                                        <FiZoomIn size={18} />
+                                    </button>
+                                    <button
+                                        onClick={() => setCsvZoomLevel(1)}
+                                        className="zoom-btn reset"
+                                        title="Reset Zoom"
+                                    >
+                                        <FiMaximize size={16} />
+                                        <span>Reset</span>
+                                    </button>
+                                </div>
+
+                                <div
+                                    className="csv-scroll-container"
+                                    style={{
+                                        flex: 1,
+                                        overflow: 'auto',
+                                        background: '#ffffff',
+                                        position: 'relative'
+                                    }}
+                                >
+                                    {csvLoading ? (
+                                        <div className="csv-loading">
+                                            <div className="loading-spinner-small"></div>
+                                            <p>Loading CSV data...</p>
+                                        </div>
+                                    ) : csvData ? (
+                                        <div
+                                            className="csv-table-container"
+                                            style={{
+                                                display: 'inline-block',
+                                                minWidth: '100%',
+                                            }}
+                                        >
+                                            <div
+                                                style={{
+                                                    zoom: csvZoomLevel,
+                                                    MozTransform: `scale(${csvZoomLevel})`,
+                                                    MozTransformOrigin: '0 0',
+                                                    display: 'inline-block',
+                                                    minWidth: '100%'
+                                                }}
+                                            >
+                                                <div dangerouslySetInnerHTML={{ __html: csvData }} />
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="csv-error">Unable to load CSV file</div>
+                                    )}
+                                </div>
+                                <div className="viewer-info">
+                                    <FiInfo size={12} />
+                                    <span style={{ marginLeft: '5px' }}>
+                                        CSV file displayed as table. Use zoom controls to adjust view. Data is read-only.
+                                    </span>
                                 </div>
                             </div>
                         )}
@@ -2187,10 +2333,8 @@ const ClientFilesUpload = () => {
                                 >
                                     <option value="">Choose Year</option>
                                     <option value="2026">2026</option>
-                                    {/* <option value="2027">2027</option> */}
                                     <option value="2025">2025</option>
                                     <option value="2024">2024</option>
-                                    {/* <option value="2023">2023</option> */}
                                 </select>
                             </div>
 
@@ -2519,12 +2663,9 @@ const ClientFilesUpload = () => {
 
                 {/* View All Files Modal */}
                 {renderViewAllModal()}
-
-                {/* ✅ Google Drive Modal REMOVED - Using Google Picker popup instead */}
             </div>
 
-
-            {/* ===== Google Drive Loading Overlay with Modal ===== */}
+            {/* Google Drive Loading Overlay with Modal */}
             {driveLoading && (
                 <div className="drive-loading-overlay">
                     <div className="drive-loading-modal">

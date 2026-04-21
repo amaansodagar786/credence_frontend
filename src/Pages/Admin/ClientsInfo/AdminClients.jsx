@@ -83,6 +83,12 @@ const AdminClients = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
+
+  // NEW: CSV states
+  const [csvData, setCsvData] = useState(null);
+  const [csvLoading, setCsvLoading] = useState(false);
+  const [csvZoomLevel, setCsvZoomLevel] = useState(1);  // ADD THIS
+
   // Client Details Modal
   const [clientDetailsModal, setClientDetailsModal] = useState(false);
 
@@ -98,7 +104,7 @@ const AdminClients = () => {
     severity: "success"
   });
 
-  // ✅ NEW STATES FOR MULTIPLE EMPLOYEE ASSIGNMENTS
+  // NEW STATES FOR MULTIPLE EMPLOYEE ASSIGNMENTS
   const [employeeAssignments, setEmployeeAssignments] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
 
@@ -106,7 +112,7 @@ const AdminClients = () => {
   const [monthLockLoading, setMonthLockLoading] = useState(false);
   const [categoryLockLoading, setCategoryLockLoading] = useState({});
 
-  // ✅ NEW: Payment status states
+  // NEW: Payment status states
   const [paymentStatus, setPaymentStatus] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentNotes, setPaymentNotes] = useState("");
@@ -114,12 +120,16 @@ const AdminClients = () => {
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
 
+  // NEW: CSV states
+  // const [csvData, setCsvData] = useState(null);
+  // const [csvLoading, setCsvLoading] = useState(false); 
+
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
 
   // Years array
-  const years = [currentYear, currentYear - 1 , currentYear - 2 ];
+  const years = [currentYear, currentYear - 1, currentYear - 2];
 
   // Months array
   const months = [
@@ -175,6 +185,89 @@ const AdminClients = () => {
     setIsDragging(false);
   };
 
+  // Helper to escape HTML for CSV
+  const escapeHtmlForCSV = (str) => {
+    if (!str) return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  };
+
+  // Parse CSV and convert to HTML table
+  const parseCSVAndDisplay = async (csvUrl) => {
+    try {
+      setCsvLoading(true);
+      const response = await fetch(csvUrl);
+      const csvText = await response.text();
+
+      // Parse CSV manually
+      const rows = [];
+      const lines = csvText.split(/\r?\n/);
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+
+        // Simple CSV parsing (handles quoted fields)
+        const row = [];
+        let inQuote = false;
+        let currentCell = '';
+
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+
+          if (char === '"') {
+            inQuote = !inQuote;
+          } else if (char === ',' && !inQuote) {
+            row.push(currentCell);
+            currentCell = '';
+          } else {
+            currentCell += char;
+          }
+        }
+        row.push(currentCell); // Push last cell
+
+        rows.push(row);
+      }
+
+      if (rows.length === 0) {
+        setCsvData('<div class="csv-error">No data found in CSV file</div>');
+        return;
+      }
+
+      // Build HTML table
+      let html = '<div class="csv-table-wrapper"><table class="csv-preview-table">';
+
+      // Header row (first row)
+      if (rows[0]) {
+        html += '<thead><tr>';
+        rows[0].forEach(cell => {
+          html += `<th>${escapeHtmlForCSV(cell)}</th>`;
+        });
+        html += '</tr></thead>';
+      }
+
+      // Data rows (remaining rows)
+      html += '<tbody>';
+      for (let i = 1; i < rows.length; i++) {
+        html += '<tr>';
+        rows[i].forEach(cell => {
+          html += `<td>${escapeHtmlForCSV(cell)}</td>`;
+        });
+        html += '</tr>';
+      }
+      html += '</tbody></table></div>';
+
+      setCsvData(html);
+    } catch (error) {
+      console.error("Error parsing CSV:", error);
+      setCsvData('<div class="csv-error">Error loading CSV file</div>');
+    } finally {
+      setCsvLoading(false);
+    }
+  };
+
   /* ================= IMPROVED FILE TYPE DETECTION ================= */
   const getFileType = (file) => {
     // Case 1: If we have fileType from MongoDB, use it first (most reliable)
@@ -186,7 +279,7 @@ const AdminClients = () => {
         return 'pdf';
       }
 
-      // Image check (jpeg, jpg, png, gif, webp, heic, heif)
+      // Image check
       if (fileTypeLower.includes('jpeg') ||
         fileTypeLower.includes('jpg') ||
         fileTypeLower.includes('png') ||
@@ -198,10 +291,14 @@ const AdminClients = () => {
         return 'image';
       }
 
-      // Excel/CSV check
+      // CSV check - MUST COME BEFORE EXCEL
+      if (fileTypeLower.includes('csv')) {
+        return 'csv';
+      }
+
+      // Excel check (but NOT csv)
       if (fileTypeLower.includes('sheet') ||
         fileTypeLower.includes('excel') ||
-        fileTypeLower.includes('csv') ||
         fileTypeLower.includes('spreadsheetml')) {
         return 'excel';
       }
@@ -211,17 +308,20 @@ const AdminClients = () => {
     if (file.url) {
       const urlLower = file.url.toLowerCase();
       if (urlLower.includes('.pdf')) return 'pdf';
+      if (urlLower.includes('.csv')) return 'csv';  // CSV FIRST
       if (urlLower.includes('.jpg') || urlLower.includes('.jpeg') ||
         urlLower.includes('.png') || urlLower.includes('.gif') ||
         urlLower.includes('.webp')) return 'image';
+      if (urlLower.includes('.xls') || urlLower.includes('.xlsx')) return 'excel';
     }
 
     // Case 3: Try from filename extension (last resort)
     if (file.fileName) {
       const ext = file.fileName.split('.').pop().toLowerCase();
       if (ext === 'pdf') return 'pdf';
+      if (ext === 'csv') return 'csv';  // CSV FIRST
       if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return 'image';
-      if (['xls', 'xlsx', 'csv', 'xlsm'].includes(ext)) return 'excel';
+      if (['xls', 'xlsx', 'xlsm'].includes(ext)) return 'excel';
     }
 
     return 'other';
@@ -300,7 +400,6 @@ const AdminClients = () => {
     previewRef.current.removeEventListener('dragstart', () => { });
   };
 
-  /* ================= OPEN DOCUMENT PREVIEW (UPDATED) ================= */
   const openDocumentPreview = (document) => {
     if (!document || !document.url) {
       showSnackbar("No document available to preview", "warning");
@@ -311,11 +410,18 @@ const AdminClients = () => {
     setZoomLevel(1);
     setImagePosition({ x: 0, y: 0 });
     setIsDragging(false);
+    setCsvData(null);
+    setCsvZoomLevel(1);  // ADD THIS LINE - Reset CSV zoom
 
     // Determine file type using the improved function that checks fileType
     const fileType = getFileType(document);
     setPreviewDoc({ ...document, fileType });
     setIsPreviewOpen(true);
+
+    // If it's a CSV, fetch and parse it
+    if (fileType === 'csv') {
+      parseCSVAndDisplay(document.url);
+    }
 
     setTimeout(() => {
       applyProtection();
@@ -330,9 +436,11 @@ const AdminClients = () => {
     setZoomLevel(1);
     setImagePosition({ x: 0, y: 0 });
     setIsDragging(false);
+    setCsvData(null);
+    setCsvLoading(false);
   };
 
-  // ✅ ADDED - useEffect to handle wheel and pinch zoom on image container
+  // useEffect to handle wheel and pinch zoom on image container
   useEffect(() => {
     const el = imageScrollRef.current;
     if (!el || !isPreviewOpen) return;
@@ -359,7 +467,7 @@ const AdminClients = () => {
     };
   }, [isPreviewOpen]);
 
-  /* ================= RENDER DOCUMENT PREVIEW (COMPLETELY UPDATED WITH ZOOM) ================= */
+  /* ================= RENDER DOCUMENT PREVIEW (COMPLETELY UPDATED WITH ZOOM AND CSV) ================= */
   const renderDocumentPreview = () => {
     if (!previewDoc || !isPreviewOpen) return null;
 
@@ -393,6 +501,7 @@ const AdminClients = () => {
                 {fileType === 'pdf' && <FiFileText size={18} />}
                 {fileType === 'image' && <FiImage size={18} />}
                 {fileType === 'excel' && <FiGrid size={18} />}
+                {fileType === 'csv' && <FiGrid size={18} />}
                 {fileType === 'other' && <FiFile size={18} />}
               </span>
               {previewDoc.fileName}
@@ -451,7 +560,7 @@ const AdminClients = () => {
               </div>
             )}
 
-            {/* ✅ IMAGE VIEWER - onWheel removed, ref added */}
+            {/* IMAGE VIEWER */}
             {fileType === 'image' && (
               <div className="image-viewer-wrapper">
                 <div className="zoom-controls">
@@ -515,6 +624,84 @@ const AdminClients = () => {
                       onDragStart={(e) => e.preventDefault()}
                     />
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* CSV Viewer with Zoom - CORRECTED */}
+            {fileType === 'csv' && (
+              <div className="csv-viewer-wrapper">
+                {/* Zoom Controls */}
+                <div className="zoom-controls">
+                  <button
+                    onClick={() => setCsvZoomLevel(prev => Math.max(prev - 0.1, 0.5))}
+                    disabled={csvZoomLevel <= 0.5}
+                    className="zoom-btn"
+                    title="Zoom Out"
+                  >
+                    <FiZoomOut size={18} />
+                  </button>
+                  <span className="zoom-level">{Math.round(csvZoomLevel * 100)}%</span>
+                  <button
+                    onClick={() => setCsvZoomLevel(prev => Math.min(prev + 0.1, 3))}
+                    disabled={csvZoomLevel >= 3}
+                    className="zoom-btn"
+                    title="Zoom In"
+                  >
+                    <FiZoomIn size={18} />
+                  </button>
+                  <button
+                    onClick={() => setCsvZoomLevel(1)}
+                    className="zoom-btn reset"
+                    title="Reset Zoom"
+                  >
+                    <FiMaximize size={16} />
+                    <span>Reset</span>
+                  </button>
+                </div>
+
+                <div
+                  className="csv-scroll-container"
+                  style={{
+                    flex: 1,
+                    overflow: 'auto',
+                    background: '#ffffff',
+                    position: 'relative'
+                  }}
+                >
+                  {csvLoading ? (
+                    <div className="csv-loading">
+                      <div className="loading-spinner-small"></div>
+                      <p>Loading CSV data...</p>
+                    </div>
+                  ) : csvData ? (
+                    <div
+                      className="csv-table-container"
+                      style={{
+                        display: 'inline-block',
+                        minWidth: '100%',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: `${csvZoomLevel * 100}%`,
+                          transformOrigin: 'top left',
+                          display: 'inline-block',
+                          width: '100%'
+                        }}
+                      >
+                        <div dangerouslySetInnerHTML={{ __html: csvData }} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="csv-error">Unable to load CSV file</div>
+                  )}
+                </div>
+                <div className="viewer-info">
+                  <FiInfo size={12} />
+                  <span style={{ marginLeft: '5px' }}>
+                    CSV file displayed as table. Use zoom controls to adjust text size. Data is read-only.
+                  </span>
                 </div>
               </div>
             )}
@@ -708,13 +895,7 @@ const AdminClients = () => {
       console.log("📋 CLIENTS FROM LIST API:", clientsList);
       console.log("📊 Total clients loaded:", clientsList.length);
 
-      // ✅ OPTIMIZATION: No more fetching full details for each client!
-      // The API now returns planSelected in the list, so we can use it directly
       setClients(clientsList);
-
-      // Check for employee notes (if documents exist in the list - they won't)
-      // We'll skip this for now since we don't have documents in the list
-      // checkForEmployeeNotes(clientsList); // This would need documents which we don't have in list
 
     } catch (error) {
       console.error("Error loading clients:", error);
@@ -746,7 +927,6 @@ const AdminClients = () => {
       }
     } catch (error) {
       console.error("Error loading payment status:", error);
-      // Don't show error to user, just log it
     }
   };
 
@@ -913,7 +1093,7 @@ const AdminClients = () => {
 
       setSelectedClient(clientData);
 
-      // ✅ UPDATED: Set employee assignments array
+      // UPDATED: Set employee assignments array
       const enrichedAssignments = clientData.employeeAssignments || [];
       setEmployeeAssignments(enrichedAssignments);
 
