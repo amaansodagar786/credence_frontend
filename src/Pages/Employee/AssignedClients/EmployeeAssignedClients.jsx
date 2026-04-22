@@ -121,20 +121,20 @@ const EmployeeAssignedClients = () => {
       setCsvLoading(true);
       const response = await fetch(csvUrl);
       const csvText = await response.text();
-      
+
       const rows = [];
       const lines = csvText.split(/\r?\n/);
-      
+
       for (const line of lines) {
         if (!line.trim()) continue;
-        
+
         const row = [];
         let inQuote = false;
         let currentCell = '';
-        
+
         for (let i = 0; i < line.length; i++) {
           const char = line[i];
-          
+
           if (char === '"') {
             inQuote = !inQuote;
           } else if (char === ',' && !inQuote) {
@@ -147,14 +147,14 @@ const EmployeeAssignedClients = () => {
         row.push(currentCell);
         rows.push(row);
       }
-      
+
       if (rows.length === 0) {
         setCsvData('<div class="csv-error">No data found in CSV file</div>');
         return;
       }
-      
+
       let html = '<div class="csv-table-wrapper"><table class="csv-preview-table">';
-      
+
       if (rows[0]) {
         html += '<thead><tr>';
         rows[0].forEach(cell => {
@@ -162,7 +162,7 @@ const EmployeeAssignedClients = () => {
         });
         html += '</thead>';
       }
-      
+
       html += '<tbody>';
       for (let i = 1; i < rows.length; i++) {
         html += '<tr>';
@@ -172,7 +172,7 @@ const EmployeeAssignedClients = () => {
         html += '</tr>';
       }
       html += '</tbody></table></div>';
-      
+
       setCsvData(html);
     } catch (error) {
       console.error("Error parsing CSV:", error);
@@ -451,13 +451,13 @@ const EmployeeAssignedClients = () => {
             categoryType: category.type,
             categoryName: category.name || null,
             fileName: file.fileName,
-            url: file.url
+            url: file.url  // ← ADD THIS
           });
           await checkFileAuditStatus({
             categoryType: category.type,
             categoryName: category.name || null,
             fileName: file.fileName,
-            url: file.url
+            url: file.url  // ← ADD THIS
           });
         }
       }
@@ -545,7 +545,7 @@ const EmployeeAssignedClients = () => {
 
       const clientId = activeAssignment.client.clientId;
       const { year, month } = activeAssignment;
-      const { categoryType, categoryName, fileName } = fileData;
+      const { categoryType, categoryName, fileName, url } = fileData;
 
       const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/employee/check-file-viewed`,
@@ -556,13 +556,15 @@ const EmployeeAssignedClients = () => {
             month,
             categoryType,
             categoryName: categoryName || undefined,
-            fileName
+            fileName,
+            fileUrl: url
           },
           withCredentials: true
         }
       );
 
-      const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}`;
+      // INCLUDE url in the key for unique identification
+      const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}-${url || 'no-url'}`;
 
       setFileViewedStatus(prev => ({
         ...prev,
@@ -595,6 +597,12 @@ const EmployeeAssignedClients = () => {
       const { year, month, task } = activeAssignment;
       const { categoryType, categoryName, fileName, url } = fileData;
 
+      // VALIDATE url exists
+      if (!url) {
+        console.error("No fileUrl provided for file:", fileName);
+        return null;
+      }
+
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/employee/toggle-file-viewed`,
         {
@@ -610,7 +618,8 @@ const EmployeeAssignedClients = () => {
         { withCredentials: true }
       );
 
-      const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}`;
+      // INCLUDE url in the key for unique identification
+      const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}-${url}`;
 
       setFileViewedStatus(prev => ({
         ...prev,
@@ -633,9 +642,10 @@ const EmployeeAssignedClients = () => {
 
     const clientId = activeAssignment.client.clientId;
     const { year, month } = activeAssignment;
-    const { categoryType, categoryName, fileName } = fileData;
+    const { categoryType, categoryName, fileName, url } = fileData;
 
-    const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}`;
+    // USE url in the key to make it unique across same-named files
+    const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}-${url || 'no-url'}`;
 
     return fileViewedStatus[fileKey] || false;
   };
@@ -649,7 +659,7 @@ const EmployeeAssignedClients = () => {
 
       const clientId = activeAssignment.client.clientId;
       const { year, month } = activeAssignment;
-      const { categoryType, categoryName, fileName } = fileData;
+      const { categoryType, categoryName, fileName, url } = fileData;
 
       const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/employee/check-file-audited`,
@@ -660,13 +670,15 @@ const EmployeeAssignedClients = () => {
             month,
             categoryType,
             categoryName: categoryName || undefined,
-            fileName
+            fileName,
+            fileUrl: url
           },
           withCredentials: true
         }
       );
 
-      const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}`;
+      // INCLUDE url in the key for unique identification
+      const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}-${url || 'no-url'}`;
 
       setFileAuditStatus(prev => ({
         ...prev,
@@ -682,6 +694,7 @@ const EmployeeAssignedClients = () => {
       setCheckingAudit(false);
     }
   };
+
 
   /* ================= TOGGLE FILE AUDIT STATUS ================= */
   const toggleFileAudit = async (fileData) => {
@@ -699,6 +712,12 @@ const EmployeeAssignedClients = () => {
       const { year, month, task } = activeAssignment;
       const { categoryType, categoryName, fileName, url } = fileData;
 
+      // VALIDATE url exists
+      if (!url) {
+        console.error("No fileUrl provided for file:", fileName);
+        return null;
+      }
+
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/employee/toggle-file-audited`,
         {
@@ -714,7 +733,8 @@ const EmployeeAssignedClients = () => {
         { withCredentials: true }
       );
 
-      const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}`;
+      // INCLUDE url in the key for unique identification
+      const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}-${url}`;
 
       setFileAuditStatus(prev => ({
         ...prev,
@@ -737,13 +757,13 @@ const EmployeeAssignedClients = () => {
 
     const clientId = activeAssignment.client.clientId;
     const { year, month } = activeAssignment;
-    const { categoryType, categoryName, fileName } = fileData;
+    const { categoryType, categoryName, fileName, url } = fileData;
 
-    const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}`;
+    // USE url in the key to make it unique across same-named files
+    const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}-${url || 'no-url'}`;
 
     return fileAuditStatus[fileKey] || false;
   };
-
   /* ================= DOCUMENT PREVIEW PROTECTION ================= */
   const applyProtection = () => {
     if (!previewRef.current) return;
@@ -1384,13 +1404,15 @@ const EmployeeAssignedClients = () => {
               const isViewed = getFileViewedStatus({
                 categoryType: categoryName ? 'other' : title.toLowerCase().split(' ')[0],
                 categoryName: categoryName || null,
-                fileName: file.fileName
+                fileName: file.fileName,
+                url: file.url
               });
 
               const isAudited = getFileAuditStatus({
                 categoryType: categoryName ? 'other' : title.toLowerCase().split(' ')[0],
                 categoryName: categoryName || null,
-                fileName: file.fileName
+                fileName: file.fileName,
+                url: file.url
               });
 
               return (
@@ -2012,7 +2034,7 @@ const EmployeeAssignedClients = () => {
                   </button>
                 </div>
 
-                <div 
+                <div
                   className="csv-scroll-container"
                   style={{
                     flex: 1,
@@ -2027,7 +2049,7 @@ const EmployeeAssignedClients = () => {
                       <p>Loading CSV data...</p>
                     </div>
                   ) : csvData ? (
-                    <div 
+                    <div
                       className="csv-table-container"
                       style={{
                         display: 'inline-block',
