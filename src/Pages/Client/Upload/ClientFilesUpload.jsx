@@ -406,6 +406,53 @@ const ClientFilesUpload = () => {
         return 'other';
     };
 
+    const lockCategoryOnly = async (type, categoryName = null) => {
+        if (!isMonthActive) {
+            showError("Cannot lock category - Client was inactive during this period.");
+            return;
+        }
+
+        // REMOVE THIS NOTE CHECK - Locking doesn't require note!
+        // Note is only for UPLOADING, not for LOCKING
+
+        setLoading(true);
+
+        try {
+            const response = await axios.post(
+                `${import.meta.env.VITE_API_URL}/clientupload/lock-category`,
+                {
+                    year,
+                    month,
+                    type,
+                    categoryName: categoryName || null,
+                    note: "" // No note required for locking
+                },
+                { withCredentials: true }
+            );
+
+            showSuccess(response.data.message || `Category locked successfully!`);
+
+            // Refresh data
+            fetchMonthData(year, month);
+
+            // Clear notes for this category
+            if (categoryName) {
+                const updatedCategories = otherCategories.map(cat =>
+                    cat.categoryName === categoryName ? { ...cat, note: "" } : cat
+                );
+                setOtherCategories(updatedCategories);
+            } else {
+                setCategoryNotes(prev => ({ ...prev, [type]: "" }));
+            }
+
+        } catch (error) {
+            console.error("Lock category error:", error);
+            showError(error.response?.data?.message || "Failed to lock category");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Delete Modal Functions
     const openDeleteModal = (type, fileName, categoryName = null) => {
         if (!isMonthActive) {
@@ -732,13 +779,13 @@ const ClientFilesUpload = () => {
     // Check if update mode
     const isUpdateMode = (categoryType, categoryName = null) => {
         if (!monthData) return false;
-        return monthData.wasLockedOnce && isUpdate(categoryType, categoryName);
+        return monthData.wasLockedOnce === true;
     };
 
     // Check if note is required
     const isNoteRequired = (categoryType, categoryName = null) => {
         if (!monthData) return false;
-        return monthData.wasLockedOnce && isUpdate(categoryType, categoryName);
+        return monthData.wasLockedOnce === true && isUpdate(categoryType, categoryName);
     };
 
     // Handle files change
@@ -1593,7 +1640,7 @@ const ClientFilesUpload = () => {
         );
     };
 
-    // Render File Upload Section
+    // Render File Upload Section - UPDATED with Lock button next to Choose Files/Drive
     const renderFileSection = (type, label) => {
         const category = monthData?.[type];
         const canUpload = canUpdateCategory(type);
@@ -1601,6 +1648,9 @@ const ClientFilesUpload = () => {
         const noteRequired = isNoteRequired(type);
         const hasNewFiles = newFiles[type] && newFiles[type].length > 0;
         const updateMode = isUpdateMode(type);
+
+        // Lock button shows ONLY in Update Mode AND category is not locked
+        const showLockButton = updateMode && category && !category.isLocked;
 
         const hasNotesInCategory = category?.files?.some(file =>
             file.notes && file.notes.length > 0
@@ -1663,6 +1713,17 @@ const ClientFilesUpload = () => {
                         >
                             <FaGoogleDrive size={20} />
                         </button>
+
+                        {showLockButton && (
+                            <button
+                                className="btn-lock-category"
+                                onClick={() => lockCategoryOnly(type, null)}
+                                disabled={loading || monthInactive}
+                                title="Lock this category"
+                            >
+                                <FiLock size={16} /> Lock Category
+                            </button>
+                        )}
                     </div>
                     <span className="file-input-hint">(Multiple files allowed)</span>
 
@@ -1699,41 +1760,28 @@ const ClientFilesUpload = () => {
 
                 {hasNewFiles && canUpload && !monthInactive && (
                     <div className="upload-buttons">
-                        {!updateMode ? (
-                            <button
-                                className="btn-upload"
-                                onClick={() => uploadFiles(type, newFiles[type])}
-                                disabled={loading || monthInactive}
-                            >
-                                {loading ? (
-                                    <>
-                                        <span className="spinner"></span> Uploading...
-                                    </>
-                                ) : fileUpdate ? (
-                                    `Upload ${newFiles[type].length} Additional File(s)`
-                                ) : (
-                                    `Upload ${newFiles[type].length} File(s)`
-                                )}
-                            </button>
-                        ) : null}
-
-                        {updateMode ? (
-                            <button
-                                className="btn-upload-lock"
-                                onClick={() => uploadFiles(type, newFiles[type], null, false, null, true)}
-                                disabled={loading || monthInactive}
-                                title="Upload and lock this category"
-                            >
-                                <FiLock size={16} /> Upload & Lock File
-                            </button>
-                        ) : null}
+                        <button
+                            className="btn-upload"
+                            onClick={() => uploadFiles(type, newFiles[type])}
+                            disabled={loading || monthInactive}
+                        >
+                            {loading ? (
+                                <>
+                                    <span className="spinner"></span> Uploading...
+                                </>
+                            ) : fileUpdate ? (
+                                `Upload ${newFiles[type].length} Additional File(s)`
+                            ) : (
+                                `Upload ${newFiles[type].length} File(s)`
+                            )}
+                        </button>
                     </div>
                 )}
             </div>
         );
     };
 
-    // Render Other Category
+    // Render Other Category - UPDATED with Lock button next to Choose Files/Drive
     const renderOtherCategory = (cat, index) => {
         const category = cat.document;
         const canUploadCat = canUpdateCategory("other", cat.categoryName);
@@ -1741,6 +1789,9 @@ const ClientFilesUpload = () => {
         const noteRequired = isNoteRequired("other", cat.categoryName);
         const hasNewFiles = cat.newFiles && cat.newFiles.length > 0;
         const updateMode = isUpdateMode("other", cat.categoryName);
+
+        // Lock button shows ONLY in Update Mode AND category is not locked
+        const showLockButton = updateMode && category && !category.isLocked;
 
         const hasNotesInCategory = category?.files?.some(file =>
             file.notes && file.notes.length > 0
@@ -1803,6 +1854,21 @@ const ClientFilesUpload = () => {
                         >
                             <FaGoogleDrive size={20} />
                         </button>
+
+                        {/* LOCK CATEGORY BUTTON - Shows ONLY in Update Mode and category not locked */}
+                        {showLockButton && (
+                            <button
+                                className="btn-lock-category"
+                                onClick={() => {
+                                    console.log("Locking category:", cat.categoryName);
+                                    lockCategoryOnly("other", cat.categoryName);
+                                }}
+                                disabled={loading || monthInactive}
+                                title="Lock this category"
+                            >
+                                <FiLock size={16} /> Lock Category
+                            </button>
+                        )}
                     </div>
                     <span className="file-input-hint">(Multiple files allowed)</span>
 
@@ -1846,34 +1912,21 @@ const ClientFilesUpload = () => {
 
                 {hasNewFiles && canUploadCat && !monthInactive && (
                     <div className="upload-buttons">
-                        {!updateMode ? (
-                            <button
-                                className="btn-upload"
-                                onClick={() => uploadFiles("other", cat.newFiles, cat.categoryName)}
-                                disabled={loading || monthInactive}
-                            >
-                                {loading ? (
-                                    <>
-                                        <span className="spinner"></span> Uploading...
-                                    </>
-                                ) : isCatUpdate ? (
-                                    `Upload ${cat.newFiles.length} Additional File(s)`
-                                ) : (
-                                    `Upload ${cat.newFiles.length} File(s)`
-                                )}
-                            </button>
-                        ) : null}
-
-                        {updateMode ? (
-                            <button
-                                className="btn-upload-lock"
-                                onClick={() => uploadFiles("other", cat.newFiles, cat.categoryName, false, null, true)}
-                                disabled={loading || monthInactive}
-                                title="Upload and lock this category"
-                            >
-                                <FiLock size={16} /> Upload & Lock File
-                            </button>
-                        ) : null}
+                        <button
+                            className="btn-upload"
+                            onClick={() => uploadFiles("other", cat.newFiles, cat.categoryName)}
+                            disabled={loading || monthInactive}
+                        >
+                            {loading ? (
+                                <>
+                                    <span className="spinner"></span> Uploading...
+                                </>
+                            ) : isCatUpdate ? (
+                                `Upload ${cat.newFiles.length} Additional File(s)`
+                            ) : (
+                                `Upload ${cat.newFiles.length} File(s)`
+                            )}
+                        </button>
                     </div>
                 )}
             </div>
@@ -2272,7 +2325,7 @@ const ClientFilesUpload = () => {
 
     return (
         <ClientLayout>
-            <ToastContainer
+            {/* <ToastContainer
                 position="top-center"
                 autoClose={3000}
                 hideProgressBar={false}
@@ -2284,7 +2337,7 @@ const ClientFilesUpload = () => {
                 pauseOnHover
                 theme="light"
                 limit={3}
-            />
+            /> */}
 
             <div className="client-files-upload">
                 {/* Header */}

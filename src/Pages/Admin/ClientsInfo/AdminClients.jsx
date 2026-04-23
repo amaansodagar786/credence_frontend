@@ -129,7 +129,7 @@ const AdminClients = () => {
   const currentMonth = now.getMonth() + 1;
 
   // Years array
-  const years = [currentYear, currentYear - 1, currentYear - 2];
+  const years = [currentYear, currentYear - 1, currentYear - 2 , currentYear + 1];
 
   // Months array
   const months = [
