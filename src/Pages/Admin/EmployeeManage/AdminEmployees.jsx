@@ -176,7 +176,7 @@ const AdminEmployees = () => {
       }
     }
   });
-  // Formik for Assign Client (UPDATED WITH MULTIPLE TASKS)
+  // Formik for Assign Client (UPDATED WITH MULTIPLE TASKS - DOCUMENT CHECK REMOVED)
   const assignFormik = useFormik({
     initialValues: {
       clientId: "",
@@ -188,21 +188,9 @@ const AdminEmployees = () => {
     onSubmit: async (values) => {
       try {
         setLoading(true);
-        // Check if client has documents
-        const documentCheck = await checkClientDocuments(
-          values.clientId,
-          values.year,
-          values.month
-        );
-        if (!documentCheck.hasDocuments) {
-          toast.error(documentCheck.message || "No documents uploaded for selected month", {
-            position: "top-right",
-            autoClose: 5000,
-            theme: "dark"
-          });
-          setLoading(false);
-          return;
-        }
+
+        // ===== DOCUMENT CHECK REMOVED - Proceed directly with assignment =====
+
         // Proceed with multiple tasks assignment
         const response = await axios.post(
           `${import.meta.env.VITE_API_URL}/admin-employee/assign-client`,
@@ -307,19 +295,6 @@ const AdminEmployees = () => {
       setClientTaskStatus(null);
     } finally {
       setLoadingTaskStatus(false);
-    }
-  };
-  // Check if client has documents for month
-  const checkClientDocuments = async (clientId, year, month) => {
-    try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_API_URL}/admin-employee/check-client-documents/${clientId}?year=${year}&month=${month}`,
-        { withCredentials: true }
-      );
-      return res.data;
-    } catch (error) {
-      console.error("Error checking documents:", error);
-      return { hasDocuments: false, message: "Error checking documents" };
     }
   };
   useEffect(() => {
@@ -729,7 +704,7 @@ const AdminEmployees = () => {
                             <div className="employee-role">Employee</div>
                           </div>
                         </td>
-                        <td>
+                        <td className="contact-info-column">
                           <div className="contact-info">
                             <div className="email">
                               <FiMail size={14} /> {employee.email}
@@ -739,7 +714,7 @@ const AdminEmployees = () => {
                             </div>
                           </div>
                         </td>
-                        <td>
+                        <td className="assignments-info-column">
                           <div className="assignments-info">
                             <div className="assignments-count">
                               <FiBriefcase size={16} />
@@ -759,7 +734,7 @@ const AdminEmployees = () => {
                             )}
                           </div>
                         </td>
-                        <td>
+                        <td className="status-column">
                           {employee.isActive ? (
                             <span className="status-badge active">
                               <FiUserCheck size={12} /> Active
@@ -770,7 +745,7 @@ const AdminEmployees = () => {
                             </span>
                           )}
                         </td>
-                        <td>
+                        <td className="actions-column">
                           <div className="action-buttons">
                             {employee.isActive ? (
                               <>
@@ -823,7 +798,7 @@ const AdminEmployees = () => {
             </div>
           )}
         </div>
-        {/* Add/Edit Employee Modal - NO CHANGES */}
+        {/* Add/Edit Employee Modal */}
         {(showAddModal || showEditModal) && (
           <div className="modal-overlay">
             <div className="modal">
@@ -998,7 +973,7 @@ const AdminEmployees = () => {
             </div>
           </div>
         )}
-        {/* Assign Tasks Modal - UPDATED WITH MULTIPLE TASKS AND MOBILE SEARCH */}
+        {/* Assign Tasks Modal - UPDATED WITH MULTIPLE TASKS AND MOBILE SEARCH - DOCUMENT CHECK REMOVED */}
         {showAssignModal && assigningEmployee && (
           <div className="modal-overlay">
             <div className="modal assign-modal">
@@ -1281,42 +1256,7 @@ const AdminEmployees = () => {
                       )}
                     </div>
                   </div>
-                  {/* Document Status Check */}
-                  {clientTaskStatus && assignFormik.values.clientId && assignFormik.values.year && assignFormik.values.month && (
-                    <div className="document-status-check">
-                      <button
-                        type="button"
-                        className="check-docs-btn"
-                        onClick={async () => {
-                          const docCheck = await checkClientDocuments(
-                            assignFormik.values.clientId,
-                            assignFormik.values.year,
-                            assignFormik.values.month
-                          );
-                          if (docCheck.hasDocuments) {
-                            toast.success("✅ " + docCheck.message, {
-                              position: "top-right",
-                              autoClose: 3000,
-                              theme: "dark"
-                            });
-                          } else {
-                            toast.warning("⚠️ " + docCheck.message, {
-                              position: "top-right",
-                              autoClose: 5000,
-                              theme: "dark"
-                            });
-                          }
-                        }}
-                        disabled={loading || loadingTaskStatus}
-                      >
-                        <FiInfo size={16} />
-                        Check Document Status
-                      </button>
-                      <small className="document-hint">
-                        Documents must be uploaded before assigning tasks
-                      </small>
-                    </div>
-                  )}
+                  {/* Document Status Check Section - REMOVED */}
                   {/* Buttons */}
                   <div className="modal-actions">
                     <button
