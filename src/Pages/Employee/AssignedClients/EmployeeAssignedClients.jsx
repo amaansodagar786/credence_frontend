@@ -1771,7 +1771,8 @@ const EmployeeAssignedClients = () => {
       categoryName: previewCategoryName === 'Sales' || previewCategoryName === 'Purchase' || previewCategoryName === 'Bank'
         ? null
         : previewCategoryName,
-      fileName: previewDoc.fileName
+      fileName: previewDoc.fileName,
+      url: previewDoc.url  // ← ADD THIS
     });
 
     const isFileAudited = getFileAuditStatus({
@@ -1779,7 +1780,8 @@ const EmployeeAssignedClients = () => {
       categoryName: previewCategoryName === 'Sales' || previewCategoryName === 'Purchase' || previewCategoryName === 'Bank'
         ? null
         : previewCategoryName,
-      fileName: previewDoc.fileName
+      fileName: previewDoc.fileName,
+      url: previewDoc.url  // ← ADD THIS
     });
 
     const handleOverlayClick = (e) => {
