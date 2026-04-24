@@ -118,6 +118,15 @@ const ClientFilesUpload = () => {
         deleteNote: ""
     });
 
+    // Bulk delete states
+    const [bulkDeleteModal, setBulkDeleteModal] = useState({
+        isOpen: false,
+        selectedFiles: [],
+        deleteNote: ""
+    });
+    const [selectedFilesForDelete, setSelectedFilesForDelete] = useState([]);
+    const [selectAll, setSelectAll] = useState(false);
+
     // State for employee assignment
     const [employeeAssignments, setEmployeeAssignments] = useState([]);
     const [selectedTask, setSelectedTask] = useState(null);
@@ -315,7 +324,7 @@ const ClientFilesUpload = () => {
                 rows[0].forEach(cell => {
                     html += `<th>${escapeHtmlForCSV(cell)}</th>`;
                 });
-                html += '</thead>';
+                html += '</tr></thead>';
             }
 
             html += '<tbody>';
@@ -412,9 +421,6 @@ const ClientFilesUpload = () => {
             return;
         }
 
-        // REMOVE THIS NOTE CHECK - Locking doesn't require note!
-        // Note is only for UPLOADING, not for LOCKING
-
         setLoading(true);
 
         try {
@@ -425,17 +431,15 @@ const ClientFilesUpload = () => {
                     month,
                     type,
                     categoryName: categoryName || null,
-                    note: "" // No note required for locking
+                    note: ""
                 },
                 { withCredentials: true }
             );
 
             showSuccess(response.data.message || `Category locked successfully!`);
 
-            // Refresh data
             fetchMonthData(year, month);
 
-            // Clear notes for this category
             if (categoryName) {
                 const updatedCategories = otherCategories.map(cat =>
                     cat.categoryName === categoryName ? { ...cat, note: "" } : cat
@@ -619,6 +623,10 @@ const ClientFilesUpload = () => {
             categoryLabel,
             files: sortedFiles
         });
+
+        // Reset selections when opening modal
+        setSelectedFilesForDelete([]);
+        setSelectAll(false);
     };
 
     // Close View All Modal
@@ -630,6 +638,8 @@ const ClientFilesUpload = () => {
             categoryLabel: "",
             files: []
         });
+        setSelectedFilesForDelete([]);
+        setSelectAll(false);
     };
 
     const fetchMonthData = async (y, m) => {
@@ -1546,7 +1556,151 @@ const ClientFilesUpload = () => {
         );
     };
 
-    // Render View All Modal
+    // Render Bulk Delete Modal
+    const renderBulkDeleteModal = () => {
+        if (!bulkDeleteModal.isOpen) return null;
+
+        const handleOverlayClick = (e) => {
+            if (e.target === e.currentTarget) {
+                closeBulkDeleteModal();
+            }
+        };
+
+        return (
+            <div className="delete-confirmation-modal">
+                <div className="modal-overlay" onClick={handleOverlayClick}></div>
+                <div className="modal-content">
+                    <div className="modal-header">
+                        <h3>
+                            <FiAlertCircle size={20} /> Confirm Bulk Delete
+                        </h3>
+                        <button className="close-modal-btn" onClick={closeBulkDeleteModal}>
+                            <FiX size={20} />
+                        </button>
+                    </div>
+
+                    <div className="modal-body">
+                        <div className="warning-message">
+                            <FiAlertCircle className="warning-icon" />
+                            <p>Are you sure you want to delete <strong>{bulkDeleteModal.selectedFiles.length} file(s)</strong>?</p>
+                            <div className="files-to-delete-list">
+                                <strong>Files to delete:</strong>
+                                <ul>
+                                    {bulkDeleteModal.selectedFiles.map((fileName, idx) => (
+                                        <li key={idx}>{fileName}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <p className="warning-text">This action will be recorded in the audit trail and cannot be undone.</p>
+                        </div>
+
+                        <div className="delete-reason-section">
+                            <label className="reason-label">
+                                Reason for deletion <span className="required-asterisk">*</span>
+                            </label>
+                            <textarea
+                                className="reason-textarea"
+                                placeholder="Please provide a reason for deleting these files..."
+                                value={bulkDeleteModal.deleteNote}
+                                onChange={(e) => setBulkDeleteModal(prev => ({
+                                    ...prev,
+                                    deleteNote: e.target.value
+                                }))}
+                                rows={3}
+                                required
+                            />
+                            <small className="reason-hint">
+                                This reason will be saved for ALL deleted files in the audit trail
+                            </small>
+                        </div>
+                    </div>
+
+                    <div className="modal-footer">
+                        <button
+                            className="btn-cancel"
+                            onClick={closeBulkDeleteModal}
+                            disabled={loading}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            className="btn-delete-confirm"
+                            onClick={confirmBulkDelete}
+                            disabled={loading || !bulkDeleteModal.deleteNote.trim()}
+                        >
+                            {loading ? (
+                                <>
+                                    <span className="spinner"></span> Deleting...
+                                </>
+                            ) : (
+                                <>
+                                    <FiTrash2 size={16} /> Delete {bulkDeleteModal.selectedFiles.length} File(s)
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const confirmBulkDelete = async () => {
+        if (!bulkDeleteModal.deleteNote.trim()) {
+            showError("Please provide a reason for deletion");
+            return;
+        }
+
+        const filesToDelete = viewAllModal.files.filter(
+            file => bulkDeleteModal.selectedFiles.includes(file.fileName)
+        );
+
+        const filesData = filesToDelete.map(file => ({
+            type: viewAllModal.categoryType,
+            fileName: file.fileName,
+            categoryName: viewAllModal.categoryName || null
+        }));
+
+        setLoading(true);
+
+        try {
+            const response = await axios.post(
+                `${import.meta.env.VITE_API_URL}/clientupload/delete-multiple-files`,
+                {
+                    year,
+                    month,
+                    files: filesData,
+                    deleteNote: bulkDeleteModal.deleteNote.trim()
+                },
+                { withCredentials: true }
+            );
+
+            showSuccess(response.data.message || `${filesToDelete.length} file(s) deleted successfully!`);
+
+            fetchMonthData(year, month);
+            fetchDeletedFiles();
+
+            closeBulkDeleteModal();
+            closeViewAllModal();
+            setSelectedFilesForDelete([]);
+            setSelectAll(false);
+
+        } catch (error) {
+            console.error("Bulk delete error:", error);
+            showError(error.response?.data?.message || "Failed to delete files");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const closeBulkDeleteModal = () => {
+        setBulkDeleteModal({
+            isOpen: false,
+            selectedFiles: [],
+            deleteNote: ""
+        });
+    };
+
+    // Render View All Modal WITH MULTIPLE DELETE
     const renderViewAllModal = () => {
         if (!viewAllModal.isOpen) return null;
 
@@ -1556,91 +1710,204 @@ const ClientFilesUpload = () => {
             }
         };
 
+        // Handle file selection for bulk delete
+        const toggleFileSelection = (fileName) => {
+            setSelectedFilesForDelete(prev => {
+                if (prev.includes(fileName)) {
+                    return prev.filter(f => f !== fileName);
+                } else {
+                    return [...prev, fileName];
+                }
+            });
+        };
+
+        const toggleSelectAll = () => {
+            if (selectAll) {
+                setSelectedFilesForDelete([]);
+            } else {
+                setSelectedFilesForDelete(viewAllModal.files.map(f => f.fileName));
+            }
+            setSelectAll(!selectAll);
+        };
+
+        const openBulkDeleteModal = () => {
+            if (selectedFilesForDelete.length === 0) {
+                showError("Please select files to delete");
+                return;
+            }
+
+            if (!isMonthActive) {
+                showError("Cannot delete files - Client was inactive during this period.");
+                return;
+            }
+
+            setBulkDeleteModal({
+                isOpen: true,
+                selectedFiles: selectedFilesForDelete,
+                deleteNote: ""
+            });
+        };
+
+        // CHECK IF CATEGORY IS UNLOCKED (THIS IS THE ONLY CHECK)
+        const canDeleteFiles = () => {
+            if (!monthData) return false;
+
+            // For "other" category
+            if (viewAllModal.categoryName) {
+                const otherCat = monthData.other?.find(cat => cat.categoryName === viewAllModal.categoryName);
+                // Allow delete ONLY if category exists and is NOT locked
+                return otherCat && !otherCat.document?.isLocked;
+            }
+            // For main categories (sales, purchase, bank)
+            else {
+                const category = monthData[viewAllModal.categoryType];
+                // Allow delete ONLY if category exists and is NOT locked
+                return category && !category.isLocked;
+            }
+        };
+
+        const canDelete = canDeleteFiles();
+
         return (
-            <div className="view-all-modal">
-                <div className="modal-overlay" onClick={handleOverlayClick}></div>
-                <div className="modal-content">
-                    <div className="modal-header">
-                        <h3>
-                            <FiFolder size={20} /> {viewAllModal.categoryLabel}
-                            <span className="file-count-badge">{viewAllModal.files.length} files</span>
-                        </h3>
-                        <button className="close-modal-btn" onClick={closeViewAllModal}>
-                            <FiX size={20} />
-                        </button>
-                    </div>
+            <>
+                <div className="view-all-modal">
+                    <div className="modal-overlay" onClick={handleOverlayClick}></div>
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h3>
+                                <FiFolder size={20} /> {viewAllModal.categoryLabel}
+                                <span className="file-count-badge">{viewAllModal.files.length} files</span>
+                            </h3>
+                            <button className="close-modal-btn" onClick={closeViewAllModal}>
+                                <FiX size={20} />
+                            </button>
+                        </div>
 
-                    <div className="modal-body">
-                        {viewAllModal.files.length === 0 ? (
-                            <div className="no-files-message">
-                                <FiFile size={32} />
-                                <p>No files in this category</p>
-                            </div>
-                        ) : (
-                            <div className="files-list-full">
-                                {viewAllModal.files.map((file, index) => (
-                                    <div key={index} className="file-list-item">
-                                        <div className="file-info">
-                                            <div className="file-icon">
-                                                {viewAllModal.categoryType === 'sales' ? <FiTrendingUp /> :
-                                                    viewAllModal.categoryType === 'purchase' ? <FiPackage /> :
-                                                        viewAllModal.categoryType === 'bank' ? <FiCreditCard /> : <FiFileText />}
-                                                {file.notes && file.notes.length > 0 && (
-                                                    <span className="file-icon-badge-small">
-                                                        <FiBell size={8} />
-                                                    </span>
-                                                )}
+                        <div className="modal-body">
+                            {viewAllModal.files.length === 0 ? (
+                                <div className="no-files-message">
+                                    <FiFile size={32} />
+                                    <p>No files in this category</p>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Bulk Delete Toolbar - Show ONLY if category is UNLOCKED */}
+                                    {canDelete && (
+                                        <div className="bulk-delete-toolbar">
+                                            <div className="select-controls">
+                                                <label className="select-all-checkbox">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectAll}
+                                                        onChange={toggleSelectAll}
+                                                    />
+                                                    <span>Select All</span>
+                                                </label>
+                                                <span className="selected-count">
+                                                    {selectedFilesForDelete.length} file(s) selected
+                                                </span>
                                             </div>
-                                            <div className="file-details-full">
-                                                <div className="file-name-row">
-                                                    <span className="file-name-text" title={file.fileName}>
-                                                        {file.fileName}
-                                                    </span>
-                                                    {file.notes && file.notes.length > 0 && (
-                                                        <span className="notes-indicator">
-                                                            <FiMessageSquare size={12} /> {file.notes.length}
-                                                        </span>
+                                            {selectedFilesForDelete.length > 0 && (
+                                                <button
+                                                    className="btn-bulk-delete"
+                                                    onClick={openBulkDeleteModal}
+                                                    disabled={loading}
+                                                >
+                                                    <FiTrash2 size={16} /> Delete Selected
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Show message if category is locked */}
+                                    {!canDelete && (
+                                        <div className="category-locked-message">
+                                            <FiLock size={14} />
+                                            <span>This category is locked. Cannot delete files.</span>
+                                        </div>
+                                    )}
+
+                                    <div className="files-list-full">
+                                        {viewAllModal.files.map((file, index) => {
+                                            const isSelected = selectedFilesForDelete.includes(file.fileName);
+
+                                            return (
+                                                <div key={index} className={`file-list-item ${isSelected ? 'selected' : ''}`}>
+                                                    {/* Show checkbox ONLY if category is UNLOCKED */}
+                                                    {canDelete && (
+                                                        <div className="file-checkbox">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isSelected}
+                                                                onChange={() => toggleFileSelection(file.fileName)}
+                                                            />
+                                                        </div>
                                                     )}
+                                                    <div className="file-info">
+                                                        <div className="file-icon">
+                                                            {viewAllModal.categoryType === 'sales' ? <FiTrendingUp /> :
+                                                                viewAllModal.categoryType === 'purchase' ? <FiPackage /> :
+                                                                    viewAllModal.categoryType === 'bank' ? <FiCreditCard /> : <FiFileText />}
+                                                            {file.notes && file.notes.length > 0 && (
+                                                                <span className="file-icon-badge-small">
+                                                                    <FiBell size={8} />
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="file-details-full">
+                                                            <div className="file-name-row">
+                                                                <span className="file-name-text" title={file.fileName}>
+                                                                    {file.fileName}
+                                                                </span>
+                                                                {file.notes && file.notes.length > 0 && (
+                                                                    <span className="notes-indicator">
+                                                                        <FiMessageSquare size={12} /> {file.notes.length}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="file-meta-small">
+                                                                <span className="file-size">
+                                                                    <FiFile size={10} /> {(file.fileSize / 1024).toFixed(1)} KB
+                                                                </span>
+                                                                <span className="upload-date">
+                                                                    <FiClock size={10} /> {new Date(file.uploadedAt).toLocaleDateString()}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="file-actions-full">
+                                                        <button
+                                                            className="btn-view-file"
+                                                            onClick={() => {
+                                                                openDocumentPreview(file);
+                                                                closeViewAllModal();
+                                                            }}
+                                                            title="Preview file"
+                                                        >
+                                                            <FiEye size={16} /> View
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <div className="file-meta-small">
-                                                    <span className="file-size">
-                                                        <FiFile size={10} /> {(file.fileSize / 1024).toFixed(1)} KB
-                                                    </span>
-                                                    <span className="upload-date">
-                                                        <FiClock size={10} /> {new Date(file.uploadedAt).toLocaleDateString()}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="file-actions-full">
-                                            <button
-                                                className="btn-view-file"
-                                                onClick={() => {
-                                                    openDocumentPreview(file);
-                                                    closeViewAllModal();
-                                                }}
-                                                title="Preview file"
-                                            >
-                                                <FiEye size={16} /> View
-                                            </button>
-                                        </div>
+                                            );
+                                        })}
                                     </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                                </>
+                            )}
+                        </div>
 
-                    <div className="modal-footer">
-                        <button className="btn-close" onClick={closeViewAllModal}>
-                            Close
-                        </button>
+                        <div className="modal-footer">
+                            <button className="btn-close" onClick={closeViewAllModal}>
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
+                {renderBulkDeleteModal()}
+            </>
         );
     };
 
-    // Render File Upload Section - UPDATED with Lock button next to Choose Files/Drive
+    // Render File Upload Section
     const renderFileSection = (type, label) => {
         const category = monthData?.[type];
         const canUpload = canUpdateCategory(type);
@@ -1649,7 +1916,6 @@ const ClientFilesUpload = () => {
         const hasNewFiles = newFiles[type] && newFiles[type].length > 0;
         const updateMode = isUpdateMode(type);
 
-        // Lock button shows ONLY in Update Mode AND category is not locked
         const showLockButton = updateMode && category && !category.isLocked;
 
         const hasNotesInCategory = category?.files?.some(file =>
@@ -1781,7 +2047,7 @@ const ClientFilesUpload = () => {
         );
     };
 
-    // Render Other Category - UPDATED with Lock button next to Choose Files/Drive
+    // Render Other Category
     const renderOtherCategory = (cat, index) => {
         const category = cat.document;
         const canUploadCat = canUpdateCategory("other", cat.categoryName);
@@ -1790,7 +2056,6 @@ const ClientFilesUpload = () => {
         const hasNewFiles = cat.newFiles && cat.newFiles.length > 0;
         const updateMode = isUpdateMode("other", cat.categoryName);
 
-        // Lock button shows ONLY in Update Mode AND category is not locked
         const showLockButton = updateMode && category && !category.isLocked;
 
         const hasNotesInCategory = category?.files?.some(file =>
@@ -1855,7 +2120,6 @@ const ClientFilesUpload = () => {
                             <FaGoogleDrive size={20} />
                         </button>
 
-                        {/* LOCK CATEGORY BUTTON - Shows ONLY in Update Mode and category not locked */}
                         {showLockButton && (
                             <button
                                 className="btn-lock-category"
@@ -2101,7 +2365,6 @@ const ClientFilesUpload = () => {
                             </div>
                         )}
 
-                        {/* CSV VIEWER WITH ZOOM */}
                         {fileType === 'csv' && (
                             <div className="csv-viewer-wrapper">
                                 <div className="zoom-controls">
@@ -2325,20 +2588,6 @@ const ClientFilesUpload = () => {
 
     return (
         <ClientLayout>
-            {/* <ToastContainer
-                position="top-center"
-                autoClose={3000}
-                hideProgressBar={false}
-                newestOnTop
-                closeOnClick
-                rtl={false}
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-                theme="light"
-                limit={3}
-            /> */}
-
             <div className="client-files-upload">
                 {/* Header */}
                 <div className="upload-header">
