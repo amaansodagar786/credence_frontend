@@ -1039,10 +1039,12 @@ const EmployeeAssignedClients = () => {
     setCsvZoomLevel(1);
   };
 
-  /* ================= ADD NOTE FUNCTIONALITY ================= */
   const openAddNoteModal = (file, categoryType, categoryName = null) => {
     setSelectedFileForNote({
-      file,
+      file: {
+        fileName: file.fileName,
+        fileUrl: file.url      // ✅ ADD THIS LINE
+      },
       categoryType,
       categoryName,
       clientId: activeAssignment.client.clientId,
@@ -1071,6 +1073,7 @@ const EmployeeAssignedClients = () => {
         month: selectedFileForNote.month,
         categoryType: selectedFileForNote.categoryType,
         fileName: selectedFileForNote.file.fileName,
+        fileUrl: selectedFileForNote.file.fileUrl,    // ✅ ADD THIS LINE
         note: newNoteText.trim()
       };
 
@@ -1081,12 +1084,7 @@ const EmployeeAssignedClients = () => {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/employee/add-file-note`,
         noteData,
-        {
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
+        { withCredentials: true }
       );
 
       await loadAssignmentFiles(
