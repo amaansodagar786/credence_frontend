@@ -121,10 +121,13 @@ const ClientFilesUpload = () => {
     // Bulk delete states
     const [bulkDeleteModal, setBulkDeleteModal] = useState({
         isOpen: false,
-        selectedFiles: [],
+        selectedFiles: [],      // Store file names for display
+        selectedFileUrls: [],   // Store file URLs for unique identification
         deleteNote: ""
     });
     const [selectedFilesForDelete, setSelectedFilesForDelete] = useState([]);
+    const [selectedFileUrlsForDelete, setSelectedFileUrlsForDelete] = useState([]);
+
     const [selectAll, setSelectAll] = useState(false);
 
     // State for employee assignment
@@ -455,6 +458,52 @@ const ClientFilesUpload = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Helper function to check for duplicate files in a category
+    const checkDuplicateFilesInCategory = (files, categoryType, categoryName = null) => {
+        const existingFileNames = new Set();
+
+        // Get existing files from the category
+        if (categoryName) {
+            // For "other" categories
+            const otherCategory = monthData?.other?.find(cat => cat.categoryName === categoryName);
+            if (otherCategory?.document?.files) {
+                otherCategory.document.files.forEach(file => {
+                    existingFileNames.add(file.fileName.toLowerCase());
+                });
+            }
+        } else {
+            // For main categories (sales, purchase, bank)
+            const mainCategory = monthData?.[categoryType];
+            if (mainCategory?.files) {
+                mainCategory.files.forEach(file => {
+                    existingFileNames.add(file.fileName.toLowerCase());
+                });
+            }
+        }
+
+        // Check for duplicates
+        const duplicateFiles = [];
+        const newFileNamesSet = new Set();
+        const internalDuplicates = [];
+
+        for (const file of files) {
+            const fileNameLower = file.name.toLowerCase();
+
+            // Check against existing files in the category
+            if (existingFileNames.has(fileNameLower)) {
+                duplicateFiles.push(file.name);
+            }
+
+            // Check for duplicates within the new selection
+            if (newFileNamesSet.has(fileNameLower)) {
+                internalDuplicates.push(file.name);
+            }
+            newFileNamesSet.add(fileNameLower);
+        }
+
+        return { duplicateFiles, internalDuplicates };
     };
 
     // Delete Modal Functions
@@ -798,21 +847,31 @@ const ClientFilesUpload = () => {
         return monthData.wasLockedOnce === true && isUpdate(categoryType, categoryName);
     };
 
-    // Handle files change
+    // Handle files change with duplicate validation
     const handleFilesChange = (type, files, categoryName = null) => {
         if (!isMonthActive) {
-            showError("Cannot upload files - Client was inactive during this period.");
+            showError("❌ Cannot upload files - Client was inactive during this period.");
             return;
         }
 
         const fileArray = Array.from(files);
 
-        const oversizedFiles = fileArray.filter(file => file.size > 10 * 1024 * 1024);
-        if (oversizedFiles.length > 0) {
-            showError(`File(s) too large: ${oversizedFiles.map(f => f.name).join(', ')}. Maximum size is 10MB per file.`);
+        // Check file size (10MB limit total for all files combined)
+        const totalSize = fileArray.reduce((sum, file) => sum + file.size, 0);
+        if (totalSize > 10 * 1024 * 1024) {
+            const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+            showError(`❌ Total file size (${totalSizeMB}MB) exceeds 10MB limit. Please select smaller files.`);
             return;
         }
 
+        // Check individual file size
+        const oversizedFiles = fileArray.filter(file => file.size > 10 * 1024 * 1024);
+        if (oversizedFiles.length > 0) {
+            showError(`❌ File(s) too large: ${oversizedFiles.map(f => f.name).join(', ')}. Maximum size is 10MB per file.`);
+            return;
+        }
+
+        // Check file extensions
         const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'xls', 'xlsx', 'csv'];
         const invalidFiles = fileArray.filter(file => {
             const ext = file.name.split('.').pop().toLowerCase();
@@ -820,10 +879,53 @@ const ClientFilesUpload = () => {
         });
 
         if (invalidFiles.length > 0) {
-            showError(`Invalid file type(s): ${invalidFiles.map(f => f.name).join(', ')}. Allowed: PDF, Images (JPG, PNG, GIF, WEBP, HEIC/HEIF), Excel (XLS, XLSX, CSV)`);
+            showError(`❌ Invalid file type(s): ${invalidFiles.map(f => f.name).join(', ')}. Allowed: PDF, Images (JPG, PNG, GIF, WEBP, HEIC/HEIF), Excel (XLS, XLSX, CSV)`);
             return;
         }
 
+        // Check for duplicate files
+        const { duplicateFiles, internalDuplicates } = checkDuplicateFilesInCategory(fileArray, type, categoryName);
+
+        // Check against currently selected new files (not yet uploaded)
+        let currentNewFiles = [];
+        if (categoryName) {
+            const category = otherCategories.find(cat => cat.categoryName === categoryName);
+            if (category && category.newFiles) {
+                currentNewFiles = category.newFiles.map(f => f.name.toLowerCase());
+            }
+        } else {
+            if (newFiles[type]) {
+                currentNewFiles = newFiles[type].map(f => f.name.toLowerCase());
+            }
+        }
+
+        const duplicatesWithPending = [];
+        for (const file of fileArray) {
+            if (currentNewFiles.includes(file.name.toLowerCase())) {
+                duplicatesWithPending.push(file.name);
+            }
+        }
+
+        // Show appropriate error messages
+        if (duplicateFiles.length > 0) {
+            const errorMsg = `❌ Cannot upload: ${duplicateFiles.join(', ')} - These file(s) already exist in this category.`;
+            showError(errorMsg);
+            return;
+        }
+
+        if (duplicatesWithPending.length > 0) {
+            const errorMsg = `❌ Cannot upload: ${duplicatesWithPending.join(', ')} - These file(s) are already in your pending upload list for this category.`;
+            showError(errorMsg);
+            return;
+        }
+
+        if (internalDuplicates.length > 0) {
+            const errorMsg = `❌ Cannot upload: ${internalDuplicates.join(', ')} - Duplicate file(s) selected in the same upload. Please select unique files.`;
+            showError(errorMsg);
+            return;
+        }
+
+        // If no duplicates, proceed with adding files
         if (categoryName) {
             const updatedCategories = [...otherCategories];
             const catIndex = updatedCategories.findIndex(cat => cat.categoryName === categoryName);
@@ -834,7 +936,9 @@ const ClientFilesUpload = () => {
                     ...fileArray
                 ];
                 setOtherCategories(updatedCategories);
-                showInfo(`${fileArray.length} file(s) added to ${categoryName}`);
+                showSuccess(`✅ ${fileArray.length} file(s) added to ${categoryName}`);
+            } else {
+                showError(`❌ Category "${categoryName}" not found`);
             }
         } else {
             setNewFiles(prev => ({
@@ -842,14 +946,14 @@ const ClientFilesUpload = () => {
                 [type]: [...(prev[type] || []), ...fileArray]
             }));
             const typeNames = { sales: 'Sales', purchase: 'Purchase', bank: 'Bank' };
-            showInfo(`${fileArray.length} file(s) added to ${typeNames[type] || type}`);
+            showSuccess(`✅ ${fileArray.length} file(s) added to ${typeNames[type] || type}`);
         }
     };
 
-    // Remove file from selection
+    // Remove file from selection (updated with better feedback)
     const removeNewFile = (type, index, categoryName = null) => {
         if (!isMonthActive) {
-            showError("Cannot modify files - Client was inactive during this period.");
+            showError("❌ Cannot modify files - Client was inactive during this period.");
             return;
         }
 
@@ -862,7 +966,7 @@ const ClientFilesUpload = () => {
                 updatedCategories[catIndex].newFiles =
                     updatedCategories[catIndex].newFiles.filter((_, i) => i !== index);
                 setOtherCategories(updatedCategories);
-                showInfo(`Removed: ${removedFile.name}`);
+                showInfo(`🗑️ Removed: ${removedFile.name}`);
             }
         } else {
             setNewFiles(prev => {
@@ -871,7 +975,7 @@ const ClientFilesUpload = () => {
                     ...prev,
                     [type]: prev[type].filter((_, i) => i !== index)
                 };
-                showInfo(`Removed: ${removedFile.name}`);
+                showInfo(`🗑️ Removed: ${removedFile.name}`);
                 return updated;
             });
         }
@@ -1650,13 +1754,20 @@ const ClientFilesUpload = () => {
             return;
         }
 
+        // Find files using URL as unique identifier
         const filesToDelete = viewAllModal.files.filter(
-            file => bulkDeleteModal.selectedFiles.includes(file.fileName)
+            file => bulkDeleteModal.selectedFileUrls?.includes(file.url)
         );
+
+        if (filesToDelete.length === 0) {
+            showError("No files selected for deletion");
+            return;
+        }
 
         const filesData = filesToDelete.map(file => ({
             type: viewAllModal.categoryType,
             fileName: file.fileName,
+            fileUrl: file.url, // Include URL for backend validation
             categoryName: viewAllModal.categoryName || null
         }));
 
@@ -1696,11 +1807,12 @@ const ClientFilesUpload = () => {
         setBulkDeleteModal({
             isOpen: false,
             selectedFiles: [],
+            selectedFileUrls: [], // Add this to track URLs
             deleteNote: ""
         });
     };
 
-    // Render View All Modal WITH MULTIPLE DELETE
+    // Render View All Modal WITH MULTIPLE DELETE - Using file URL as unique identifier
     const renderViewAllModal = () => {
         if (!viewAllModal.isOpen) return null;
 
@@ -1710,13 +1822,13 @@ const ClientFilesUpload = () => {
             }
         };
 
-        // Handle file selection for bulk delete
-        const toggleFileSelection = (fileName) => {
+        // Handle file selection for bulk delete using URL as unique identifier
+        const toggleFileSelection = (fileUrl) => {
             setSelectedFilesForDelete(prev => {
-                if (prev.includes(fileName)) {
-                    return prev.filter(f => f !== fileName);
+                if (prev.includes(fileUrl)) {
+                    return prev.filter(f => f !== fileUrl);
                 } else {
-                    return [...prev, fileName];
+                    return [...prev, fileUrl];
                 }
             });
         };
@@ -1725,7 +1837,7 @@ const ClientFilesUpload = () => {
             if (selectAll) {
                 setSelectedFilesForDelete([]);
             } else {
-                setSelectedFilesForDelete(viewAllModal.files.map(f => f.fileName));
+                setSelectedFilesForDelete(viewAllModal.files.map(f => f.url));
             }
             setSelectAll(!selectAll);
         };
@@ -1741,27 +1853,28 @@ const ClientFilesUpload = () => {
                 return;
             }
 
+            // Get file names for display from selected URLs
+            const selectedFileNames = viewAllModal.files
+                .filter(file => selectedFilesForDelete.includes(file.url))
+                .map(file => file.fileName);
+
             setBulkDeleteModal({
                 isOpen: true,
-                selectedFiles: selectedFilesForDelete,
+                selectedFiles: selectedFileNames, // Store names for display
+                selectedFileUrls: selectedFilesForDelete, // Store URLs for actual deletion
                 deleteNote: ""
             });
         };
 
-        // CHECK IF CATEGORY IS UNLOCKED (THIS IS THE ONLY CHECK)
+        // CHECK IF CATEGORY IS UNLOCKED
         const canDeleteFiles = () => {
             if (!monthData) return false;
 
-            // For "other" category
             if (viewAllModal.categoryName) {
                 const otherCat = monthData.other?.find(cat => cat.categoryName === viewAllModal.categoryName);
-                // Allow delete ONLY if category exists and is NOT locked
                 return otherCat && !otherCat.document?.isLocked;
-            }
-            // For main categories (sales, purchase, bank)
-            else {
+            } else {
                 const category = monthData[viewAllModal.categoryType];
-                // Allow delete ONLY if category exists and is NOT locked
                 return category && !category.isLocked;
             }
         };
@@ -1829,17 +1942,17 @@ const ClientFilesUpload = () => {
 
                                     <div className="files-list-full">
                                         {viewAllModal.files.map((file, index) => {
-                                            const isSelected = selectedFilesForDelete.includes(file.fileName);
+                                            const isSelected = selectedFilesForDelete.includes(file.url);
 
                                             return (
-                                                <div key={index} className={`file-list-item ${isSelected ? 'selected' : ''}`}>
+                                                <div key={file.url || index} className={`file-list-item ${isSelected ? 'selected' : ''}`}>
                                                     {/* Show checkbox ONLY if category is UNLOCKED */}
                                                     {canDelete && (
                                                         <div className="file-checkbox">
                                                             <input
                                                                 type="checkbox"
                                                                 checked={isSelected}
-                                                                onChange={() => toggleFileSelection(file.fileName)}
+                                                                onChange={() => toggleFileSelection(file.url)}
                                                             />
                                                         </div>
                                                     )}

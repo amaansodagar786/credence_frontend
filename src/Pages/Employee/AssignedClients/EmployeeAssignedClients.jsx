@@ -72,6 +72,10 @@ const EmployeeAssignedClients = () => {
   const [addingNote, setAddingNote] = useState(false);
   const [activeFilesData, setActiveFilesData] = useState(null);
 
+  /* ================= ALL NOTES MODAL STATE (NEW) ================= */
+  const [showAllNotesModal, setShowAllNotesModal] = useState(false);
+  const [allNotesData, setAllNotesData] = useState({ notes: [], fileName: "", categoryName: "" });
+
   /* ================= DOCUMENT PREVIEW STATES ================= */
   const [previewDoc, setPreviewDoc] = useState(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -156,7 +160,7 @@ const EmployeeAssignedClients = () => {
       let html = '<div class="csv-table-wrapper"><table class="csv-preview-table">';
 
       if (rows[0]) {
-        html += '<thead><tr>';
+        html += '<thead></tr>';
         rows[0].forEach(cell => {
           html += `<th>${escapeHtmlForCSV(cell)}</th>`;
         });
@@ -167,7 +171,7 @@ const EmployeeAssignedClients = () => {
       for (let i = 1; i < rows.length; i++) {
         html += '<tr>';
         rows[i].forEach(cell => {
-          html += `<td>${escapeHtmlForCSV(cell)}</td>`;
+          html += `<tr>${escapeHtmlForCSV(cell)}</table>`;
         });
         html += '</tr>';
       }
@@ -222,16 +226,13 @@ const EmployeeAssignedClients = () => {
 
   /* ================= IMPROVED FILE TYPE DETECTION WITH CSV ================= */
   const getFileType = (file) => {
-    // Case 1: If we have fileType from MongoDB, use it first (most reliable)
     if (file.fileType) {
       const fileTypeLower = file.fileType.toLowerCase();
 
-      // PDF check
       if (fileTypeLower.includes('pdf')) {
         return 'pdf';
       }
 
-      // Image check (jpeg, jpg, png, gif, webp, heic, heif)
       if (fileTypeLower.includes('jpeg') ||
         fileTypeLower.includes('jpg') ||
         fileTypeLower.includes('png') ||
@@ -243,12 +244,10 @@ const EmployeeAssignedClients = () => {
         return 'image';
       }
 
-      // CSV check - MUST COME BEFORE EXCEL
       if (fileTypeLower.includes('csv')) {
         return 'csv';
       }
 
-      // Excel check (but NOT csv)
       if (fileTypeLower.includes('sheet') ||
         fileTypeLower.includes('excel') ||
         fileTypeLower.includes('spreadsheetml')) {
@@ -256,7 +255,6 @@ const EmployeeAssignedClients = () => {
       }
     }
 
-    // Case 2: Try from URL if fileType not available
     if (file.url) {
       const urlLower = file.url.toLowerCase();
       if (urlLower.includes('.pdf')) return 'pdf';
@@ -267,7 +265,6 @@ const EmployeeAssignedClients = () => {
       if (urlLower.includes('.xls') || urlLower.includes('.xlsx')) return 'excel';
     }
 
-    // Case 3: Try from filename extension (last resort)
     if (file.fileName) {
       const ext = file.fileName.split('.').pop().toLowerCase();
       if (ext === 'pdf') return 'pdf';
@@ -451,13 +448,13 @@ const EmployeeAssignedClients = () => {
             categoryType: category.type,
             categoryName: category.name || null,
             fileName: file.fileName,
-            url: file.url  // ← ADD THIS
+            url: file.url
           });
           await checkFileAuditStatus({
             categoryType: category.type,
             categoryName: category.name || null,
             fileName: file.fileName,
-            url: file.url  // ← ADD THIS
+            url: file.url
           });
         }
       }
@@ -563,7 +560,6 @@ const EmployeeAssignedClients = () => {
         }
       );
 
-      // INCLUDE url in the key for unique identification
       const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}-${url || 'no-url'}`;
 
       setFileViewedStatus(prev => ({
@@ -597,7 +593,6 @@ const EmployeeAssignedClients = () => {
       const { year, month, task } = activeAssignment;
       const { categoryType, categoryName, fileName, url } = fileData;
 
-      // VALIDATE url exists
       if (!url) {
         console.error("No fileUrl provided for file:", fileName);
         return null;
@@ -618,7 +613,6 @@ const EmployeeAssignedClients = () => {
         { withCredentials: true }
       );
 
-      // INCLUDE url in the key for unique identification
       const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}-${url}`;
 
       setFileViewedStatus(prev => ({
@@ -644,7 +638,6 @@ const EmployeeAssignedClients = () => {
     const { year, month } = activeAssignment;
     const { categoryType, categoryName, fileName, url } = fileData;
 
-    // USE url in the key to make it unique across same-named files
     const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}-${url || 'no-url'}`;
 
     return fileViewedStatus[fileKey] || false;
@@ -677,7 +670,6 @@ const EmployeeAssignedClients = () => {
         }
       );
 
-      // INCLUDE url in the key for unique identification
       const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}-${url || 'no-url'}`;
 
       setFileAuditStatus(prev => ({
@@ -712,7 +704,6 @@ const EmployeeAssignedClients = () => {
       const { year, month, task } = activeAssignment;
       const { categoryType, categoryName, fileName, url } = fileData;
 
-      // VALIDATE url exists
       if (!url) {
         console.error("No fileUrl provided for file:", fileName);
         return null;
@@ -733,7 +724,6 @@ const EmployeeAssignedClients = () => {
         { withCredentials: true }
       );
 
-      // INCLUDE url in the key for unique identification
       const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}-${url}`;
 
       setFileAuditStatus(prev => ({
@@ -759,11 +749,26 @@ const EmployeeAssignedClients = () => {
     const { year, month } = activeAssignment;
     const { categoryType, categoryName, fileName, url } = fileData;
 
-    // USE url in the key to make it unique across same-named files
     const fileKey = `${clientId}-${year}-${month}-${categoryType}-${categoryName || 'main'}-${fileName}-${url || 'no-url'}`;
 
     return fileAuditStatus[fileKey] || false;
   };
+
+  /* ================= OPEN ALL NOTES MODAL (NEW) ================= */
+  const openAllNotesModal = (notes, fileName, categoryName) => {
+    setAllNotesData({
+      notes: notes,
+      fileName: fileName,
+      categoryName: categoryName
+    });
+    setShowAllNotesModal(true);
+  };
+
+  const closeAllNotesModal = () => {
+    setShowAllNotesModal(false);
+    setAllNotesData({ notes: [], fileName: "", categoryName: "" });
+  };
+
   /* ================= DOCUMENT PREVIEW PROTECTION ================= */
   const applyProtection = () => {
     if (!previewRef.current) return;
@@ -911,7 +916,6 @@ const EmployeeAssignedClients = () => {
     setPreviewDoc({ ...document, fileType, categoryType: actualCategoryType });
     setIsPreviewOpen(true);
 
-    // If CSV, parse it
     if (fileType === 'csv') {
       parseCSVAndDisplay(document.url);
     }
@@ -950,7 +954,6 @@ const EmployeeAssignedClients = () => {
       setCsvData(null);
       setCsvZoomLevel(1);
 
-      // If next file is CSV, parse it
       if (getFileType(nextFile) === 'csv') {
         parseCSVAndDisplay(nextFile.url);
       }
@@ -994,7 +997,6 @@ const EmployeeAssignedClients = () => {
       setCsvData(null);
       setCsvZoomLevel(1);
 
-      // If previous file is CSV, parse it
       if (getFileType(prevFile) === 'csv') {
         parseCSVAndDisplay(prevFile.url);
       }
@@ -1043,7 +1045,7 @@ const EmployeeAssignedClients = () => {
     setSelectedFileForNote({
       file: {
         fileName: file.fileName,
-        fileUrl: file.url      // ✅ ADD THIS LINE
+        fileUrl: file.url
       },
       categoryType,
       categoryName,
@@ -1073,7 +1075,7 @@ const EmployeeAssignedClients = () => {
         month: selectedFileForNote.month,
         categoryType: selectedFileForNote.categoryType,
         fileName: selectedFileForNote.file.fileName,
-        fileUrl: selectedFileForNote.file.fileUrl,    // ✅ ADD THIS LINE
+        fileUrl: selectedFileForNote.file.fileUrl,
         note: newNoteText.trim()
       };
 
@@ -1353,6 +1355,52 @@ const EmployeeAssignedClients = () => {
     );
   };
 
+  /* ================= RENDER ALL NOTES MODAL (NEW) ================= */
+  const renderAllNotesModal = () => {
+    if (!showAllNotesModal) return null;
+
+    return (
+      <div className="modal-overlay" onClick={closeAllNotesModal}>
+        <div className="modal all-notes-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <h3>
+              <FiMessageSquare size={24} /> All Notes
+            </h3>
+            <button className="close-modal" onClick={closeAllNotesModal}>
+              <FiX size={24} />
+            </button>
+          </div>
+          <div className="modal-body">
+            <div className="all-notes-header">
+              <h4>{allNotesData.fileName}</h4>
+              <p className="category-breadcrumb">{allNotesData.categoryName}</p>
+            </div>
+            <div className="all-notes-list">
+              {allNotesData.notes.map((note, index) => (
+                <div key={index} className="all-note-item">
+                  <div className="note-text">{note.note}</div>
+                  <div className="note-meta">
+                    <span className="note-by">
+                      {note.employeeName || note.addedBy || "Unknown"}
+                    </span>
+                    <span className="note-date">
+                      {formatDate(note.addedAt)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="modal-actions">
+            <button className="primary-btn" onClick={closeAllNotesModal}>
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   /* ================= RENDER FILES ================= */
   const renderFilesSection = (title, files, category, categoryName = null) => {
     const categoryKey = `${title}-${categoryName || 'main'}`;
@@ -1462,7 +1510,10 @@ const EmployeeAssignedClients = () => {
                             </div>
                           ))}
                           {file.notes.length > 2 && (
-                            <div className="more-notes">
+                            <div
+                              className="more-notes"
+                              onClick={() => openAllNotesModal(file.notes, file.fileName, title)}
+                            >
                               +{file.notes.length - 2} more employee notes
                             </div>
                           )}
@@ -1770,7 +1821,7 @@ const EmployeeAssignedClients = () => {
         ? null
         : previewCategoryName,
       fileName: previewDoc.fileName,
-      url: previewDoc.url  // ← ADD THIS
+      url: previewDoc.url
     });
 
     const isFileAudited = getFileAuditStatus({
@@ -1779,7 +1830,7 @@ const EmployeeAssignedClients = () => {
         ? null
         : previewCategoryName,
       fileName: previewDoc.fileName,
-      url: previewDoc.url  // ← ADD THIS
+      url: previewDoc.url
     });
 
     const handleOverlayClick = (e) => {
@@ -1907,7 +1958,6 @@ const EmployeeAssignedClients = () => {
               </span>
             </div>
 
-            {/* PDF Viewer */}
             {fileType === 'pdf' && (
               <div className="protected-view-container pdf-viewer-container">
                 <iframe
@@ -1931,7 +1981,6 @@ const EmployeeAssignedClients = () => {
               </div>
             )}
 
-            {/* IMAGE VIEWER */}
             {fileType === 'image' && (
               <div className="image-viewer-wrapper">
                 <div className="zoom-controls">
@@ -2003,7 +2052,6 @@ const EmployeeAssignedClients = () => {
               </div>
             )}
 
-            {/* CSV VIEWER WITH ZOOM */}
             {fileType === 'csv' && (
               <div className="csv-viewer-wrapper">
                 <div className="zoom-controls">
@@ -2081,7 +2129,6 @@ const EmployeeAssignedClients = () => {
               </div>
             )}
 
-            {/* Excel Viewer with Zoom Controls */}
             {fileType === 'excel' && (
               <div className="excel-viewer-wrapper">
                 <div className="zoom-controls">
@@ -2172,7 +2219,6 @@ const EmployeeAssignedClients = () => {
               </div>
             )}
 
-            {/* Other Files */}
             {fileType === 'other' && (
               <div
                 className="protected-view-container other-file-container"
@@ -2790,6 +2836,7 @@ const EmployeeAssignedClients = () => {
         {renderDocumentsModal()}
         {renderAddNoteModal()}
         {renderDocumentPreview()}
+        {renderAllNotesModal()}
       </div>
     </EmployeeLayout>
   );
