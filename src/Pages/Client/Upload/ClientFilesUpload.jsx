@@ -1367,8 +1367,8 @@ const ClientFilesUpload = () => {
                                 onClick={() => openViewAllModal(
                                     categoryType,
                                     categoryName,
-                                    categoryName || (categoryType === 'sales' ? 'Sales Files' :
-                                        categoryType === 'purchase' ? 'Purchase Files' :
+                                    categoryName || (categoryType === 'sales' ? 'Sales Files (Income)' :
+                                        categoryType === 'purchase' ? 'Purchase Files (Purchases)' :
                                             categoryType === 'bank' ? 'Bank Statements' : categoryType)
                                 )}
                                 title="View all files"
@@ -2967,8 +2967,8 @@ const ClientFilesUpload = () => {
                                     </div>
 
                                     <div className="files-grid">
-                                        {renderFileSection("sales", "Sales Files")}
-                                        {renderFileSection("purchase", "Purchase Files")}
+                                        {renderFileSection("sales", "Sales Files (Income)")}
+                                        {renderFileSection("purchase", "Purchase Files (Purchases)")}
                                         {renderFileSection("bank", "Bank Statements")}
                                     </div>
                                 </div>

@@ -1533,8 +1533,8 @@ const EmployeeAssignedClients = () => {
                           displayCategoryName = categoryName;
                         } else {
                           catType = title.toLowerCase().split(' ')[0];
-                          if (title === 'Sales Documents') displayCategoryName = 'Sales';
-                          else if (title === 'Purchase Documents') displayCategoryName = 'Purchase';
+                          if (title === 'Sales Documents (Income)') displayCategoryName = 'Sales';
+                          else if (title === 'Purchase Documents (Expenses)') displayCategoryName = 'Purchase';
                           else if (title === 'Bank Documents') displayCategoryName = 'Bank';
                           else displayCategoryName = title;
                         }
@@ -1662,14 +1662,14 @@ const EmployeeAssignedClients = () => {
           <div className="modal-body">
             <div className="documents-container">
               {renderFilesSection(
-                "Sales Documents",
+                "Sales Documents (Income)" ,
                 activeFilesData.categories?.sales?.files,
                 activeFilesData.categories?.sales,
                 null
               )}
 
               {renderFilesSection(
-                "Purchase Documents",
+                "Purchase Documents (Expenses)",
                 activeFilesData.categories?.purchase?.files,
                 activeFilesData.categories?.purchase,
                 null

@@ -129,7 +129,7 @@ const AdminClients = () => {
   const currentMonth = now.getMonth() + 1;
 
   // Years array
-  const years = [currentYear, currentYear - 1, currentYear - 2 , currentYear + 1];
+  const years = [currentYear, currentYear - 1, currentYear - 2, currentYear + 1];
 
   // Months array
   const months = [
@@ -2205,6 +2205,21 @@ const AdminClients = () => {
                         const isExpanded = expandedFiles[categoryId];
                         const hasAlerts = categoryAlerts[category];
 
+                        // Helper function to get contextual label
+                        const getContextLabel = (cat) => {
+                          if (cat === 'sales') return '(Income)';
+                          if (cat === 'purchase') return '(Expenses)';
+                          return ''; // bank has no label
+                        };
+
+                        // Helper function to get display name
+                        const getDisplayName = (cat) => {
+                          if (cat === 'sales') return 'Sales';
+                          if (cat === 'purchase') return 'Purchase';
+                          if (cat === 'bank') return 'Bank';
+                          return cat.charAt(0).toUpperCase() + cat.slice(1);
+                        };
+
                         return (
                           <div key={category} className="files-category">
                             <div className="category-header">
@@ -2213,7 +2228,14 @@ const AdminClients = () => {
                                   {getFileIcon(category)}
                                 </div>
                                 <div className="category-title-content">
-                                  <h4>{category.charAt(0).toUpperCase() + category.slice(1)} Documents</h4>
+                                  <h4>
+                                    {getDisplayName(category)} Documents
+                                    {getContextLabel(category) && (
+                                      <span className="category-context-label">
+                                        {' '}{getContextLabel(category)}
+                                      </span>
+                                    )}
+                                  </h4>
                                   {hasAlerts && (
                                     <span className="category-alert-icon" title="Has employee notes">
                                       <FiBell size={12} color="#f59e0b" />
@@ -2264,7 +2286,7 @@ const AdminClients = () => {
                                         </>
                                       ) : (
                                         <>
-                                          <FiLock size={14} /> {categoryData?.isLocked ? `${category.charAt(0).toUpperCase() + category.slice(1)} Already Locked` : `Lock ${category.charAt(0).toUpperCase() + category.slice(1)}`}
+                                          <FiLock size={14} /> {categoryData?.isLocked ? `${getDisplayName(category)} Already Locked` : `Lock ${getDisplayName(category)}`}
                                         </>
                                       )}
                                     </button>
@@ -2280,7 +2302,7 @@ const AdminClients = () => {
                                         </>
                                       ) : (
                                         <>
-                                          <FiUnlock size={14} /> {!categoryData?.isLocked ? `${category.charAt(0).toUpperCase() + category.slice(1)} Already Unlocked` : `Unlock ${category.charAt(0).toUpperCase() + category.slice(1)}`}
+                                          <FiUnlock size={14} /> {!categoryData?.isLocked ? `${getDisplayName(category)} Already Unlocked` : `Unlock ${getDisplayName(category)}`}
                                         </>
                                       )}
                                     </button>
