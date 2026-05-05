@@ -38,7 +38,7 @@ import MaintenanceComponent from './Pages/MaintenanceComponent/MaintenanceCompon
 
 function App() {
   // 👇 MAINTENANCE MODE FLAG - SET TO true TO SHOW MAINTENANCE, false FOR NORMAL SITE
-  const isMaintenanceMode = true;  // CHANGE THIS TO false WHEN SITE IS READY
+  const isMaintenanceMode = false;  // CHANGE THIS TO false WHEN SITE IS READY
 
   // If maintenance mode is ON, show only the maintenance component
   if (isMaintenanceMode) {
