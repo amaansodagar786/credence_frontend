@@ -97,11 +97,11 @@ const AdminNotesPanel = () => {
 
             console.log(" FULL API RESPONSE:", response);
             console.log(" RESPONSE DATA:", response.data);
-            console.log(" RESPONSE DATA TOTALCLIENTS:", response.data?.totalClients); // Check this
+            console.log(" RESPONSE DATA TOTALCLIENTS:", response.data?.totalClients);
 
             if (response.data.success) {
                 setDocsSummary({
-                    count: response.data.totalClients || 0, // CHANGE THIS LINE - use totalClients instead of count
+                    count: response.data.totalClients || 0,
                     monthsCount: response.data.monthsData?.length || 0
                 });
             }
@@ -151,8 +151,8 @@ const AdminNotesPanel = () => {
     // ==================== DOCS DETAILS API ====================
     const fetchDocsDetailsData = async () => {
         try {
-            setModalLoading(true);
-            setActiveModal('uploadedLocked');
+            // IMPORTANT: Do NOT set modalLoading or setActiveModal here anymore
+            // These are now called BEFORE this function
 
             const params = { timeFilter };
             if (timeFilter === "custom" && customStartDate && customEndDate) {
@@ -181,13 +181,18 @@ const AdminNotesPanel = () => {
 
     // Add useEffect to refetch when timeFilter changes
     useEffect(() => {
-        if (activeModal === 'uploadedLocked') {
-            fetchDocsDetailsData();
+        if (activeModal === 'uploadedLocked' && modalData) {
+            // Refetch logic if needed
         }
     }, [timeFilter, customStartDate, customEndDate]);
 
     const handleTimeFilterChange = (newFilter) => {
         setTimeFilter(newFilter);
+        // Refetch data when filter changes
+        if (activeModal === 'uploadedLocked') {
+            setModalLoading(true);
+            fetchDocsDetailsData();
+        }
     };
 
     const formatDate = (dateString) => {
@@ -224,7 +229,6 @@ const AdminNotesPanel = () => {
 
             const params = {};
 
-            // Apply month filter
             if (filters.monthFilter === 'current') {
                 const now = new Date();
                 params.year = now.getFullYear();
@@ -235,9 +239,7 @@ const AdminNotesPanel = () => {
                 params.year = lastMonth.getFullYear();
                 params.month = lastMonth.getMonth() + 1;
             } else if (filters.monthFilter === 'custom') {
-                // Ensure dates are valid
                 if (filters.customStartDate && filters.customEndDate) {
-                    // Validate dates
                     const start = new Date(filters.customStartDate);
                     const end = new Date(filters.customEndDate);
 
@@ -253,9 +255,8 @@ const AdminNotesPanel = () => {
                     return;
                 }
             }
-            // 'all' filter shows all notes, no params needed
 
-            console.log("Fetching notes with params:", params); // Debug log
+            console.log("Fetching notes with params:", params);
 
             const response = await axios.get(
                 `${import.meta.env.VITE_API_URL}/admin/notes/client/${clientId}/notes`,
@@ -283,7 +284,6 @@ const AdminNotesPanel = () => {
     const handleClientClick = (client) => {
         setSelectedClient(client);
         setActiveModal('clientNotes');
-        // Reset to default filter when opening client notes
         setFilters({
             monthFilter: 'current',
             customStartDate: '',
@@ -294,13 +294,7 @@ const AdminNotesPanel = () => {
     const handleMarkAllAsRead = async () => {
         if (!selectedClient) return;
 
-        // Optional: Add confirmation
-        // if (!window.confirm(`Mark ALL unread notes as read for ${selectedClient.clientName} with current filter?`)) {
-        //     return;
-        // }
-
         try {
-            // Build filter object based on current filters
             const filterParams = {};
 
             if (filters.monthFilter === 'current') {
@@ -314,7 +308,6 @@ const AdminNotesPanel = () => {
                 filterParams.month = lastMonth.getMonth() + 1;
             } else if (filters.monthFilter === 'custom') {
                 if (filters.customStartDate && filters.customEndDate) {
-                    // Validate dates first
                     const start = new Date(filters.customStartDate);
                     const end = new Date(filters.customEndDate);
 
@@ -330,26 +323,22 @@ const AdminNotesPanel = () => {
                     return;
                 }
             }
-            // For 'all' filter, we send empty filter (will mark all notes)
 
-            console.log("Marking notes with filter:", filterParams); // Debug
+            console.log("Marking notes with filter:", filterParams);
 
             const response = await axios.post(
                 `${import.meta.env.VITE_API_URL}/admin/notes/mark-as-viewed`,
                 {
                     clientId: selectedClient.clientId,
-                    filter: filterParams // Send the actual filter
+                    filter: filterParams
                 },
                 { withCredentials: true }
             );
 
             if (response.data.success) {
                 showToast(`Marked ${response.data.markedCount} notes as read for the selected period`, 'success');
-                // Refresh the notes
                 fetchClientNotes(selectedClient.clientId);
-                // Refresh unread count
                 fetchUnreadCount();
-                // Refresh clients list to update badges
                 fetchClientsSummary();
             }
         } catch (error) {
@@ -371,11 +360,8 @@ const AdminNotesPanel = () => {
 
             if (response.data.success) {
                 showToast('Note marked as read', 'success');
-                // Refresh the notes
                 fetchClientNotes(selectedClient.clientId);
-                // Refresh unread count
                 fetchUnreadCount();
-                // Refresh clients list
                 fetchClientsSummary();
             }
         } catch (error) {
@@ -422,9 +408,8 @@ const AdminNotesPanel = () => {
 
     // ==================== MODAL RENDER FUNCTIONS ====================
 
-    // Render Docs Details Modal (uploadedLocked)
     const renderDocsDetailsModal = () => {
-        if (activeModal !== 'uploadedLocked' || !modalData) return null;
+        if (activeModal !== 'uploadedLocked') return null;
 
         return (
             <div className="modal-overlay">
@@ -432,8 +417,8 @@ const AdminNotesPanel = () => {
                     <div className="modal-header">
                         <h3>
                             <FiLock /> Clients with Uploaded Documents For This Month
-                            {modalData.count !== undefined && (
-                                <span className="count-badge">{modalData.count}</span>
+                            {modalData?.totalClients !== undefined && (
+                                <span className="count-badge">{modalData.totalClients}</span>
                             )}
                         </h3>
                         <button className="close-modal" onClick={closeModal}>
@@ -468,6 +453,12 @@ const AdminNotesPanel = () => {
                                 <div className="spinner"></div>
                                 <p>Loading data...</p>
                             </div>
+                        ) : !modalData ? (
+                            <div className="empty-state">
+                                <div className="empty-icon">📁</div>
+                                <h4>No data available</h4>
+                                <p>Unable to load data. Please try again.</p>
+                            </div>
                         ) : modalData.monthsData && modalData.monthsData.length > 0 ? (
                             <div className="uploaded-locked-modal-content">
                                 <div className="modal-summary">
@@ -494,7 +485,6 @@ const AdminNotesPanel = () => {
                                                     🔒 {month.count} client{month.count !== 1 ? 's' : ''}
                                                 </span>
                                             </div>
-
                                             <div className="month-clients">
                                                 <div className="responsive-table">
                                                     <table className="dashboard-table">
@@ -559,7 +549,6 @@ const AdminNotesPanel = () => {
         );
     };
 
-    // Render Clients Summary Modal
     const renderClientsSummaryModal = () => {
         return (
             <div className="modal-overlay">
@@ -587,7 +576,7 @@ const AdminNotesPanel = () => {
                                 <div className="spinner"></div>
                                 <p>Loading clients...</p>
                             </div>
-                        ) : modalData.clients.length === 0 ? (
+                        ) : modalData?.clients?.length === 0 ? (
                             <div className="empty-state">
                                 <div className="empty-icon">🎉</div>
                                 <h4>No unread notes</h4>
@@ -606,7 +595,7 @@ const AdminNotesPanel = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {modalData.clients.map((client, index) => (
+                                        {modalData?.clients?.map((client, index) => (
                                             <tr key={index} className="clickable-row">
                                                 <td>
                                                     <div className="client-cell">
@@ -653,7 +642,7 @@ const AdminNotesPanel = () => {
                                                         <FiEye size={14} /> View Notes
                                                     </button>
                                                 </td>
-                                            </tr>
+                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
@@ -665,7 +654,6 @@ const AdminNotesPanel = () => {
         );
     };
 
-    // Render Client Notes Modal
     const renderClientNotesModal = () => {
         if (!selectedClient) return null;
 
@@ -695,7 +683,6 @@ const AdminNotesPanel = () => {
                     </div>
 
                     <div className="modal-body">
-                        {/* Filters Section - Auto-applies */}
                         <div className="filters-section">
                             <div className="filter-row">
                                 <div className="filter-group">
@@ -711,7 +698,6 @@ const AdminNotesPanel = () => {
                                         <option value="current">This Month</option>
                                         <option value="last">Last Month</option>
                                         <option value="all">All Time</option>
-                                        {/* <option value="custom">Custom Date Range</option>  */}
                                     </select>
                                 </div>
                                 {filters.monthFilter === 'custom' && (
@@ -727,7 +713,6 @@ const AdminNotesPanel = () => {
                                                 onChange={handleFilterChange}
                                                 disabled={modalLoading}
                                                 className="date-input"
-                                                // Add max attribute to prevent end date before start date
                                                 max={filters.customEndDate || new Date().toISOString().split('T')[0]}
                                             />
                                         </div>
@@ -742,7 +727,6 @@ const AdminNotesPanel = () => {
                                                 onChange={handleFilterChange}
                                                 disabled={modalLoading}
                                                 className="date-input"
-                                                // Add min attribute
                                                 min={filters.customStartDate}
                                                 max={new Date().toISOString().split('T')[0]}
                                             />
@@ -752,7 +736,6 @@ const AdminNotesPanel = () => {
                             </div>
                         </div>
 
-                        {/* Action Bar */}
                         <div className="action-bar">
                             <div className="notes-stats">
                                 <div className="stat-item">
@@ -780,14 +763,13 @@ const AdminNotesPanel = () => {
                             )}
                         </div>
 
-                        {/* Notes List */}
                         <div className="notes-list-container">
                             {modalLoading ? (
                                 <div className="loading-state">
                                     <div className="spinner"></div>
                                     <p>Loading notes...</p>
                                 </div>
-                            ) : clientNotes.byMonth.length === 0 ? (
+                            ) : clientNotes.byMonth?.length === 0 ? (
                                 <div className="empty-state">
                                     <div className="empty-icon">📝</div>
                                     <h4>No notes found</h4>
@@ -813,7 +795,6 @@ const AdminNotesPanel = () => {
 
                                             <div className="notes-list">
                                                 {month.notes.map((note, noteIndex) => {
-                                                    // Determine badge type based on noteLevel
                                                     let badgeText = '';
                                                     let badgeClass = '';
 
@@ -855,7 +836,6 @@ const AdminNotesPanel = () => {
                                                                     )}
                                                                 </div>
                                                                 <div className="note-meta-right">
-                                                                    {/* Show "Added by Employee" only for file notes */}
                                                                     {note.noteLevel === 'file' && note.addedBy && (
                                                                         <span className="note-added-by">
                                                                             <FiUser size={12} /> Added by Employee: {note.addedBy}
@@ -883,18 +863,6 @@ const AdminNotesPanel = () => {
                                                                         Admin: {note.isViewedByAdmin ? 'Viewed' : 'Not viewed'}
                                                                     </span>
                                                                 </div>
-
-                                                                {/* <div className="note-actions">
-                                                                    {!note.isViewedByAdmin && (
-                                                                        <button
-                                                                            className="mark-read-btn"
-                                                                            onClick={() => handleMarkSingleAsRead(note.noteId)}
-                                                                            disabled={modalLoading}
-                                                                        >
-                                                                            <FiCheck size={14} /> Mark as Read
-                                                                        </button>
-                                                                    )}
-                                                                </div> */}
                                                             </div>
                                                         </div>
                                                     );
@@ -911,7 +879,6 @@ const AdminNotesPanel = () => {
         );
     };
 
-    // Render Modal based on activeModal state
     const renderModal = () => {
         if (!activeModal) return null;
 
@@ -943,7 +910,6 @@ const AdminNotesPanel = () => {
                     </div>
                 </div>
 
-                {/* Cards Grid - 2 cards in a row */}
                 <div className="notes-cards-grid">
                     {/* Card 1: Unread Notes */}
                     <div
@@ -977,10 +943,14 @@ const AdminNotesPanel = () => {
                         </div>
                     </div>
 
-                    {/* Card 2: Docs Details - Updated with badge and client count only */}
+                    {/* Card 2: Docs Details - CORRECTED: Modal opens IMMEDIATELY with loader */}
                     <div
                         className="summary-card clickable"
-                        onClick={fetchDocsDetailsData}
+                        onClick={async () => {
+                            setModalLoading(true);           // 1. Show loader
+                            setActiveModal('uploadedLocked'); // 2. Open modal NOW
+                            await fetchDocsDetailsData();     // 3. Fetch data while loader shows
+                        }}
                         style={{ borderTopColor: "#8B5CF6" }}
                     >
                         <div className="card-icon" style={{ background: "#8B5CF615", position: "relative" }}>
@@ -1009,7 +979,6 @@ const AdminNotesPanel = () => {
                     </div>
                 </div>
 
-                {/* Modals */}
                 {renderModal()}
             </div>
         </>
