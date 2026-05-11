@@ -148,14 +148,16 @@ const AdminNotesPanel = () => {
         }
     };
 
-    // ==================== DOCS DETAILS API ====================
-    const fetchDocsDetailsData = async () => {
+    // ==================== DOCS DETAILS API - FIXED ====================
+    const fetchDocsDetailsData = async (filterValue = null) => {
         try {
-            // IMPORTANT: Do NOT set modalLoading or setActiveModal here anymore
-            // These are now called BEFORE this function
+            // Use passed filter value or fallback to state
+            const currentFilter = filterValue !== null ? filterValue : timeFilter;
 
-            const params = { timeFilter };
-            if (timeFilter === "custom" && customStartDate && customEndDate) {
+            console.log("📅 Fetching docs with filter:", currentFilter);
+
+            const params = { timeFilter: currentFilter };
+            if (currentFilter === "custom" && customStartDate && customEndDate) {
                 params.customStart = customStartDate;
                 params.customEnd = customEndDate;
             }
@@ -168,6 +170,8 @@ const AdminNotesPanel = () => {
                 }
             );
 
+            console.log("📊 API Response:", response.data);
+
             if (response.data.success) {
                 setModalData(response.data);
             }
@@ -179,19 +183,17 @@ const AdminNotesPanel = () => {
         }
     };
 
-    // Add useEffect to refetch when timeFilter changes
-    useEffect(() => {
-        if (activeModal === 'uploadedLocked' && modalData) {
-            // Refetch logic if needed
-        }
-    }, [timeFilter, customStartDate, customEndDate]);
+    // FIXED: Handle time filter change with direct parameter passing
+    const handleTimeFilterChange = async (newFilter) => {
+        console.log("🔄 Filter changed to:", newFilter);
 
-    const handleTimeFilterChange = (newFilter) => {
+        // Update state
         setTimeFilter(newFilter);
-        // Refetch data when filter changes
+
+        // If modal is open, fetch data with the NEW filter directly
         if (activeModal === 'uploadedLocked') {
             setModalLoading(true);
-            fetchDocsDetailsData();
+            await fetchDocsDetailsData(newFilter); // Pass the new filter directly!
         }
     };
 
@@ -404,6 +406,14 @@ const AdminNotesPanel = () => {
     const handleBackToClientList = () => {
         setActiveModal('clientsSummary');
         setSelectedClient(null);
+    };
+
+    // FIXED: Function to open Docs Details modal
+    const openDocsDetailsModal = async () => {
+        console.log("🚀 Opening Docs Details Modal with current filter:", timeFilter);
+        setModalLoading(true);
+        setActiveModal('uploadedLocked');
+        await fetchDocsDetailsData(timeFilter); // Pass current filter
     };
 
     // ==================== MODAL RENDER FUNCTIONS ====================
@@ -642,7 +652,7 @@ const AdminNotesPanel = () => {
                                                         <FiEye size={14} /> View Notes
                                                     </button>
                                                 </td>
-                                             </tr>
+                                            </tr>
                                         ))}
                                     </tbody>
                                 </table>
@@ -943,14 +953,10 @@ const AdminNotesPanel = () => {
                         </div>
                     </div>
 
-                    {/* Card 2: Docs Details - CORRECTED: Modal opens IMMEDIATELY with loader */}
+                    {/* Card 2: Docs Details - FIXED: Uses openDocsDetailsModal function */}
                     <div
                         className="summary-card clickable"
-                        onClick={async () => {
-                            setModalLoading(true);           // 1. Show loader
-                            setActiveModal('uploadedLocked'); // 2. Open modal NOW
-                            await fetchDocsDetailsData();     // 3. Fetch data while loader shows
-                        }}
+                        onClick={openDocsDetailsModal}
                         style={{ borderTopColor: "#8B5CF6" }}
                     >
                         <div className="card-icon" style={{ background: "#8B5CF615", position: "relative" }}>
