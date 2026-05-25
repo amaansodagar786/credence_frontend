@@ -856,6 +856,20 @@ const ClientFilesUpload = () => {
 
         const fileArray = Array.from(files);
 
+        // ========== NEW: CHECK FOR EMPTY/CORRUPT FILES ==========
+        const emptyFiles = fileArray.filter(file => file.size === 0);
+        if (emptyFiles.length > 0) {
+            showError(`❌ Cannot upload: ${emptyFiles.map(f => f.name).join(', ')} - File(s) are empty (0 bytes). Please check the files and try again.`);
+            return;
+        }
+
+        const corruptedFiles = fileArray.filter(file => file.size < 100 && file.size > 0);
+        if (corruptedFiles.length > 0) {
+            showError(`❌ Cannot upload: ${corruptedFiles.map(f => `${f.name} (${f.size} bytes)`).join(', ')} - File(s) appear corrupted or too small. Minimum file size is 100 bytes.`);
+            return;
+        }
+        // ========== END OF NEW CHECK ==========
+
         // Check file size (10MB limit total for all files combined)
         const totalSize = fileArray.reduce((sum, file) => sum + file.size, 0);
         if (totalSize > 10 * 1024 * 1024) {
