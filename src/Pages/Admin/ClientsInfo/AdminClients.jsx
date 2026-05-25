@@ -407,18 +407,6 @@ const AdminClients = () => {
     }
 
 
-    // 🔴🔴🔴 PASTE DEBUG CODE HERE 🔴🔴🔴
-    console.log("🔍 PREVIEWING FILE:", document.fileName);
-    console.log("URL:", document.url);
-    console.log("File name length:", document.fileName?.length);
-    if (document.fileName) {
-      console.log("Characters in filename:");
-      for (let i = 0; i < document.fileName.length; i++) {
-        console.log(`  ${i}: "${document.fileName[i]}" (code: ${document.fileName.charCodeAt(i)})`);
-      }
-    }
-    // 🔴🔴🔴 DEBUG CODE ENDS HERE 🔴🔴🔴
-
     // Reset zoom and position when opening new document
     setZoomLevel(1);
     setImagePosition({ x: 0, y: 0 });
