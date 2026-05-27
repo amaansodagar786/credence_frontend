@@ -8,7 +8,8 @@ import {
     FiChevronRight,
     FiChevronsLeft,
     FiChevronsRight,
-    FiUsers
+    FiUsers,
+    FiAlertCircle
 } from 'react-icons/fi';
 import { AiOutlineSearch } from 'react-icons/ai';
 import './ClientPaymentInfo.scss';
@@ -26,6 +27,36 @@ const ClientPaymentInfo = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(20);
     const [totalPages, setTotalPages] = useState(1);
+
+    // Helper function to get status display info
+    const getStatusInfo = (status) => {
+        switch (status) {
+            case 'paid':
+                return {
+                    text: 'Paid',
+                    icon: <FiCheckCircle className="status-icon" />,
+                    className: 'paid'
+                };
+            case 'pending':
+                return {
+                    text: 'Pending',
+                    icon: <FiAlertCircle className="status-icon" />,
+                    className: 'pending'
+                };
+            case 'not_credited':
+                return {
+                    text: 'Not Credited',
+                    icon: <FiXCircle className="status-icon" />,
+                    className: 'not-credited'
+                };
+            default:
+                return {
+                    text: 'Pending',
+                    icon: <FiAlertCircle className="status-icon" />,
+                    className: 'pending'
+                };
+        }
+    };
 
     // Fetch payment status data
     const fetchPaymentStatus = async () => {
@@ -106,18 +137,18 @@ const ClientPaymentInfo = () => {
         toast.className = 'admin-toast';
         toast.textContent = message;
         toast.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
-      color: white;
-      padding: 12px 24px;
-      border-radius: 8px;
-      z-index: 10000;
-      animation: slideIn 0.3s ease;
-      font-weight: 500;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    `;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        `;
         document.body.appendChild(toast);
 
         setTimeout(() => {
@@ -213,22 +244,14 @@ const ClientPaymentInfo = () => {
                                         </td>
                                         {months.map((month, index) => {
                                             const monthKey = getMonthKey(month.year, month.month);
-                                            const isPaid = client.paymentStatus?.[monthKey] || false;
+                                            const status = client.paymentStatus?.[monthKey] || 'pending';
+                                            const statusInfo = getStatusInfo(status);
 
                                             return (
                                                 <td key={index} className="status-cell">
-                                                    <div className={`payment-status ${isPaid ? 'paid' : 'pending'}`}>
-                                                        {isPaid ? (
-                                                            <>
-                                                                <FiCheckCircle className="status-icon" />
-                                                                <span>Paid</span>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <FiXCircle className="status-icon" />
-                                                                <span>Pending</span>
-                                                            </>
-                                                        )}
+                                                    <div className={`payment-status ${statusInfo.className}`}>
+                                                        {statusInfo.icon}
+                                                        <span>{statusInfo.text}</span>
                                                     </div>
                                                 </td>
                                             );

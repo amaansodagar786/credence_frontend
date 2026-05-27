@@ -492,3 +492,53 @@
     }
   }
 }
+
+
+/* Add at the end of your ClientPaymentInfo.scss file */
+
+/* ========== 3-STATUS PAYMENT STYLES ========== */
+.payment-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &.paid {
+    background: rgba(16, 185, 129, 0.1);
+    color: #065f46;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+
+    .status-icon {
+      color: #10b981;
+    }
+  }
+
+  &.pending {
+    background: rgba(245, 158, 11, 0.1);
+    color: #92400e;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+
+    .status-icon {
+      color: #f59e0b;
+    }
+  }
+
+  /* NEW: Not Credited status */
+  &.not-credited {
+    background: rgba(239, 68, 68, 0.1);
+    color: #991b1b;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+
+    .status-icon {
+      color: #ef4444;
+    }
+  }
+
+  .status-icon {
+    font-size: 14px;
+  }
+}
