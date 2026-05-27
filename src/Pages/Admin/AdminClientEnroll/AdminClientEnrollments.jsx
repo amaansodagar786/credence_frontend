@@ -588,17 +588,40 @@ const AdminClientEnrollments = () => {
     }
   };
 
-  // Get payment status badge
   const getPaymentStatusBadge = (paymentSummary) => {
     if (!paymentSummary) return <span className="status-badge pending">No Data</span>;
 
-    if (paymentSummary.paidMonths === paymentSummary.totalMonths && paymentSummary.totalMonths > 0) {
-      return <span className="status-badge approved">All Paid</span>;
-    } else if (paymentSummary.paidMonths === 0) {
-      return <span className="status-badge pending">All Pending</span>;
-    } else {
-      return <span className="status-badge partial">{paymentSummary.displayText}</span>;
+    // Handle the new 3-status system
+    // paymentSummary now has: paidMonths, pendingMonths, notCreditedMonths, totalMonths
+
+    const { paidMonths = 0, pendingMonths = 0, notCreditedMonths = 0, totalMonths = 0 } = paymentSummary;
+
+    if (totalMonths === 0) {
+      return <span className="status-badge pending">No Data</span>;
     }
+
+    // All paid
+    if (paidMonths === totalMonths) {
+      return <span className="status-badge approved">All Paid</span>;
+    }
+
+    // All not credited
+    if (notCreditedMonths === totalMonths) {
+      return <span className="status-badge not-credited">All Not Credited</span>;
+    }
+
+    // All pending (no paid, no not_credited)
+    if (pendingMonths === totalMonths) {
+      return <span className="status-badge pending">All Pending</span>;
+    }
+
+    // Mixed status - show summary
+    let parts = [];
+    if (paidMonths > 0) parts.push(`${paidMonths} Paid`);
+    if (pendingMonths > 0) parts.push(`${pendingMonths} Pending`);
+    if (notCreditedMonths > 0) parts.push(`${notCreditedMonths} Not Credited`);
+
+    return <span className="status-badge partial">{parts.join(', ')}</span>;
   };
 
   // Toast function
@@ -1507,55 +1530,79 @@ const AdminClientEnrollments = () => {
             {/* Tab Content */}
             <div className="task-tab-content">
               {activeTaskTab === 'payment' ? (
-                // PAYMENT TAB - Show month by month payment status
+                // PAYMENT TAB - Show month by month payment status (UPDATED for 3 statuses)
                 <div className="payment-monthly-view">
-                  {monthlyBreakdown.map((month, index) => (
-                    <div key={`${month.month}-${month.year}-${index}`} className="payment-month-card">
-                      <div className="payment-month-header">
-                        <h4>
-                          {month.month} {month.year}
-                          {month.isPartial && (
-                            <span className="partial-badge">
-                              {formatDate(month.fromDate)} - {formatDate(month.toDate)}
-                            </span>
-                          )}
-                        </h4>
-                        <span className={`payment-status-badge ${month.payment?.status ? 'paid' : 'pending'}`}>
-                          {month.payment?.status ? 'Paid' : 'Pending'}
-                        </span>
+                  {monthlyBreakdown.map((month, index) => {
+                    // Get payment status (supports both old boolean and new string)
+                    let paymentStatus = month.payment?.status;
+                    let statusClass = 'pending';
+                    let statusText = 'Pending';
+
+                    if (typeof paymentStatus === 'boolean') {
+                      statusClass = paymentStatus ? 'paid' : 'pending';
+                      statusText = paymentStatus ? 'Paid' : 'Pending';
+                    } else if (typeof paymentStatus === 'string') {
+                      statusClass = paymentStatus;
+                      if (paymentStatus === 'paid') statusText = 'Paid';
+                      else if (paymentStatus === 'pending') statusText = 'Pending';
+                      else if (paymentStatus === 'not_credited') statusText = 'Not Credited';
+                    }
+
+                    return (
+                      <div key={`${month.month}-${month.year}-${index}`} className="payment-month-card">
+                        <div className="payment-month-header">
+                          <h4>
+                            {month.month} {month.year}
+                            {month.isPartial && (
+                              <span className="partial-badge">
+                                {formatDate(month.fromDate)} - {formatDate(month.toDate)}
+                              </span>
+                            )}
+                          </h4>
+                          <span className={`payment-status-badge ${statusClass}`}>
+                            {statusText}
+                          </span>
+                        </div>
+
+                        {statusClass === 'paid' && (
+                          <div className="payment-details">
+                            {month.payment?.updatedAt && (
+                              <div className="payment-detail">
+                                <span className="detail-label">Paid On:</span>
+                                <span className="detail-value">{formatDate(month.payment.updatedAt)}</span>
+                              </div>
+                            )}
+                            {month.payment?.updatedByName && (
+                              <div className="payment-detail">
+                                <span className="detail-label">Updated By:</span>
+                                <span className="detail-value">{month.payment.updatedByName}</span>
+                              </div>
+                            )}
+                            {month.payment?.notes && (
+                              <div className="payment-detail notes">
+                                <span className="detail-label">Notes:</span>
+                                <span className="detail-value">{month.payment.notes}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {statusClass === 'pending' && (
+                          <div className="payment-detail pending-message">
+                            <FiAlertCircle size={16} />
+                            <span>Payment pending for this period</span>
+                          </div>
+                        )}
+
+                        {statusClass === 'not_credited' && (
+                          <div className="payment-detail not-credited-message">
+                            <FiXCircle size={16} />
+                            <span>Payment not credited for this period</span>
+                          </div>
+                        )}
                       </div>
-
-                      {month.payment?.status && (
-                        <div className="payment-details">
-                          {month.payment.updatedAt && (
-                            <div className="payment-detail">
-                              <span className="detail-label">Paid On:</span>
-                              <span className="detail-value">{formatDate(month.payment.updatedAt)}</span>
-                            </div>
-                          )}
-                          {month.payment.updatedByName && (
-                            <div className="payment-detail">
-                              <span className="detail-label">Updated By:</span>
-                              <span className="detail-value">{month.payment.updatedByName}</span>
-                            </div>
-                          )}
-                          {month.payment.notes && (
-                            <div className="payment-detail notes">
-                              <span className="detail-label">Notes:</span>
-                              <span className="detail-value">{month.payment.notes}</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {!month.payment?.status && (
-                        <div className="payment-detail pending-message">
-                          <FiAlertCircle size={16} />
-                          <span>Payment not received for this period</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {monthlyBreakdown.length === 0 && (
                     <div className="empty-state small">

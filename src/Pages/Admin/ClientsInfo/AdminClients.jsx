@@ -83,11 +83,10 @@ const AdminClients = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
-
   // NEW: CSV states
   const [csvData, setCsvData] = useState(null);
   const [csvLoading, setCsvLoading] = useState(false);
-  const [csvZoomLevel, setCsvZoomLevel] = useState(1);  // ADD THIS
+  const [csvZoomLevel, setCsvZoomLevel] = useState(1);
 
   // Client Details Modal
   const [clientDetailsModal, setClientDetailsModal] = useState(false);
@@ -112,17 +111,13 @@ const AdminClients = () => {
   const [monthLockLoading, setMonthLockLoading] = useState(false);
   const [categoryLockLoading, setCategoryLockLoading] = useState({});
 
-  // NEW: Payment status states
-  const [paymentStatus, setPaymentStatus] = useState(false);
+  // UPDATED: Payment status states - now using string status
+  const [paymentStatus, setPaymentStatus] = useState('pending');
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentNotes, setPaymentNotes] = useState("");
   const [showPaymentNotes, setShowPaymentNotes] = useState(false);
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
-
-  // NEW: CSV states
-  // const [csvData, setCsvData] = useState(null);
-  // const [csvLoading, setCsvLoading] = useState(false); 
 
   const now = new Date();
   const currentYear = now.getFullYear();
@@ -146,6 +141,26 @@ const AdminClients = () => {
     { value: 11, label: "November" },
     { value: 12, label: "December" }
   ];
+
+  // Helper function for status display names
+  const getStatusDisplayName = (status) => {
+    switch (status) {
+      case 'paid': return 'PAID';
+      case 'pending': return 'PENDING';
+      case 'not_credited': return 'NOT CREDITED';
+      default: return 'PENDING';
+    }
+  };
+
+  // Helper function for status badge class
+  const getStatusClass = (status) => {
+    switch (status) {
+      case 'paid': return 'paid';
+      case 'pending': return 'pending';
+      case 'not_credited': return 'not-credited';
+      default: return 'pending';
+    }
+  };
 
   // Zoom functions
   const handleZoomIn = () => {
@@ -202,14 +217,12 @@ const AdminClients = () => {
       const response = await fetch(csvUrl);
       const csvText = await response.text();
 
-      // Parse CSV manually
       const rows = [];
       const lines = csvText.split(/\r?\n/);
 
       for (const line of lines) {
         if (!line.trim()) continue;
 
-        // Simple CSV parsing (handles quoted fields)
         const row = [];
         let inQuote = false;
         let currentCell = '';
@@ -226,8 +239,7 @@ const AdminClients = () => {
             currentCell += char;
           }
         }
-        row.push(currentCell); // Push last cell
-
+        row.push(currentCell);
         rows.push(row);
       }
 
@@ -236,10 +248,8 @@ const AdminClients = () => {
         return;
       }
 
-      // Build HTML table
       let html = '<div class="csv-table-wrapper"><table class="csv-preview-table">';
 
-      // Header row (first row)
       if (rows[0]) {
         html += '<thead><tr>';
         rows[0].forEach(cell => {
@@ -248,7 +258,6 @@ const AdminClients = () => {
         html += '</tr></thead>';
       }
 
-      // Data rows (remaining rows)
       html += '<tbody>';
       for (let i = 1; i < rows.length; i++) {
         html += '<tr>';
@@ -268,18 +277,14 @@ const AdminClients = () => {
     }
   };
 
-  /* ================= IMPROVED FILE TYPE DETECTION ================= */
   const getFileType = (file) => {
-    // Case 1: If we have fileType from MongoDB, use it first (most reliable)
     if (file.fileType) {
       const fileTypeLower = file.fileType.toLowerCase();
 
-      // PDF check
       if (fileTypeLower.includes('pdf')) {
         return 'pdf';
       }
 
-      // Image check
       if (fileTypeLower.includes('jpeg') ||
         fileTypeLower.includes('jpg') ||
         fileTypeLower.includes('png') ||
@@ -291,12 +296,10 @@ const AdminClients = () => {
         return 'image';
       }
 
-      // CSV check - MUST COME BEFORE EXCEL
       if (fileTypeLower.includes('csv')) {
         return 'csv';
       }
 
-      // Excel check (but NOT csv)
       if (fileTypeLower.includes('sheet') ||
         fileTypeLower.includes('excel') ||
         fileTypeLower.includes('spreadsheetml')) {
@@ -304,22 +307,20 @@ const AdminClients = () => {
       }
     }
 
-    // Case 2: Try from URL if fileType not available
     if (file.url) {
       const urlLower = file.url.toLowerCase();
       if (urlLower.includes('.pdf')) return 'pdf';
-      if (urlLower.includes('.csv')) return 'csv';  // CSV FIRST
+      if (urlLower.includes('.csv')) return 'csv';
       if (urlLower.includes('.jpg') || urlLower.includes('.jpeg') ||
         urlLower.includes('.png') || urlLower.includes('.gif') ||
         urlLower.includes('.webp')) return 'image';
       if (urlLower.includes('.xls') || urlLower.includes('.xlsx')) return 'excel';
     }
 
-    // Case 3: Try from filename extension (last resort)
     if (file.fileName) {
       const ext = file.fileName.split('.').pop().toLowerCase();
       if (ext === 'pdf') return 'pdf';
-      if (ext === 'csv') return 'csv';  // CSV FIRST
+      if (ext === 'csv') return 'csv';
       if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return 'image';
       if (['xls', 'xlsx', 'xlsm'].includes(ext)) return 'excel';
     }
@@ -327,7 +328,6 @@ const AdminClients = () => {
     return 'other';
   };
 
-  // Show snackbar
   const showSnackbar = (message, severity = "success") => {
     setSnackbar({
       open: true,
@@ -336,12 +336,10 @@ const AdminClients = () => {
     });
   };
 
-  // Close snackbar
   const handleCloseSnackbar = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
   };
 
-  /* ================= DOCUMENT PREVIEW PROTECTION ================= */
   const applyProtection = () => {
     if (!previewRef.current) return;
 
@@ -357,7 +355,6 @@ const AdminClients = () => {
       return false;
     };
 
-    // Apply to iframe
     const iframe = previewRef.current.querySelector('iframe');
     if (iframe) {
       iframe.addEventListener('contextmenu', disableRightClick);
@@ -365,7 +362,6 @@ const AdminClients = () => {
       iframe.setAttribute('draggable', 'false');
     }
 
-    // Apply to images
     const images = previewRef.current.querySelectorAll('img');
     images.forEach(img => {
       img.addEventListener('contextmenu', disableRightClick);
@@ -376,7 +372,6 @@ const AdminClients = () => {
       img.style.webkitUserSelect = 'none';
     });
 
-    // Apply to the container
     previewRef.current.addEventListener('contextmenu', disableRightClick);
     previewRef.current.addEventListener('dragstart', disableDragStart);
   };
@@ -406,20 +401,16 @@ const AdminClients = () => {
       return;
     }
 
-
-    // Reset zoom and position when opening new document
     setZoomLevel(1);
     setImagePosition({ x: 0, y: 0 });
     setIsDragging(false);
     setCsvData(null);
-    setCsvZoomLevel(1);  // ADD THIS LINE - Reset CSV zoom
+    setCsvZoomLevel(1);
 
-    // Determine file type using the improved function that checks fileType
     const fileType = getFileType(document);
     setPreviewDoc({ ...document, fileType });
     setIsPreviewOpen(true);
 
-    // If it's a CSV, fetch and parse it
     if (fileType === 'csv') {
       parseCSVAndDisplay(document.url);
     }
@@ -429,7 +420,6 @@ const AdminClients = () => {
     }, 100);
   };
 
-  /* ================= CLOSE DOCUMENT PREVIEW ================= */
   const closeDocumentPreview = () => {
     cleanupProtection();
     setIsPreviewOpen(false);
@@ -441,7 +431,6 @@ const AdminClients = () => {
     setCsvLoading(false);
   };
 
-  // useEffect to handle wheel and pinch zoom on image container
   useEffect(() => {
     const el = imageScrollRef.current;
     if (!el || !isPreviewOpen) return;
@@ -468,13 +457,11 @@ const AdminClients = () => {
     };
   }, [isPreviewOpen]);
 
-  /* ================= RENDER DOCUMENT PREVIEW (COMPLETELY UPDATED WITH ZOOM AND CSV) ================= */
   const renderDocumentPreview = () => {
     if (!previewDoc || !isPreviewOpen) return null;
 
     const fileType = previewDoc.fileType || getFileType(previewDoc);
 
-    // Handle overlay click
     const handleOverlayClick = (e) => {
       if (e.target === e.currentTarget) {
         closeDocumentPreview();
@@ -537,7 +524,6 @@ const AdminClients = () => {
               </span>
             </div>
 
-            {/* PDF Viewer - Native browser zoom works with Ctrl+Mouse Wheel */}
             {fileType === 'pdf' && (
               <div className="protected-view-container pdf-viewer-container">
                 <iframe
@@ -561,7 +547,6 @@ const AdminClients = () => {
               </div>
             )}
 
-            {/* IMAGE VIEWER */}
             {fileType === 'image' && (
               <div className="image-viewer-wrapper">
                 <div className="zoom-controls">
@@ -629,10 +614,8 @@ const AdminClients = () => {
               </div>
             )}
 
-            {/* CSV Viewer with Zoom - CORRECTED */}
             {fileType === 'csv' && (
               <div className="csv-viewer-wrapper">
-                {/* Zoom Controls */}
                 <div className="zoom-controls">
                   <button
                     onClick={() => setCsvZoomLevel(prev => Math.max(prev - 0.1, 0.5))}
@@ -707,10 +690,8 @@ const AdminClients = () => {
               </div>
             )}
 
-            {/* Excel Viewer with Zoom Controls */}
             {fileType === 'excel' && (
               <div className="excel-viewer-wrapper">
-                {/* Zoom Controls */}
                 <div className="zoom-controls">
                   <button
                     onClick={handleZoomOut}
@@ -799,7 +780,6 @@ const AdminClients = () => {
               </div>
             )}
 
-            {/* Other Files */}
             {fileType === 'other' && (
               <div
                 className="protected-view-container other-file-container"
@@ -857,7 +837,6 @@ const AdminClients = () => {
     );
   };
 
-  /* ================= HANDLE YEAR SELECTION ================= */
   const handleYearSelect = (year) => {
     setSelectedYear(year);
     setYearDropdownOpen(false);
@@ -865,12 +844,10 @@ const AdminClients = () => {
       year: year,
       month: selectedMonthNum
     });
-    // Reset payment status when month changes
-    setPaymentStatus(false);
+    setPaymentStatus('pending');
     setPaymentHistory([]);
   };
 
-  /* ================= HANDLE MONTH SELECTION ================= */
   const handleMonthSelect = (month) => {
     setSelectedMonthNum(month);
     setMonthDropdownOpen(false);
@@ -878,12 +855,10 @@ const AdminClients = () => {
       year: selectedYear,
       month: month
     });
-    // Reset payment status when month changes
-    setPaymentStatus(false);
+    setPaymentStatus('pending');
     setPaymentHistory([]);
   };
 
-  /* ================= LOAD ALL CLIENTS - OPTIMIZED VERSION ================= */
   const loadClients = async () => {
     try {
       setLoading(true);
@@ -906,7 +881,6 @@ const AdminClients = () => {
     }
   };
 
-  /* ================= LOAD PAYMENT STATUS ================= */
   const loadPaymentStatus = async () => {
     if (!selectedClient || !selectedMonth) return;
 
@@ -923,7 +897,11 @@ const AdminClients = () => {
       );
 
       if (res.data.success) {
-        setPaymentStatus(res.data.paymentStatus);
+        let status = res.data.paymentStatus;
+        if (typeof status === 'boolean') {
+          status = status === true ? 'paid' : 'pending';
+        }
+        setPaymentStatus(status);
         setPaymentHistory(res.data.paymentHistory || []);
       }
     } catch (error) {
@@ -931,14 +909,16 @@ const AdminClients = () => {
     }
   };
 
-  /* ================= TOGGLE PAYMENT STATUS ================= */
-  const togglePaymentStatus = async () => {
+  const updatePaymentStatus = async (newStatus) => {
     if (!selectedClient || !selectedMonth || paymentLoading) return;
+
+    if (newStatus === paymentStatus) {
+      showSnackbar(`Payment status is already ${getStatusDisplayName(newStatus)}`, "info");
+      return;
+    }
 
     try {
       setPaymentLoading(true);
-
-      const newStatus = !paymentStatus;
 
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}/admin/clients/${selectedClient.clientId}/payment-status`,
@@ -946,7 +926,7 @@ const AdminClients = () => {
           year: selectedMonth.year,
           month: selectedMonth.month,
           status: newStatus,
-          notes: `Payment marked as ${newStatus ? 'PAID' : 'PENDING'}`
+          notes: `Payment marked as ${getStatusDisplayName(newStatus)}`
         },
         { withCredentials: true }
       );
@@ -954,17 +934,16 @@ const AdminClients = () => {
       if (res.data.success) {
         setPaymentStatus(newStatus);
         setPaymentHistory(res.data.paymentHistory || []);
-        showSnackbar(`Payment status updated to ${newStatus ? 'PAID' : 'PENDING'}`, "success");
+        showSnackbar(`Payment status updated to ${getStatusDisplayName(newStatus)}`, "success");
       }
     } catch (error) {
-      console.error("Error toggling payment status:", error);
+      console.error("Error updating payment status:", error);
       showSnackbar(`Error: ${error.response?.data?.message || error.message}`, "error");
     } finally {
       setPaymentLoading(false);
     }
   };
 
-  /* ================= CHECK FOR EMPLOYEE NOTES ================= */
   const checkForEmployeeNotes = (clientsData) => {
     const alerts = {};
 
@@ -973,12 +952,10 @@ const AdminClients = () => {
 
       let hasNotes = false;
 
-      // Check all documents for employee notes
       Object.keys(client.documents).forEach(year => {
         Object.keys(client.documents[year]).forEach(month => {
           const monthData = client.documents[year][month];
 
-          // Check main categories
           ['sales', 'purchase', 'bank'].forEach(category => {
             if (monthData[category]?.files) {
               monthData[category].files.forEach(file => {
@@ -989,7 +966,6 @@ const AdminClients = () => {
             }
           });
 
-          // Check other categories
           if (monthData.other) {
             monthData.other.forEach(otherCat => {
               if (otherCat.document?.files) {
@@ -1012,13 +988,11 @@ const AdminClients = () => {
     setClientAlerts(alerts);
   };
 
-  /* ================= CHECK MONTH ALERTS ================= */
   const checkMonthAlerts = (monthData) => {
     if (!monthData) return false;
 
     let hasNotes = false;
 
-    // Check main categories
     ['sales', 'purchase', 'bank'].forEach(category => {
       if (monthData[category]?.files) {
         monthData[category].files.forEach(file => {
@@ -1029,7 +1003,6 @@ const AdminClients = () => {
       }
     });
 
-    // Check other categories
     if (monthData.other) {
       monthData.other.forEach(otherCat => {
         if (otherCat.document?.files) {
@@ -1045,7 +1018,6 @@ const AdminClients = () => {
     return hasNotes;
   };
 
-  /* ================= CHECK CATEGORY ALERTS ================= */
   const checkCategoryAlerts = (monthData, category, categoryName = null) => {
     if (!monthData) return false;
 
@@ -1071,7 +1043,6 @@ const AdminClients = () => {
     return hasNotes;
   };
 
-  /* ================= LOAD SINGLE CLIENT - UPDATED ================= */
   const loadClientDetails = async (clientId) => {
     try {
       setLoading(true);
@@ -1082,7 +1053,6 @@ const AdminClients = () => {
         { withCredentials: true }
       );
 
-      // Handle response format
       let clientData;
       if (res.data.success && res.data.client) {
         clientData = res.data.client;
@@ -1094,14 +1064,11 @@ const AdminClients = () => {
 
       setSelectedClient(clientData);
 
-      // UPDATED: Set employee assignments array
       const enrichedAssignments = clientData.employeeAssignments || [];
       setEmployeeAssignments(enrichedAssignments);
 
-      // Set default selected task
       setSelectedTask("");
 
-      // Set default selected month
       const newSelectedYear = currentYear;
       const newSelectedMonth = currentMonth;
 
@@ -1112,7 +1079,6 @@ const AdminClients = () => {
         month: newSelectedMonth
       });
 
-      // Load payment status for current month
       setTimeout(() => {
         loadPaymentStatus();
       }, 100);
@@ -1127,7 +1093,6 @@ const AdminClients = () => {
     }
   };
 
-  /* ================= GET MONTH DATA ================= */
   const getMonthData = () => {
     if (!selectedClient || !selectedMonth) return null;
 
@@ -1137,7 +1102,6 @@ const AdminClients = () => {
     return selectedClient.documents?.[yearKey]?.[monthKey] || null;
   };
 
-  /* ================= GET ASSIGNMENTS FOR CURRENT MONTH - NEW ================= */
   const getAssignmentsForCurrentMonth = () => {
     if (!employeeAssignments || !selectedMonth) return [];
 
@@ -1147,14 +1111,12 @@ const AdminClients = () => {
     );
   };
 
-  /* ================= CHECK AND UPDATE ALERTS ================= */
   const updateAlerts = useCallback(() => {
     if (!selectedClient || !selectedMonth) return;
 
     const monthData = getMonthData();
 
     if (monthData && selectedClient) {
-      // Check month alerts
       const hasMonthAlerts = checkMonthAlerts(monthData);
       const monthAlertKey = `${selectedClient.clientId}-${selectedMonth.year}-${selectedMonth.month}`;
 
@@ -1165,7 +1127,6 @@ const AdminClients = () => {
         }));
       }
 
-      // Update category alerts
       const catAlerts = {};
       ['sales', 'purchase', 'bank'].forEach(cat => {
         catAlerts[cat] = checkCategoryAlerts(monthData, cat);
@@ -1177,14 +1138,12 @@ const AdminClients = () => {
         });
       }
 
-      // Only update if changed
       if (JSON.stringify(catAlerts) !== JSON.stringify(categoryAlerts)) {
         setCategoryAlerts(catAlerts);
       }
     }
   }, [selectedClient, selectedMonth, categoryAlerts, monthAlerts]);
 
-  /* ================= GET DOCUMENT UPLOAD STATUS ================= */
   const getDocumentUploadStatus = () => {
     if (!selectedMonth) return null;
 
@@ -1202,7 +1161,6 @@ const AdminClients = () => {
     return "pending";
   };
 
-  /* ================= MONTH LOCK ================= */
   const toggleMonthLock = async (lock) => {
     if (monthLockLoading) return;
 
@@ -1229,16 +1187,12 @@ const AdminClients = () => {
     }
   };
 
-  /* ================= FILE LOCK ================= */
   const toggleFileLock = async (type, lock, categoryName = null) => {
-    // Create a unique key for this category lock
     const lockKey = categoryName ? `${type}-${categoryName}` : type;
 
-    // Check if already loading
     if (categoryLockLoading[lockKey]) return;
 
     try {
-      // Set loading state for this specific category
       setCategoryLockLoading(prev => ({
         ...prev,
         [lockKey]: true
@@ -1262,7 +1216,6 @@ const AdminClients = () => {
       console.error("Error toggling file lock:", error);
       showSnackbar(`Error: ${error.response?.data?.message || error.message || "Please try again"}`, "error");
     } finally {
-      // Clear loading state
       setCategoryLockLoading(prev => ({
         ...prev,
         [lockKey]: false
@@ -1270,7 +1223,6 @@ const AdminClients = () => {
     }
   };
 
-  /* ================= FORMAT DATE ================= */
   const formatMonthYear = (month, year) => {
     const date = new Date(year, month - 1);
     return date.toLocaleDateString('en-US', {
@@ -1279,7 +1231,6 @@ const AdminClients = () => {
     });
   };
 
-  /* ================= GET FILE ICON ================= */
   const getFileIcon = (type) => {
     switch (type) {
       case 'sales': return <FiTrendingUp />;
@@ -1289,7 +1240,6 @@ const AdminClients = () => {
     }
   };
 
-  /* ================= GET STATUS BADGE ================= */
   const getStatusBadge = (isActive) => (
     <span className={`status-badge ${isActive ? 'active' : 'inactive'}`}>
       {isActive ? (
@@ -1304,7 +1254,6 @@ const AdminClients = () => {
     </span>
   );
 
-  /* ================= GET LOCK BADGE ================= */
   const getLockBadge = (isLocked) => (
     <span className={`lock-badge ${isLocked ? 'locked' : 'unlocked'}`}>
       {isLocked ? (
@@ -1319,7 +1268,6 @@ const AdminClients = () => {
     </span>
   );
 
-  /* ================= GET DOCUMENT UPLOAD BADGE ================= */
   const getDocumentUploadBadge = () => {
     const status = getDocumentUploadStatus();
 
@@ -1338,24 +1286,40 @@ const AdminClients = () => {
     );
   };
 
-  /* ================= GET PAYMENT BADGE ================= */
   const getPaymentBadge = () => {
+    let badgeClass = '';
+    let icon = null;
+    let text = '';
+
+    switch (paymentStatus) {
+      case 'paid':
+        badgeClass = 'paid';
+        icon = <FiCheckCircle />;
+        text = 'Payment Done';
+        break;
+      case 'pending':
+        badgeClass = 'pending';
+        icon = <FiAlertCircle />;
+        text = 'Payment Pending';
+        break;
+      case 'not_credited':
+        badgeClass = 'not-credited';
+        icon = <FiXCircle />;
+        text = 'Not Credited';
+        break;
+      default:
+        badgeClass = 'pending';
+        icon = <FiAlertCircle />;
+        text = 'Payment Pending';
+    }
+
     return (
-      <span className={`payment-badge ${paymentStatus ? 'paid' : 'pending'}`}>
-        {paymentStatus ? (
-          <>
-            <FiCheckCircle /> Payment Done
-          </>
-        ) : (
-          <>
-            <FiAlertCircle /> Payment Pending
-          </>
-        )}
+      <span className={`payment-badge ${badgeClass}`}>
+        {icon} {text}
       </span>
     );
   };
 
-  /* ================= RENDER NOTES SECTION ================= */
   const renderNotesSection = (notes, title = "Notes", notesKey = "default") => {
     if (!notes || notes.length === 0) return null;
 
@@ -1401,7 +1365,6 @@ const AdminClients = () => {
     );
   };
 
-  /* ================= RENDER CATEGORY NOTES ================= */
   const renderCategoryNotes = (categoryData, categoryType, categoryName = null) => {
     if (!categoryData || !categoryData.categoryNotes || categoryData.categoryNotes.length === 0) {
       return null;
@@ -1411,7 +1374,6 @@ const AdminClients = () => {
     return renderNotesSection(categoryData.categoryNotes, "📝 Client Notes", notesKey);
   };
 
-  /* ================= RENDER FILE NOTES ================= */
   const renderFileNotes = (file, fileIndex, categoryType, categoryName = null) => {
     if (!file || !file.notes || file.notes.length === 0) {
       return null;
@@ -1421,7 +1383,6 @@ const AdminClients = () => {
     return renderNotesSection(file.notes, "👤 Employee Notes", notesKey);
   };
 
-  /* ================= RENDER FILES IN CATEGORY ================= */
   const renderFilesInCategory = (files, categoryType, categoryName = null) => {
     if (!files || files.length === 0) {
       return (
@@ -1435,9 +1396,6 @@ const AdminClients = () => {
     return (
       <div className="files-list">
         {files.map((file, fileIndex) => {
-
-
-
           const fileId = `${categoryType}-${categoryName || 'main'}-${fileIndex}-${selectedMonth.year}-${selectedMonth.month}`;
           const isExpanded = expandedFiles[fileId];
           const hasNotes = file.notes && file.notes.length > 0;
@@ -1497,7 +1455,6 @@ const AdminClients = () => {
 
               {isExpanded && (
                 <div className="file-item-details">
-                  {/* File Notes (Employee Notes) */}
                   {renderFileNotes(file, fileIndex, categoryType, categoryName)}
 
                   <div className="file-detail-grid">
@@ -1529,7 +1486,6 @@ const AdminClients = () => {
     );
   };
 
-  /* ================= TOGGLE EXPANSION ================= */
   const toggleFileExpansion = (fileId) => {
     setExpandedFiles(prev => ({
       ...prev,
@@ -1544,7 +1500,6 @@ const AdminClients = () => {
     }));
   };
 
-  /* ================= RENDER CLIENT DETAILS MODAL ================= */
   const renderClientDetailsModal = () => {
     if (!selectedClient) return null;
 
@@ -1701,7 +1656,6 @@ const AdminClients = () => {
     );
   };
 
-  /* ================= FILTERED CLIENTS ================= */
   const filteredClients = clients.filter(client => {
     const matchesSearch = searchTerm === '' ||
       client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1722,7 +1676,6 @@ const AdminClients = () => {
     updateAlerts();
   }, [updateAlerts]);
 
-  // Load payment status when month changes
   useEffect(() => {
     if (selectedClient && selectedMonth) {
       loadPaymentStatus();
@@ -1735,7 +1688,6 @@ const AdminClients = () => {
   return (
     <AdminLayout>
       <div className="admin-clients">
-        {/* Header */}
         <div className="enrollments-header">
           <div className="header-left">
             <h2>Client Management</h2>
@@ -1745,9 +1697,7 @@ const AdminClients = () => {
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="main-content">
-          {/* Left Sidebar - Client List */}
           <div className="clients-sidebar">
             <div className="sidebar-header">
               <h3>Clients</h3>
@@ -1820,8 +1770,6 @@ const AdminClients = () => {
                       <p className="client-email">{client.email}</p>
                       <div className="client-meta">
                         {getStatusBadge(client.isActive)}
-
-                        {/* ONLY SHOW PLAN IF CLIENT IS ACTIVE AND PLAN EXISTS */}
                         {client.isActive && client.planSelected && (
                           <span className="plan-badge-small">
                             {client.planSelected}
@@ -1840,11 +1788,9 @@ const AdminClients = () => {
             </div>
           </div>
 
-          {/* Right Content - Client Details */}
           <div className="client-content">
             {selectedClient ? (
               <>
-                {/* Client Header */}
                 <div className="client-header">
                   <div className="client-profile">
                     <div className="profile-avatar">
@@ -1877,7 +1823,6 @@ const AdminClients = () => {
                   </div>
                 </div>
 
-                {/* Month Selection - Dropdown Style */}
                 <div className="month-selection-section">
                   <div className="section-header">
                     <h3>
@@ -1955,7 +1900,7 @@ const AdminClients = () => {
                   </div>
                 </div>
 
-                {/* Payment Status Section - Right after month selection */}
+                {/* UPDATED: Payment Status Section with 3 buttons */}
                 <div className="payment-status-section">
                   <div className="section-header">
                     <h4>
@@ -1974,26 +1919,51 @@ const AdminClients = () => {
                       </div>
                       <div className="payment-info-item">
                         <span className="label">Current Status:</span>
-                        <span className={`value status-text ${paymentStatus ? 'paid' : 'pending'}`}>
-                          {paymentStatus ? 'PAID' : 'PENDING'}
+                        <span className={`value status-text ${getStatusClass(paymentStatus)}`}>
+                          {getStatusDisplayName(paymentStatus)}
                         </span>
                       </div>
                     </div>
 
-                    <div className="payment-actions">
+                    <div className="payment-actions payment-actions-3">
                       <button
-                        className={`payment-toggle-btn ${paymentStatus ? 'mark-pending' : 'mark-paid'}`}
-                        onClick={togglePaymentStatus}
-                        disabled={paymentLoading}
+                        className={`payment-status-btn paid-btn ${paymentStatus === 'paid' ? 'active' : ''}`}
+                        onClick={() => updatePaymentStatus('paid')}
+                        disabled={paymentLoading || paymentStatus === 'paid'}
                       >
-                        {paymentLoading ? (
-                          <>
-                            <div className="spinner-tiny"></div>
-                            Processing...
-                          </>
+                        {paymentLoading && paymentStatus !== 'paid' ? (
+                          <div className="spinner-tiny"></div>
                         ) : (
                           <>
-                            {paymentStatus ? 'Mark as Pending' : 'Mark as Paid'}
+                            <FiCheckCircle size={16} /> Paid
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        className={`payment-status-btn pending-btn ${paymentStatus === 'pending' ? 'active' : ''}`}
+                        onClick={() => updatePaymentStatus('pending')}
+                        disabled={paymentLoading || paymentStatus === 'pending'}
+                      >
+                        {paymentLoading && paymentStatus !== 'pending' ? (
+                          <div className="spinner-tiny"></div>
+                        ) : (
+                          <>
+                            <FiAlertCircle size={16} /> Pending
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        className={`payment-status-btn not-credited-btn ${paymentStatus === 'not_credited' ? 'active' : ''}`}
+                        onClick={() => updatePaymentStatus('not_credited')}
+                        disabled={paymentLoading || paymentStatus === 'not_credited'}
+                      >
+                        {paymentLoading && paymentStatus !== 'not_credited' ? (
+                          <div className="spinner-tiny"></div>
+                        ) : (
+                          <>
+                            <FiXCircle size={16} /> Not Credited
                           </>
                         )}
                       </button>
@@ -2003,7 +1973,6 @@ const AdminClients = () => {
 
                 {selectedMonth && (
                   <>
-                    {/* Month Information Panel - UPDATED */}
                     <div className="month-info-panel">
                       <div className="info-section">
                         <div className="info-header">
@@ -2014,13 +1983,11 @@ const AdminClients = () => {
 
                         <div className="info-details">
                           <div className="info-grid">
-                            {/* Document Upload Status */}
                             <div className="info-item">
                               <span className="label">Document Status:</span>
                               {getDocumentUploadBadge()}
                             </div>
 
-                            {/* Month Lock Status */}
                             <div className="info-item">
                               <span className="label">Month Status:</span>
                               {monthData?.isLocked ? (
@@ -2045,7 +2012,6 @@ const AdminClients = () => {
                             </div>
                           </div>
 
-                          {/* TASK SELECTION DROPDOWN */}
                           <div className="task-selection-section">
                             <div className="dropdown-wrapper">
                               <label className="dropdown-label">
@@ -2068,7 +2034,6 @@ const AdminClients = () => {
                             </div>
                           </div>
 
-                          {/* EMPLOYEE ASSIGNMENT DETAILS TABLE */}
                           <div className="assignment-info">
                             <h5>
                               <FiUserCheck size={16} /> Employee Assignment Details
@@ -2131,7 +2096,6 @@ const AdminClients = () => {
                       </div>
                     </div>
 
-                    {/* Month Actions */}
                     <div className="month-actions-section">
                       <div className="section-header">
                         <h3>
@@ -2186,7 +2150,6 @@ const AdminClients = () => {
                       </div>
                     </div>
 
-                    {/* Files Section */}
                     <div className="files-section">
                       <div className="section-header">
                         <h3>
@@ -2202,21 +2165,18 @@ const AdminClients = () => {
                         </span>
                       </div>
 
-                      {/* Main Categories */}
                       {['sales', 'purchase', 'bank'].map((category) => {
                         const categoryData = monthData?.[category];
                         const categoryId = `${category}-${selectedMonth.year}-${selectedMonth.month}`;
                         const isExpanded = expandedFiles[categoryId];
                         const hasAlerts = categoryAlerts[category];
 
-                        // Helper function to get contextual label
                         const getContextLabel = (cat) => {
                           if (cat === 'sales') return '(Income)';
                           if (cat === 'purchase') return '(Expenses)';
-                          return ''; // bank has no label
+                          return '';
                         };
 
-                        // Helper function to get display name
                         const getDisplayName = (cat) => {
                           if (cat === 'sales') return 'Sales';
                           if (cat === 'purchase') return 'Purchase';
@@ -2269,13 +2229,9 @@ const AdminClients = () => {
 
                             {isExpanded && (
                               <div className="category-content">
-                                {/* Category Notes (Client Notes) */}
                                 {renderCategoryNotes(categoryData, category)}
-
-                                {/* Files in this category */}
                                 {renderFilesInCategory(categoryData?.files, category)}
 
-                                {/* Category Lock Controls */}
                                 {categoryData && (
                                   <div className="category-controls">
                                     <button
@@ -2318,7 +2274,6 @@ const AdminClients = () => {
                         );
                       })}
 
-                      {/* Other Documents */}
                       <div className="files-category">
                         <div className="category-header">
                           <div className="category-title">
@@ -2373,13 +2328,9 @@ const AdminClients = () => {
 
                                 {isExpanded && (
                                   <div className="other-category-content">
-                                    {/* Category Notes (Client Notes) */}
                                     {renderCategoryNotes(otherCategory.document, 'other', otherCategory.categoryName)}
-
-                                    {/* Files in this category */}
                                     {renderFilesInCategory(otherCategory.document?.files, 'other', otherCategory.categoryName)}
 
-                                    {/* Category Lock Controls */}
                                     {otherCategory.document && (
                                       <div className="category-controls">
                                         <button
@@ -2442,13 +2393,9 @@ const AdminClients = () => {
           </div>
         </div>
 
-        {/* CLIENT DETAILS MODAL */}
         {renderClientDetailsModal()}
-
-        {/* DOCUMENT PREVIEW MODAL */}
         {renderDocumentPreview()}
 
-        {/* SNACKBAR FOR NOTIFICATIONS */}
         <Snackbar
           open={snackbar.open}
           autoHideDuration={4000}

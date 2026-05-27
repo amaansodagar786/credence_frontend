@@ -2195,3 +2195,105 @@
   animation: spin 1s linear infinite;
   display: inline-block;
 }
+
+.payment-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+
+  &.paid {
+    background: rgba(16, 185, 129, 0.1);
+    color: #065f46;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+
+  &.pending {
+    background: rgba(245, 158, 11, 0.1);
+    color: #92400e;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+  }
+
+  /* NEW: Not Credited */
+  &.not_credited,
+  &.not-credited {
+    background: rgba(239, 68, 68, 0.1);
+    color: #991b1b;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+
+    svg {
+      color: #ef4444;
+    }
+  }
+}
+
+/* ============================================
+   NOT CREDITED MESSAGE STYLES
+   ============================================ */
+
+/* Not Credited message box */
+.not-credited-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px;
+  color: #991b1b;
+  background: rgba(239, 68, 68, 0.08);
+  border-top: 1px solid rgba(239, 68, 68, 0.2);
+  margin: 0;
+
+  svg {
+    flex-shrink: 0;
+    color: #ef4444;
+  }
+
+  span {
+    font-size: 13px;
+    font-weight: 500;
+  }
+}
+
+/* Payment status badge for Not Credited */
+.payment-status-badge {
+  &.not_credited,
+  &.not-credited {
+    background: rgba(239, 68, 68, 0.1);
+    color: #991b1b;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    
+    svg {
+      color: #ef4444;
+    }
+  }
+}
+
+/* Payment month card - ensure not-credited message is styled */
+.payment-month-card {
+  .not-credited-message {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 20px;
+    color: #991b1b;
+    background: rgba(239, 68, 68, 0.08);
+    border-top: 1px solid rgba(239, 68, 68, 0.2);
+    margin: 0;
+    border-radius: 0 0 12px 12px;
+
+    svg {
+      flex-shrink: 0;
+      color: #ef4444;
+      width: 18px;
+      height: 18px;
+    }
+
+    span {
+      font-size: 13px;
+      font-weight: 500;
+    }
+  }
+}
