@@ -147,7 +147,7 @@ const AdminClients = () => {
     switch (status) {
       case 'paid': return 'PAID';
       case 'pending': return 'PENDING';
-      case 'not_credited': return 'NOT CREDITED';
+      case 'not_credited': return 'CREDIT NOTE';
       default: return 'PENDING';
     }
   };
@@ -1305,7 +1305,7 @@ const AdminClients = () => {
       case 'not_credited':
         badgeClass = 'not-credited';
         icon = <FiXCircle />;
-        text = 'Not Credited';
+        text = 'CREDIT NOTE';
         break;
       default:
         badgeClass = 'pending';
@@ -1935,7 +1935,7 @@ const AdminClients = () => {
                           <div className="spinner-tiny"></div>
                         ) : (
                           <>
-                            <FiCheckCircle size={16} /> Paid
+                            <FiCheckCircle size={16} /> PAID
                           </>
                         )}
                       </button>
@@ -1949,13 +1949,13 @@ const AdminClients = () => {
                           <div className="spinner-tiny"></div>
                         ) : (
                           <>
-                            <FiAlertCircle size={16} /> Pending
+                            <FiAlertCircle size={16} /> PENDING
                           </>
                         )}
                       </button>
 
                       <button
-                        className={`payment-status-btn not-credited-btn ${paymentStatus === 'not_credited' ? 'active' : ''}`}
+                        className={`payment-status-btn credit-note-btn ${paymentStatus === 'not_credited' ? 'active' : ''}`}
                         onClick={() => updatePaymentStatus('not_credited')}
                         disabled={paymentLoading || paymentStatus === 'not_credited'}
                       >
@@ -1963,7 +1963,7 @@ const AdminClients = () => {
                           <div className="spinner-tiny"></div>
                         ) : (
                           <>
-                            <FiXCircle size={16} /> Not Credited
+                            <FiFileText size={16} /> CREDIT NOTE
                           </>
                         )}
                       </button>
