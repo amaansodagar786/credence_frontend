@@ -35,6 +35,9 @@ import AgreementPdf from './Pages/Admin/AgreementPdf/AgreementPdf';
 
 // IMPORT YOUR MAINTENANCE COMPONENT
 import MaintenanceComponent from './Pages/MaintenanceComponent/MaintenanceComponent';
+import BlogSingle from './Pages/Blogs/Blogsingle/Blogsingle';
+import BlogList from './Pages/Blogs/Blogslist/BlogList';
+import Blogs from './Pages/Blogs/Blogs';
 
 function App() {
   // 👇 MAINTENANCE MODE FLAG - SET TO true TO SHOW MAINTENANCE, false FOR NORMAL SITE
@@ -65,6 +68,10 @@ function App() {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/drive" element={<GoogleDrivePicker />} />
           <Route path="*" element={<NotFound />} />
+
+
+          <Route path="/blogs" element={<Blogs />} />
+          <Route path="/blog/:id" element={<BlogSingle />} />
 
           {/* ADMIN ROUTES  */}
 
