@@ -21,6 +21,11 @@ const Navbar = () => {
     navigate("/login");
   };
 
+  const handleCasesClick = (e) => {
+    e.preventDefault();
+    navigate("/blogs");
+  };
+
   // Animation variants
   const navbarVariants = {
     hidden: { y: -50, opacity: 0 },
@@ -44,16 +49,27 @@ const Navbar = () => {
       variants={navbarVariants}
     >
       <div className="navbar">
-        <motion.div
-          className="navbar-logo"
-          whileHover={{ scale: 1.05 }}
-        >
-          <img
-            src={logoImage}
-            alt="Credence Logo"
-            className="navbar-logo-image"
-          />
-        </motion.div>
+        <div className="navbar-left">
+          <motion.div
+            className="navbar-logo"
+            whileHover={{ scale: 1.05 }}
+          >
+            <img
+              src={logoImage}
+              alt="Credence Logo"
+              className="navbar-logo-image"
+            />
+          </motion.div>
+
+          <motion.span
+            className="navbar-cases-link"
+            onClick={handleCasesClick}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            Cases
+          </motion.span>
+        </div>
 
         <div className="navbar-buttons">
           <motion.span

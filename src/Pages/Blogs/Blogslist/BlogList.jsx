@@ -77,7 +77,7 @@ const allBlogs = [
     date: "May 10, 2026",
     time: "2:45 pm",
     category: "Court Appeals",
-    coverImage: "https://images.unsplash.com/photo-1589391886645-9a115e5f36d9?w=800&h=500&fit=crop",
+    coverImage: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800&h=500&fit=crop",
     description: "How we overturned a negative decision at the Administrative Court level using fresh evidence and strategic legal arguments. A must-read for anyone facing rejection.",
     content: [
       {
