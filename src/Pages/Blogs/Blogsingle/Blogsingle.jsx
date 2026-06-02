@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import "./BlogSingle.scss";
 import Navbar from "../../Home/Navbar/Navbar";
@@ -47,20 +47,70 @@ const overlayVariants = {
 };
 
 const BlogSingle = () => {
-  const location = useLocation();
+  // ✅ FIXED: Route param is "id", rename to blogId
+  const { id: blogId } = useParams();
   const navigate = useNavigate();
-  const blog = location.state?.blogData;
+
+  console.log("BlogSingle rendered, blogId:", blogId);
+
+  const [blog, setBlog] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
   const [errors, setErrors] = useState({});
 
-  // If no blog data, redirect to blog list
-  if (!blog) {
-    navigate("/blogs");
-    return null;
-  }
+  // ============================================
+  // FETCH BLOG FROM API USING blogId
+  // ============================================
+  useEffect(() => {
+    const fetchBlog = async () => {
+      try {
+        setLoading(true);
+        console.log("Fetching blog with blogId:", blogId);
+
+        if (!blogId) {
+          console.error("No blogId provided");
+          navigate("/blogs");
+          return;
+        }
+
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/blogs/${blogId}`, {
+          credentials: "include"
+        });
+
+        console.log("Response status:", response.status);
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error("Blog not found");
+          }
+          throw new Error("Failed to fetch blog");
+        }
+
+        const data = await response.json();
+        console.log("API Response:", data);
+
+        if (data.success) {
+          console.log("Blog found:", data.blog.title);
+          setBlog(data.blog);
+        } else {
+          throw new Error(data.message || "Failed to fetch blog");
+        }
+      } catch (err) {
+        console.error("Error fetching blog:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (blogId) {
+      fetchBlog();
+    }
+  }, [blogId, navigate]);
 
   const validate = () => {
     const e = {};
@@ -90,7 +140,21 @@ const BlogSingle = () => {
     }, 400);
   };
 
+  // ============================================
+  // RENDER CONTENT WITH FORMATTING (HTML)
+  // ============================================
   const renderParagraph = (item, idx) => {
+    if (item.html) {
+      return (
+        <motion.div
+          key={idx}
+          className="bs-para"
+          variants={fadeUp}
+          dangerouslySetInnerHTML={{ __html: item.html }}
+        />
+      );
+    }
+
     if (!item.underline) {
       return (
         <motion.p key={idx} className="bs-para" variants={fadeUp}>
@@ -109,16 +173,37 @@ const BlogSingle = () => {
     );
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <section className="blog-single">
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Loading blog...</p>
+          </div>
+        </section>
+        <Footer />
+      </>
+    );
+  }
+
+  // Error state - redirect to blogs list
+  if (error || !blog) {
+    navigate("/blogs");
+    return null;
+  }
+
   return (
     <>
-    <Navbar/>
+      <Navbar />
       <motion.section
         className="blog-single"
         initial="hidden"
         animate="visible"
         variants={{ visible: { transition: { staggerChildren: 0.12 } } }}
       >
-        {/* AUTHOR - STATIC */}
         <motion.div className="bs-author" variants={fadeUp}>
           <div className="bs-author-img-wrap">
             <img src={staticAuthor.image} alt={staticAuthor.name} />
@@ -127,12 +212,10 @@ const BlogSingle = () => {
           <p className="bs-author-bio">{staticAuthor.bio}</p>
         </motion.div>
 
-        {/* TITLE */}
         <motion.h1 className="bs-title" variants={fadeUp}>
           {blog.title}
         </motion.h1>
 
-        {/* META */}
         <motion.div className="bs-meta" variants={fadeUp}>
           <span className="bs-meta-date">{blog.date}</span>
           <span className="bs-meta-dot">·</span>
@@ -141,12 +224,10 @@ const BlogSingle = () => {
           <span className="bs-meta-cat">{blog.category}</span>
         </motion.div>
 
-        {/* COVER IMAGE */}
         <motion.div className="bs-cover" variants={fadeIn}>
           <img src={blog.coverImage} alt="Blog cover" />
         </motion.div>
 
-        {/* CONTENT */}
         <motion.div
           className="bs-content"
           initial="hidden"
@@ -154,10 +235,9 @@ const BlogSingle = () => {
           viewport={{ once: true, amount: 0.1 }}
           variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
         >
-          {blog.content.map((item, idx) => renderParagraph(item, idx))}
+          {blog.content && blog.content.map((item, idx) => renderParagraph(item, idx))}
         </motion.div>
 
-        {/* CONTACT US BUTTON */}
         <motion.div
           className="bs-cta-wrap"
           initial={{ opacity: 0, y: 30 }}
@@ -177,7 +257,6 @@ const BlogSingle = () => {
         </motion.div>
       </motion.section>
 
-      {/* MODAL */}
       <AnimatePresence>
         {modalOpen && (
           <>
@@ -270,7 +349,7 @@ const BlogSingle = () => {
           </>
         )}
       </AnimatePresence>
-      <Footer/>
+      <Footer />
     </>
   );
 };

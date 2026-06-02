@@ -258,6 +258,11 @@ const AdminSidebar = ({ children }) => {
       title: "Agreement Pdf",
       path: "/admin/pdf",
     },
+    {
+      icon: <FiFileText  />,
+      title: "BLogs Management",
+      path: "/admin/blogs",
+    },
   ];
 
   return (

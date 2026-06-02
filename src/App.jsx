@@ -38,6 +38,7 @@ import MaintenanceComponent from './Pages/MaintenanceComponent/MaintenanceCompon
 import BlogSingle from './Pages/Blogs/Blogsingle/Blogsingle';
 import BlogList from './Pages/Blogs/Blogslist/BlogList';
 import Blogs from './Pages/Blogs/Blogs';
+import BlogManagement from './Pages/Admin/BlogManagement/BlogManagement';
 
 function App() {
   // 👇 MAINTENANCE MODE FLAG - SET TO true TO SHOW MAINTENANCE, false FOR NORMAL SITE
@@ -85,6 +86,7 @@ function App() {
           <Route path="/admin/logs" element={<ActivityLogs />} />
           <Route path="/admin/notes" element={<AdminNotesPanel />} />
           <Route path="/admin/pdf" element={<AgreementPdf />} />
+          <Route path="/admin/blogs" element={<BlogManagement />} />
 
           {/* CLIENT ROUTES  */}
           {/* <Route path="/client/login" element={<ClientLogin />} /> */}

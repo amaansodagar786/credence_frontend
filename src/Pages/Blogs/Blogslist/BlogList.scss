@@ -154,3 +154,51 @@
         }
     }
 }
+
+// Loading State
+.loading-state {
+    text-align: center;
+    padding: 60px;
+    color: #6b7280;
+    font-size: 16px;
+}
+
+// Error State
+.error-state {
+    text-align: center;
+    padding: 60px;
+
+    p {
+        color: #ef4444;
+        font-size: 16px;
+        margin-bottom: 20px;
+    }
+
+    .retry-btn {
+        background: #7cd64b;
+        color: #000;
+        border: none;
+        padding: 10px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Poppins', sans-serif;
+        transition: all 0.3s;
+
+        &:hover {
+            background: #9ce76a;
+            transform: translateY(-2px);
+        }
+    }
+}
+
+// Empty State
+.empty-state {
+    text-align: center;
+    padding: 60px;
+
+    p {
+        color: #6b7280;
+        font-size: 16px;
+    }
+}
