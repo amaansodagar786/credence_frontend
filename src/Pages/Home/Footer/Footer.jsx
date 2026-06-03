@@ -45,6 +45,7 @@ const Footer = () => {
           <div className="fgf-col fgf-policies-col">
             <a href="/terms">Terms and Conditions</a>
             <a href="/privacy">Privacy Policy</a>
+            <a href="/blogs">Cases</a>
           </div>
 
           {/* RIGHT - CONTACT */}
@@ -91,7 +92,7 @@ const Footer = () => {
         <div className="fgf-copyright-row">
           <div className="fgf-copyright-text">
             <p className="desktop-view">
-              Copyrights © 2026 - Credence Developed by
+              Copyright © 2026 - Credence Developed by
               <span>
                 <a
                   rel="noopener noreferrer"

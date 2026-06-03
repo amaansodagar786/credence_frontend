@@ -5,6 +5,7 @@ import { useModal } from "../Home/Model/ModalProvider";
 import logoImage from "../../assets/Images/home/logo.png";
 import "./TermsConditions.scss";
 import Footer from '../Home/Footer/Footer';
+import Navbar from '../Home/Navbar/Navbar';
 
 const TermsConditions = () => {
     const navigate = useNavigate();
@@ -203,56 +204,9 @@ const TermsConditions = () => {
     return (
         <>
             {/* ===== NAVBAR FROM PACKAGEPLANS (EXACT COPY) ===== */}
-            <section className="terms-header-section">
-                {/* Flow particles (exactly from PackagePlans) */}
-                <div className="pulse-layer"></div>
-                <div className="flow-particle"></div>
-                <div className="flow-particle"></div>
-                <div className="flow-particle"></div>
-                <div className="flow-particle"></div>
-                <div className="flow-particle"></div>
+           
 
-                {/* Navbar */}
-                <motion.div
-                    className="terms-navbar-wrapper"
-                    initial="hidden"
-                    animate="visible"
-                    variants={navbarVariants}
-                >
-                    <div className="terms-navbar">
-                        <motion.span
-                            className="terms-nav-link"
-                            onClick={handleEnrollClick}
-                            style={{ cursor: 'pointer' }}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                        >
-                            <span className="enroll-text">Enroll Now</span>
-                        </motion.span>
-
-                        <motion.div
-                            className="terms-logo"
-                            whileHover={{ scale: 1.05 }}
-                        >
-                            <img
-                                src={logoImage}
-                                alt="Credence Logo"
-                                className="terms-logo-image"
-                            />
-                        </motion.div>
-
-                        <motion.span
-                            className="terms-nav-link"
-                            onClick={handleSignInClick}
-                            style={{ cursor: 'pointer' }}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                        >
-                            Sign in
-                        </motion.span>
-                    </div>
-                </motion.div>
-            </section>
+            <Navbar/>
 
             <motion.section
                 className="terms-conditions"

@@ -36,7 +36,7 @@ import AgreementPdf from './Pages/Admin/AgreementPdf/AgreementPdf';
 // IMPORT YOUR MAINTENANCE COMPONENT
 import MaintenanceComponent from './Pages/MaintenanceComponent/MaintenanceComponent';
 import BlogSingle from './Pages/Blogs/Blogsingle/Blogsingle';
-import BlogList from './Pages/Blogs/Blogslist/BlogList';
+// import BlogList from './Pages/Blogs/Blogslist/BlogList';
 import Blogs from './Pages/Blogs/Blogs';
 import BlogManagement from './Pages/Admin/BlogManagement/BlogManagement';
 

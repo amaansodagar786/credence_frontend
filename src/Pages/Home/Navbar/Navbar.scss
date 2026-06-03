@@ -58,6 +58,14 @@
       transform: translateY(-2px) !important;
       box-shadow: 0 4px 12px rgba(124, 214, 75, 0.3);
     }
+
+    // ACTIVE STATE - Same as hover effect
+    &.active {
+      background: #7cd64b !important;
+      color: #ffffff !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 12px rgba(124, 214, 75, 0.3);
+    }
   }
 
   .navbar-buttons {

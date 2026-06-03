@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "./BlogSingle.scss";
 import Navbar from "../../Home/Navbar/Navbar";
-import { Footer } from "antd/es/layout/layout";
+import Footer from "../../Home/Footer/Footer";
+
 
 // Static author (same for all blogs)
 const staticAuthor = {
-  name: "EMILJAN CECI",
-  designation: "Founding Partner, Appeals & Cases Law Office",
+  name: "Credence",
+  designation: "Founding Partner, Jlad Group",
   image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&h=200&fit=crop&crop=face",
   bio: "Emiljan Ceci is the Founding Partner of Appeals & Cases Law Office, specialising in immigration matters and business consulting.",
 };
@@ -47,18 +50,15 @@ const overlayVariants = {
 };
 
 const BlogSingle = () => {
-  // ✅ FIXED: Route param is "id", rename to blogId
   const { id: blogId } = useParams();
   const navigate = useNavigate();
-
-  console.log("BlogSingle rendered, blogId:", blogId);
 
   const [blog, setBlog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
   const [errors, setErrors] = useState({});
 
@@ -69,10 +69,8 @@ const BlogSingle = () => {
     const fetchBlog = async () => {
       try {
         setLoading(true);
-        console.log("Fetching blog with blogId:", blogId);
 
         if (!blogId) {
-          console.error("No blogId provided");
           navigate("/blogs");
           return;
         }
@@ -80,8 +78,6 @@ const BlogSingle = () => {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/blogs/${blogId}`, {
           credentials: "include"
         });
-
-        console.log("Response status:", response.status);
 
         if (!response.ok) {
           if (response.status === 404) {
@@ -91,10 +87,8 @@ const BlogSingle = () => {
         }
 
         const data = await response.json();
-        console.log("API Response:", data);
 
         if (data.success) {
-          console.log("Blog found:", data.blog.title);
           setBlog(data.blog);
         } else {
           throw new Error(data.message || "Failed to fetch blog");
@@ -112,6 +106,18 @@ const BlogSingle = () => {
     }
   }, [blogId, navigate]);
 
+
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "smooth" // Use "smooth" for smooth scrolling, "instant" for immediate
+    });
+  }, []);
+
+  // ============================================
+  // VALIDATE FORM
+  // ============================================
   const validate = () => {
     const e = {};
     if (!form.name.trim()) e.name = "Name is required";
@@ -121,23 +127,99 @@ const BlogSingle = () => {
     return e;
   };
 
-  const handleSubmit = () => {
+  // ============================================
+  // HANDLE FORM SUBMIT TO BACKEND
+  // ============================================
+  const handleSubmit = async () => {
+    // Validate form
     const e = validate();
     if (Object.keys(e).length > 0) {
       setErrors(e);
+      toast.error("Please fill all required fields correctly", {
+        position: "top-center",
+        autoClose: 3000,
+        closeButton: true,
+        draggable: false,
+        pauseOnHover: false,
+        style: { zIndex: 10001 }
+      });
       return;
     }
-    setErrors({});
-    setSubmitted(true);
+
+    setSubmitting(true);
+    const toastId = toast.loading("Sending your message...", {
+      position: "top-center",
+      style: { zIndex: 10001 }
+    });
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/blog-contact/submit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim(),
+          message: form.message.trim(),
+          blogId: blog.blogId,
+          blogTitle: blog.title
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Success toast
+        toast.update(toastId, {
+          render: "✅ Message sent successfully! We'll contact you soon.",
+          type: "success",
+          isLoading: false,
+          autoClose: 5000,
+          closeButton: true,
+          style: { zIndex: 10001, background: "#7cd64b", color: "#000" }
+        });
+
+        // Reset form and close modal after delay
+        setTimeout(() => {
+          setForm({ name: "", email: "", phone: "", message: "" });
+          setErrors({});
+          setModalOpen(false);
+        }, 2000);
+      } else {
+        // Error response from server
+        toast.update(toastId, {
+          render: data.message || "❌ Failed to send message. Please try again.",
+          type: "error",
+          isLoading: false,
+          autoClose: 4000,
+          closeButton: true,
+          style: { zIndex: 10001 }
+        });
+      }
+    } catch (error) {
+      console.error("Submit error:", error);
+      toast.update(toastId, {
+        render: "❌ Network error. Please check your connection and try again.",
+        type: "error",
+        isLoading: false,
+        autoClose: 4000,
+        closeButton: true,
+        style: { zIndex: 10001 }
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleClose = () => {
     setModalOpen(false);
+    // Reset form after modal closes
     setTimeout(() => {
-      setSubmitted(false);
       setForm({ name: "", email: "", phone: "", message: "" });
       setErrors({});
-    }, 400);
+    }, 300);
   };
 
   // ============================================
@@ -198,6 +280,18 @@ const BlogSingle = () => {
   return (
     <>
       <Navbar />
+      <ToastContainer
+        position="top-center"
+        autoClose={3500}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
       <motion.section
         className="blog-single"
         initial="hidden"
@@ -209,7 +303,7 @@ const BlogSingle = () => {
             <img src={staticAuthor.image} alt={staticAuthor.name} />
           </div>
           <p className="bs-author-name">{staticAuthor.name}</p>
-          <p className="bs-author-bio">{staticAuthor.bio}</p>
+          <p className="bs-author-bio">{staticAuthor.designation}</p>
         </motion.div>
 
         <motion.h1 className="bs-title" variants={fadeUp}>
@@ -276,75 +370,70 @@ const BlogSingle = () => {
               exit="exit"
             >
               <button className="bs-modal-close" onClick={handleClose}>✕</button>
-              {!submitted ? (
-                <>
-                  <h3 className="bs-modal-title">Get In Touch</h3>
-                  <p className="bs-modal-sub">Fill in the details below and we'll get back to you shortly.</p>
-                  <div className="bs-form">
-                    <div className="bs-form-group">
-                      <label>Full Name</label>
-                      <input
-                        type="text"
-                        placeholder="Your full name"
-                        value={form.name}
-                        onChange={(e) => setForm({ ...form, name: e.target.value })}
-                        className={errors.name ? "error" : ""}
-                      />
-                      {errors.name && <span className="bs-err">{errors.name}</span>}
-                    </div>
-                    <div className="bs-form-group">
-                      <label>Email Address</label>
-                      <input
-                        type="email"
-                        placeholder="your@email.com"
-                        value={form.email}
-                        onChange={(e) => setForm({ ...form, email: e.target.value })}
-                        className={errors.email ? "error" : ""}
-                      />
-                      {errors.email && <span className="bs-err">{errors.email}</span>}
-                    </div>
-                    <div className="bs-form-group">
-                      <label>Phone Number</label>
-                      <input
-                        type="tel"
-                        placeholder="+91 00000 00000"
-                        value={form.phone}
-                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                        className={errors.phone ? "error" : ""}
-                      />
-                      {errors.phone && <span className="bs-err">{errors.phone}</span>}
-                    </div>
-                    <div className="bs-form-group">
-                      <label>Message</label>
-                      <textarea
-                        placeholder="Write your message here..."
-                        rows={4}
-                        value={form.message}
-                        onChange={(e) => setForm({ ...form, message: e.target.value })}
-                        className={errors.message ? "error" : ""}
-                      />
-                      {errors.message && <span className="bs-err">{errors.message}</span>}
-                    </div>
-                    <motion.button
-                      className="bs-modal-submit"
-                      onClick={handleSubmit}
-                      whileHover={{ scale: 1.04 }}
-                      whileTap={{ scale: 0.97 }}
-                    >
-                      Submit
-                    </motion.button>
+              <>
+                <h3 className="bs-modal-title">Get In Touch</h3>
+                <p className="bs-modal-sub">Fill in the details below and we'll get back to you shortly.</p>
+                <div className="bs-form">
+                  <div className="bs-form-group">
+                    <label>Full Name</label>
+                    <input
+                      type="text"
+                      placeholder="Your full name"
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      className={errors.name ? "error" : ""}
+                      disabled={submitting}
+                    />
+                    {errors.name && <span className="bs-err">{errors.name}</span>}
                   </div>
-                </>
-              ) : (
-                <motion.div className="bs-success">
-                  <div className="bs-success-icon">✓</div>
-                  <h3>Thank You!</h3>
-                  <p>Your message has been received. We will get back to you as soon as possible.</p>
-                  <motion.button className="bs-cta-btn" onClick={handleClose}>
-                    Close
+                  <div className="bs-form-group">
+                    <label>Email Address</label>
+                    <input
+                      type="email"
+                      placeholder="your@email.com"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      className={errors.email ? "error" : ""}
+                      disabled={submitting}
+                    />
+                    {errors.email && <span className="bs-err">{errors.email}</span>}
+                  </div>
+                  <div className="bs-form-group">
+                    <label>Phone Number</label>
+                    <input
+                      type="tel"
+                      placeholder="+91 00000 00000"
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      className={errors.phone ? "error" : ""}
+                      disabled={submitting}
+                    />
+                    {errors.phone && <span className="bs-err">{errors.phone}</span>}
+                  </div>
+                  <div className="bs-form-group">
+                    <label>Message</label>
+                    <textarea
+                      placeholder="Write your message here..."
+                      rows={4}
+                      value={form.message}
+                      onChange={(e) => setForm({ ...form, message: e.target.value })}
+                      className={errors.message ? "error" : ""}
+                      disabled={submitting}
+                    />
+                    {errors.message && <span className="bs-err">{errors.message}</span>}
+                  </div>
+                  <motion.button
+                    className="bs-modal-submit"
+                    onClick={handleSubmit}
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.97 }}
+                    disabled={submitting}
+                    style={{ opacity: submitting ? 0.7 : 1 }}
+                  >
+                    {submitting ? "SENDING..." : "SUBMIT"}
                   </motion.button>
-                </motion.div>
-              )}
+                </div>
+              </>
             </motion.div>
           </>
         )}

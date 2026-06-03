@@ -5,6 +5,7 @@ import { useModal } from "../../Pages/Home/Model/ModalProvider";
 import logoImage from "../../assets/Images/home/logo.png";
 import "./PrivacyPolicy.scss";
 import Footer from '../Home/Footer/Footer';
+import Navbar from '../Home/Navbar/Navbar';
 
 const PrivacyPolicy = () => {
     const navigate = useNavigate();
@@ -214,49 +215,7 @@ const PrivacyPolicy = () => {
 
     return (
         <>
-            {/* ===== NAVBAR SECTION (EXACTLY LIKE TERMS) ===== */}
-            <section className="privacy-header-section" style={{ background: '#f5f5f5' }}>
-                {/* Navbar */}
-                <motion.div
-                    className="privacy-navbar-wrapper"
-                    initial="hidden"
-                    animate="visible"
-                    variants={navbarVariants}
-                >
-                    <div className="privacy-navbar">
-                        <motion.span
-                            className="privacy-nav-link"
-                            onClick={handleEnrollClick}
-                            style={{ cursor: 'pointer' }}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                        >
-                            <span className="enroll-text">Enroll Now</span>
-                        </motion.span>
-
-                        <motion.div
-                            className="privacy-logo"
-                            whileHover={{ scale: 1.05 }}
-                        >
-                            <img
-                                src={logoImage}
-                                alt="Credence Logo"
-                                className="privacy-logo-image"
-                            />
-                        </motion.div>
-
-                        <motion.span
-                            className="privacy-nav-link"
-                            onClick={handleSignInClick}
-                            style={{ cursor: 'pointer' }}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                        >
-                            Sign in
-                        </motion.span>
-                    </div>
-                </motion.div>
-            </section>
+            <Navbar/>
 
             {/* ===== MAIN CONTENT SECTION ===== */}
             <motion.section

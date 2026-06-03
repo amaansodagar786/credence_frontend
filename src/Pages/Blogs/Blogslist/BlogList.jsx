@@ -42,30 +42,44 @@ const BlogList = () => {
   }, []);
 
   // ============================================
-  // EXTRACT SHORT DESCRIPTION FROM CONTENT
+  // EXTRACT SHORT DESCRIPTION FROM CONTENT WITH FORMATTING
   // ============================================
   const getShortDescription = (content) => {
     if (!content || content.length === 0) return "No description available";
 
-    // Get text from first content block
     const firstBlock = content[0];
     let description = "";
+    let isHtml = false;
 
-    if (firstBlock.text) {
+    if (firstBlock.html && firstBlock.html.trim()) {
+      description = firstBlock.html;
+      isHtml = true;
+    } else if (firstBlock.text) {
       description = firstBlock.text;
-    } else if (firstBlock.html) {
-      // Strip HTML tags to get plain text
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = firstBlock.html;
-      description = tempDiv.innerText;
+      isHtml = false;
     }
+
+    // Strip HTML to get plain text for length check
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = description;
+    const plainText = tempDiv.innerText || description;
 
     // Trim to 120 characters
-    if (description.length > 120) {
-      return `${description.substring(0, 120)}...`;
+    if (plainText.length > 120) {
+      if (isHtml) {
+        // For HTML content, truncate while preserving HTML structure
+        const truncatedPlain = plainText.substring(0, 120) + '...';
+        const truncatedHtml = description.replace(plainText, truncatedPlain);
+        return { __html: truncatedHtml, isHtml: true };
+      } else {
+        return { __html: plainText.substring(0, 120) + '...', isHtml: false };
+      }
     }
 
-    return description;
+    if (isHtml) {
+      return { __html: description, isHtml: true };
+    }
+    return { __html: description, isHtml: false };
   };
 
   // Loading state
@@ -73,8 +87,6 @@ const BlogList = () => {
     return (
       <section className="blog-list">
         <div className="blog-list-container">
-          <h1 className="blog-list-title">Our Blog</h1>
-          <p className="blog-list-subtitle">Insights, case studies, and legal updates</p>
           <div className="loading-state">Loading blogs...</div>
         </div>
       </section>
@@ -86,8 +98,6 @@ const BlogList = () => {
     return (
       <section className="blog-list">
         <div className="blog-list-container">
-          <h1 className="blog-list-title">Our Blogs</h1>
-          <p className="blog-list-subtitle">Insights, case studies, and legal updates</p>
           <div className="error-state">
             <p>Failed to load blogs. Please try again later.</p>
             <button onClick={() => window.location.reload()} className="retry-btn">
@@ -104,8 +114,6 @@ const BlogList = () => {
     return (
       <section className="blog-list">
         <div className="blog-list-container">
-          <h1 className="blog-list-title">Our Blog</h1>
-          <p className="blog-list-subtitle">Insights, case studies, and legal updates</p>
           <div className="empty-state">
             <p>No blogs available yet. Check back soon!</p>
           </div>
@@ -122,34 +130,39 @@ const BlogList = () => {
       transition={{ duration: 0.5 }}
     >
       <div className="blog-list-container">
-        <h1 className="blog-list-title">Our Blog</h1>
-        <p className="blog-list-subtitle">Insights, case studies, and legal updates</p>
-
         <div className="blog-grid">
-          {blogs.map((blog) => (
-            <motion.div
-              key={blog.blogId}
-              className="blog-card"
-              whileHover={{ y: -5 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Link to={`/blog/${blog.blogId}`} className="blog-card-link">
-                <div className="blog-card-image">
-                  <img src={blog.coverImage} alt={blog.title} />
-                </div>
-                <div className="blog-card-content">
-                  <h2 className="blog-card-title">{blog.title}</h2>
-                  <p className="blog-card-description">
-                    {getShortDescription(blog.content)}
-                  </p>
-                  <div className="blog-card-footer">
-                    <span className="blog-card-date">{blog.date}</span>
-                    <span className="blog-card-readmore">Read More →</span>
+          {blogs.map((blog) => {
+            const description = getShortDescription(blog.content);
+            return (
+              <motion.div
+                key={blog.blogId}
+                className="blog-card"
+                whileHover={{ y: -5 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Link to={`/blog/${blog.blogId}`} className="blog-card-link">
+                  <div className="blog-card-image-wrapper">
+                    <div className="blog-card-image">
+                      <img src={blog.coverImage} alt={blog.title} />
+                    </div>
+                    {/* Category Badge - Top Right Corner */}
+                    <span className="blog-card-category-badge">{blog.category}</span>
                   </div>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
+                  <div className="blog-card-content">
+                    <h2 className="blog-card-title">{blog.title}</h2>
+                    <div 
+                      className="blog-card-description"
+                      dangerouslySetInnerHTML={description}
+                    />
+                    <div className="blog-card-footer">
+                      <span className="blog-card-date">{blog.date}</span>
+                      <span className="blog-card-readmore">Read More →</span>
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </motion.section>

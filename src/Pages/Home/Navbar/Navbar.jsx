@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useModal } from "../Model/ModalProvider";
 import "./Navbar.scss";
 
@@ -10,6 +10,7 @@ import logoImage from "../../../assets/Images/home/logo.png";
 const Navbar = () => {
   const { openAgreementModal } = useModal();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleEnrollClick = (e) => {
     e.preventDefault();
@@ -25,6 +26,14 @@ const Navbar = () => {
     e.preventDefault();
     navigate("/blogs");
   };
+
+  const handleLogoClick = (e) => {
+    e.preventDefault();
+    navigate("/");
+  };
+
+  // Check if current route is blogs or single blog page
+  const isCasesActive = location.pathname === "/blogs" || location.pathname.startsWith("/blog/");
 
   // Animation variants
   const navbarVariants = {
@@ -53,6 +62,9 @@ const Navbar = () => {
           <motion.div
             className="navbar-logo"
             whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleLogoClick}
+            style={{ cursor: 'pointer' }}
           >
             <img
               src={logoImage}
@@ -62,7 +74,7 @@ const Navbar = () => {
           </motion.div>
 
           <motion.span
-            className="navbar-cases-link"
+            className={`navbar-cases-link ${isCasesActive ? "active" : ""}`}
             onClick={handleCasesClick}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
