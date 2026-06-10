@@ -4,7 +4,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useModal } from "../Model/ModalProvider";
 import "./Navbar.scss";
 
-// Import logo image
 import logoImage from "../../../assets/Images/home/logo.png";
 
 const Navbar = () => {
@@ -32,10 +31,8 @@ const Navbar = () => {
     navigate("/");
   };
 
-  // Check if current route is blogs or single blog page
   const isCasesActive = location.pathname === "/cases" || location.pathname.startsWith("/cases/");
 
-  // Animation variants
   const navbarVariants = {
     hidden: { y: -50, opacity: 0 },
     visible: {
@@ -72,7 +69,6 @@ const Navbar = () => {
               className="navbar-logo-image"
             />
           </motion.div>
-
           <motion.span
             className={`navbar-cases-link ${isCasesActive ? "active" : ""}`}
             onClick={handleCasesClick}
@@ -96,7 +92,6 @@ const Navbar = () => {
           >
             <span>Enroll Now</span>
           </motion.span>
-
           <motion.span
             className="navbar-nav-link"
             onClick={handleSignInClick}

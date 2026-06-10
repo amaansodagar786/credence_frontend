@@ -63,7 +63,6 @@
       box-shadow: 0 4px 12px rgba(124, 214, 75, 0.3);
     }
 
-    // ACTIVE STATE - Same as hover effect
     &.active {
       background: #7cd64b !important;
       color: #ffffff !important;
@@ -108,9 +107,17 @@
   .navbar {
     padding: 8px 16px;
 
+    // Make navbar a flat flex row where we control all 3 items:
+    // logo (inside navbar-left), navbar-buttons, cases-link (inside navbar-left)
+    // Solution: navbar-left becomes a flex row that splits logo left + cases right
+    // and navbar-buttons inserts itself between them using negative margin trick
+
     .navbar-left {
-      gap: 12px;
-      // THIS IS THE ONLY ADDITION - makes the cases link move to right
+      gap: 0;
+      display: contents; // ← KEY: dissolves navbar-left, its children become direct navbar flex children
+    }
+
+    .navbar-logo {
       order: 1;
     }
 
@@ -119,14 +126,13 @@
     }
 
     .navbar-cases-link {
+      order: 3; // far right
       font-size: 13px;
       padding: 8px 12px !important;
       white-space: normal !important;
       line-height: 1.3 !important;
       text-align: center;
       min-width: 100px;
-      // THIS IS THE ONLY ADDITION - makes it appear on the right
-      order: 2;
 
       .desktop-text {
         display: none;
@@ -138,9 +144,9 @@
     }
 
     .navbar-buttons {
+      order: 2; // middle — right after logo
       gap: 8px;
-      // THIS IS THE ONLY ADDITION - keeps buttons on left
-      order: 1;
+      flex: 1; // takes up all middle space, pushing cases to far right
     }
 
     .navbar-nav-link {
@@ -164,12 +170,8 @@
   .navbar {
     padding: 6px 12px;
 
-    .navbar-left {
-      gap: 8px;
-    }
-
     .navbar-logo-image {
-      height: 50px;
+      height: 60px;
     }
 
     .navbar-cases-link {
@@ -186,6 +188,7 @@
     .navbar-nav-link {
       font-size: 12px;
       padding: 5px 8px !important;
+      margin-left: 4px;
     }
   }
 }
