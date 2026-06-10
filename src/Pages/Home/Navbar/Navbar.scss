@@ -52,6 +52,10 @@
     display: inline-block;
     text-decoration: none;
 
+    .mobile-text {
+      display: none;
+    }
+
     &:hover {
       background: #7cd64b !important;
       color: #ffffff !important;
@@ -106,6 +110,8 @@
 
     .navbar-left {
       gap: 12px;
+      // THIS IS THE ONLY ADDITION - makes the cases link move to right
+      order: 1;
     }
 
     .navbar-logo-image {
@@ -114,11 +120,27 @@
 
     .navbar-cases-link {
       font-size: 13px;
-      padding: 6px 12px !important;
+      padding: 8px 12px !important;
+      white-space: normal !important;
+      line-height: 1.3 !important;
+      text-align: center;
+      min-width: 100px;
+      // THIS IS THE ONLY ADDITION - makes it appear on the right
+      order: 2;
+
+      .desktop-text {
+        display: none;
+      }
+
+      .mobile-text {
+        display: inline-block;
+      }
     }
 
     .navbar-buttons {
       gap: 8px;
+      // THIS IS THE ONLY ADDITION - keeps buttons on left
+      order: 1;
     }
 
     .navbar-nav-link {
@@ -151,8 +173,10 @@
     }
 
     .navbar-cases-link {
-      font-size: 12px;
-      padding: 5px 10px !important;
+      font-size: 11px;
+      padding: 6px 8px !important;
+      line-height: 1.3 !important;
+      min-width: 85px;
     }
 
     .navbar-buttons {

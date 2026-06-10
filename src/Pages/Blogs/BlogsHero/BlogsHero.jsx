@@ -18,7 +18,7 @@ const BlogsHero = () => {
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.2 }}
                 >
-                    Our Blog
+                    Successful Cases
                 </motion.h1>
                 <motion.p
                     className="blogs-hero-subtitle"

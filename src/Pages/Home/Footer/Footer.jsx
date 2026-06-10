@@ -45,7 +45,7 @@ const Footer = () => {
           <div className="fgf-col fgf-policies-col">
             <a href="/terms">Terms and Conditions</a>
             <a href="/privacy">Privacy Policy</a>
-            <a href="/blogs">Cases</a>
+            <a href="/cases">Cases</a>
           </div>
 
           {/* RIGHT - CONTACT */}

@@ -6,13 +6,14 @@ import "react-toastify/dist/ReactToastify.css";
 import "./BlogSingle.scss";
 import Navbar from "../../Home/Navbar/Navbar";
 import Footer from "../../Home/Footer/Footer";
+import img from "../../../assets/Images/cases/img4.png"
 
 
 // Static author (same for all blogs)
 const staticAuthor = {
-  name: "Credence",
+  name: "Piyush Lad",
   designation: "Founding Partner, Jlad Group",
-  image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&h=200&fit=crop&crop=face",
+  image: img ,
   bio: "Emiljan Ceci is the Founding Partner of Appeals & Cases Law Office, specialising in immigration matters and business consulting.",
 };
 

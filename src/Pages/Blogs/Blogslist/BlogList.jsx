@@ -87,7 +87,7 @@ const BlogList = () => {
     return (
       <section className="blog-list">
         <div className="blog-list-container">
-          <div className="loading-state">Loading blogs...</div>
+          <div className="loading-state">Loading Cases...</div>
         </div>
       </section>
     );
@@ -140,7 +140,7 @@ const BlogList = () => {
                 whileHover={{ y: -5 }}
                 transition={{ duration: 0.2 }}
               >
-                <Link to={`/blog/${blog.blogId}`} className="blog-card-link">
+                <Link to={`/cases/${blog.blogId}`} className="blog-card-link">
                   <div className="blog-card-image-wrapper">
                     <div className="blog-card-image">
                       <img src={blog.coverImage} alt={blog.title} />

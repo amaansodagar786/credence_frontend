@@ -26,7 +26,7 @@ const BlogIntro = () => {
           className="blog-intro-title"
           variants={fadeUp}
         >
-          Welcome to Our Blog
+          Welcome to Successful Cases
         </motion.h2>
         
         <motion.div 

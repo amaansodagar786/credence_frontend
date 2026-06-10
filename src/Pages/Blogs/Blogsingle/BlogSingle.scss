@@ -138,11 +138,11 @@
         }
 
         @media (max-width: 768px) {
-            height: 260px;
+            height: auto;
         }
 
         @media (max-width: 480px) {
-            height: 200px;
+            height: auto;
         }
     }
 }
@@ -446,16 +446,16 @@
         gap: 6px;
     }
 
-    .bs-modal {
-        top: auto;
-        bottom: 0;
-        left: 0;
-        transform: none;
-        width: 100%;
-        max-width: 100%;
-        border-radius: 20px 20px 0 0;
-        max-height: 92vh;
-    }
+    // .bs-modal {
+    //     top: auto;
+    //     bottom: 0;
+    //     left: 0;
+    //     transform: none;
+    //     width: 100%;
+    //     max-width: 100%;
+    //     border-radius: 20px 20px 0 0;
+    //     max-height: 92vh;
+    // }
 }
 
 // Loading State

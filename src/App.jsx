@@ -71,8 +71,8 @@ function App() {
           <Route path="*" element={<NotFound />} />
 
 
-          <Route path="/blogs" element={<Blogs />} />
-          <Route path="/blog/:id" element={<BlogSingle />} />
+          <Route path="/cases" element={<Blogs />} />
+          <Route path="/cases/:id" element={<BlogSingle />} />
 
           {/* ADMIN ROUTES  */}
 

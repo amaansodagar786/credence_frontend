@@ -24,7 +24,7 @@ const Navbar = () => {
 
   const handleCasesClick = (e) => {
     e.preventDefault();
-    navigate("/blogs");
+    navigate("/cases");
   };
 
   const handleLogoClick = (e) => {
@@ -33,7 +33,7 @@ const Navbar = () => {
   };
 
   // Check if current route is blogs or single blog page
-  const isCasesActive = location.pathname === "/blogs" || location.pathname.startsWith("/blog/");
+  const isCasesActive = location.pathname === "/cases" || location.pathname.startsWith("/cases/");
 
   // Animation variants
   const navbarVariants = {
@@ -79,7 +79,10 @@ const Navbar = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            Cases
+            <span className="desktop-text">Appeals & Residence Permits</span>
+            <span className="mobile-text">
+              Residence Permits<br />& Appeals
+            </span>
           </motion.span>
         </div>
 
