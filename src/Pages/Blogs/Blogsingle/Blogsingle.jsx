@@ -12,9 +12,9 @@ import img from "../../../assets/Images/cases/img4.png"
 // Static author (same for all blogs)
 const staticAuthor = {
   name: "Piyush Lad",
-  designation: "Founding Partner, Jlad Group",
+  designation: "Founder & Managing Director | Business and Immigration Consultant",
   image: img ,
-  bio: "Emiljan Ceci is the Founding Partner of Appeals & Cases Law Office, specialising in immigration matters and business consulting.",
+  bio: "Founder & Managing Director | Business and Immigration Consultant",
 };
 
 // Animation variants
