@@ -7,7 +7,8 @@ import { useModal } from "../Model/ModalProvider";
 import { useNavigate } from "react-router-dom";
 
 // Import logo image
-import hero1 from "../../../assets/Images/home/herocredence.png";
+// import hero1 from "../../../assets/Images/home/herocredence.png";
+import hero1 from "../../../assets/Images/home/newherocredence.png";
 
 const PackagePlans = () => {
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
